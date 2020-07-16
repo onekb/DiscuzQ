@@ -1,0 +1,49 @@
+{
+  "name": "qcloud/discuz",
+  "description": "Discuz Q",
+  "type": "project",
+  "keywords": [
+    "discuz",
+    "comsenz",
+    "forum",
+    "community"
+  ],
+  "require": {
+    "php": "^7.2.5",
+    "ext-json": "*",
+    "ext-pdo": "*",
+    "discuz/core": "v1.0.200715",
+    "endroid/qr-code": "^3.6",
+    "ezyang/htmlpurifier": "^4.12",
+    "league/omnipay": "^3.0",
+    "lokielse/omnipay-wechatpay": "^3.0",
+    "overtrue/wechat": "~4.0",
+    "s9e/text-formatter": "^2.3",
+    "doctrine/dbal": "^2.0"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://cloud.discuz.chat"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require-dev": {
+    "symfony/var-dumper": "^4.3",
+    "friendsofphp/php-cs-fixer": "^2.16"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "./app"
+    },
+    "classmap": [
+      "database/seeds"
+    ]
+  }
+}

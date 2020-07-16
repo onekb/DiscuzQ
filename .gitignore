@@ -1,0 +1,14 @@
+/framework
+/vendor
+/composer.lock
+/.idea
+/config/config.php
+/node_modules
+.php_cs.cache
+/public/s9e.js
+/public/storage
+/storage/install.lock
+/public/docs
+/public/api-docs
+/public/manual-h5
+/public/manual-admin
