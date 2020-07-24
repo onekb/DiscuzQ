@@ -1,14 +1,24 @@
 <?php
 
 /**
- * Discuz & Tencent Cloud
- * This is NOT a freeware, use is subject to license terms
+ * Copyright (C) 2020 Tencent Cloud.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 namespace App\Rules\Settings;
 
 use Discuz\Contracts\Setting\SettingsRepository;
-use Discuz\Validation\AbstractRule;
 use TencentCloud\Common\Credential;
 use TencentCloud\Common\Exception\TencentCloudSDKException;
 use TencentCloud\Common\Profile\ClientProfile;
@@ -22,22 +32,27 @@ use TencentCloud\Sms\V20190711\SmsClient;
  * Class QcloudSMSVerify
  * @package App\Rules\Settings
  */
-class QcloudSMSVerify extends AbstractRule
+class QcloudSMSVerify extends BaseQcloud
 {
     private $qcloudSmsAppId;
 
-    private $qcloudSecretId;
+    protected $qcloudSecretId;
 
-    private $qcloudSecretKey;
+    protected $qcloudSecretKey;
 
+    /**
+     * QcloudSMSVerify constructor.
+     * @param null $qcloudSmsAppId
+     * @throws TencentCloudSDKException
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     */
     public function __construct($qcloudSmsAppId = null)
     {
+        parent::__construct();
+
         $this->qcloudSmsAppId = $qcloudSmsAppId; // 不能为空
 
         $settings = app()->make(SettingsRepository::class);
-
-        $this->qcloudSecretId = $settings->get('qcloud_secret_id', 'qcloud');
-        $this->qcloudSecretKey = $settings->get('qcloud_secret_key', 'qcloud');
 
         if (is_null($this->qcloudSmsAppId)) {
             // 执行开启开关
@@ -55,6 +70,10 @@ class QcloudSMSVerify extends AbstractRule
      */
     public function passes($attribute, $value)
     {
+        // 判断总开关
+        $this->currentKeyStatus($attribute, $value);
+
+        // 验证短信Api
         try {
             $cred = new Credential($this->qcloudSecretId, $this->qcloudSecretKey);
             $httpProfile = new HttpProfile();
