@@ -12,6 +12,7 @@ return [
     'cash_failure'           => '提现失败，退回',
     'cash_review_failure'           => '审核不通过，退回',
     'operate_forbidden' => '非法操作',
+    'pem_notexist' => '证书不存在，请先上传证书',
 
     // 分割线
 
@@ -27,4 +28,7 @@ return [
     'expend_artificial'         => '人工支出',
 
     'cash_operate_desc'         => '提现',
+
+    'unbind_wechat'         => '请绑定微信后再进行操作',
+
 ];

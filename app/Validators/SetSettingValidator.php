@@ -26,6 +26,7 @@ use App\Rules\Settings\QcloudClose;
 use App\Rules\Settings\QcloudMasterSwitch;
 use App\Rules\Settings\QcloudSecretVerify;
 use App\Rules\Settings\QcloudSMSVerify;
+use App\Rules\Settings\QcloudTaskflowGifVerify;
 use App\Rules\Settings\QcloudVodCoverTemplateVerify;
 use App\Rules\Settings\QcloudVodTranscodeVerify;
 use App\Rules\Settings\QcloudVodVerify;
@@ -72,6 +73,7 @@ class SetSettingValidator extends AbstractValidator
             'qcloud_cms_text' => Arr::has($this->data, 'qcloud_cms_text') ? [new QcloudMasterSwitch()] : [],
             'qcloud_cos' => Arr::has($this->data, 'qcloud_cos') ? [new QcloudMasterSwitch()] : [],
             'qcloud_captcha' => Arr::has($this->data, 'qcloud_captcha') ? [new QcloudMasterSwitch()] : [],
+            'site_price' => 'required_if:site_mode,pay|nullable|not_in:0',
         ];
 
         // 腾讯云验证码特殊处理
@@ -111,6 +113,10 @@ class SetSettingValidator extends AbstractValidator
             $rules['qcloud_vod_cover_template'] = [new QcloudVodCoverTemplateVerify()];
         }
 
+        if (Arr::has($this->data, 'qcloud_vod_taskflow_gif')) {
+            $rules['qcloud_vod_taskflow_gif'] = [new QcloudTaskflowGifVerify()];
+        }
+
         return $rules;
     }
 
@@ -121,7 +127,8 @@ class SetSettingValidator extends AbstractValidator
     protected function getMessages()
     {
         return [
-//            'password_length.gte' => '密码长度必须大于或等于:value',
+           'site_price.required_if' => trans('setting.site_mode_not_found_price'),
+           'site_price.not_in' => trans('setting.site_mode_not_found_price'),
         ];
     }
 

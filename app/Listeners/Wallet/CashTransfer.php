@@ -78,7 +78,7 @@ class CashTransfer
     {
         switch ($event->transfer_type) {
             case GatewayConfig::WECAHT_TRANSFER://微信企业付款
-                $result = $this->wecahtTransfer($event);
+                $this->wecahtTransfer($event);
                 break;
             default:
                 break;
@@ -88,21 +88,27 @@ class CashTransfer
     /**
      * 微信企业付
      * @param Cash $event 事件参数
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
     public function wecahtTransfer(Cash $event)
     {
-        //获取用户openid
+        //获取微信配置
+        $config = $this->settings->tag('wxpay');
+        $miniprogram_app_id = $this->settings->get('miniprogram_app_id', 'wx_miniprogram');
+        $offiaccount_app_id = $this->settings->get('offiaccount_app_id', 'wx_offiaccount');
+
+        //如果有公众号openid那么拿公众号appid提现，如果有小程序openid那么拿小程序appid提现
         $user_id = $event->cash_record->user_id;
         $user_wecaht = User::findOrfail($user_id)->wechat;
-
-        if (isset($user_wecaht->mp_openid)) {
+        if ($user_wecaht && $user_wecaht->mp_openid) {
             $openid = $user_wecaht->mp_openid;
+            $config['app_id'] = $offiaccount_app_id;
+        } elseif ($user_wecaht && $user_wecaht->min_openid) {
+            $openid = $user_wecaht->min_openid;
+            $config['app_id'] = $miniprogram_app_id;
         } else {
             $openid = '';
         }
-        //获取微信配置
-        $config = $this->settings->tag('wxpay');
+
         //微信证书
         $config['cert_path'] = storage_path().'/cert/apiclient_cert.pem';
         $config['key_path'] = storage_path().'/cert/apiclient_key.pem';
@@ -147,7 +153,7 @@ class CashTransfer
 
     /**
      * 提现成功结果处理
-     * @param  $cash_id 提现数据id
+     * @param  int $cash_id 提现数据id
      * @param  array $data 结果数组
      */
     public function transferSuccess($cash_id, $data)
@@ -185,7 +191,7 @@ class CashTransfer
                 //提交事务
                 $this->connection->commit();
                 return true;
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 //回滚事务
                 $this->connection->rollback();
                 return false;
@@ -195,9 +201,9 @@ class CashTransfer
 
     /**
      * 提现失败
-     * @param  $cash_id 提现数据id
+     * @param  int $cash_id 提现数据id
      * @param  array $data 结果数组
-     * @param  $is_thaw 是否解冻提现金额
+     * @param  bool $is_thaw 是否解冻提现金额
      */
     public function transferFailure($cash_id, $data, bool $is_thaw = false)
     {

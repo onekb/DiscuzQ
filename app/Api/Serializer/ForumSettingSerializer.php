@@ -73,6 +73,7 @@ class ForumSettingSerializer extends AbstractSerializer
                 'site_install' => $this->settings->get('site_install'), // 安装时间
                 'site_record' => $this->settings->get('site_record'),
                 'site_cover' => $this->settings->get('site_cover') ?: '',
+                'site_record_code' => $this->settings->get('site_record_code') ?: '',
             ],
 
             // 注册设置
@@ -143,6 +144,7 @@ class ForumSettingSerializer extends AbstractSerializer
                 'can_view_user_list' => $this->actor->can('viewUserList'),
                 'can_edit_user_group' => $this->actor->can('user.edit.group'),
                 'can_create_invite' => $this->actor->can('createInvite'),
+                'can_create_thread_paid' => $this->actor->can('createThreadPaid'),
                 'create_thread_with_captcha' => ! $this->actor->isAdmin() && $this->actor->can('createThreadWithCaptcha'),
                 'publish_need_real_name' => ! $this->actor->isAdmin() && $this->actor->can('publishNeedRealName') && ! $this->actor->realname,
                 'publish_need_bind_phone' => ! $this->actor->isAdmin() && $this->actor->can('publishNeedBindPhone') && ! $this->actor->mobile,
@@ -205,7 +207,7 @@ class ForumSettingSerializer extends AbstractSerializer
             }
         }
 
-        return $attributes;
+        return $attributes + Arr::except($model, 'id');
     }
 
     public function getId($model)

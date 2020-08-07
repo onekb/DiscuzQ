@@ -64,4 +64,14 @@ return [
     'tencent_captcha_code_100' => '验证码错误(100):的配置参数错误',
     'tencent_captcha_unknown_error' => '验证码未知错误:腾讯云未知错误',
     'tencent_captcha_unknown_CaptchaCode' => '验证码未知错误:腾讯云验证码未知CaptchaCode',
+
+
+    'wxpay_appid_error' => 'app_id只能选择 公众号接口配置 或 小程序配置 中设置的值',
+
+    'app_id_cannot_be_empty' => 'App Id 不能为空。',
+    'app_secret_cannot_be_empty' => 'App Secret 不能为空。',
+    'mch_id_cannot_be_empty' => 'mch_id 不能为空。',
+    'api_key_cannot_be_empty' => 'API Key 不能为空。',
+
+    'offiaccount_error' => '微信公众号配置错误。',
 ];

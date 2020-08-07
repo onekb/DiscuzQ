@@ -11,7 +11,7 @@ object-assign
  */
 
 /*!
- * vue-i18n v8.18.2 
+ * vue-i18n v8.20.0 
  * (c) 2020 kazuya kawaguchi
  * Released under the MIT License.
  */
