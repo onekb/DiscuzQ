@@ -20,6 +20,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Closure;
+use Discuz\Contracts\Setting\SettingsRepository;
 use Discuz\Database\ScopeVisibilityTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,7 +32,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $payment_sn
  * @property float $amount
  * @property float $master_amount
- * @property float $actual_amount
+ * @property float $author_amount
+ * @property int $be_scale
  * @property int $user_id
  * @property int $payee_id
  * @property int $type
@@ -166,13 +168,64 @@ class Order extends Model
     }
 
     /**
-     * 获取实际金额
+     * 判断是否是分成的订单
      *
-     * @return float
+     * @return bool
      */
-    public function getActualAmountAttribute()
+    public function isScale()
     {
-        return number_format($this->amount - $this->master_amount, 2, '.', '');
+        return $this->be_scale > 0;
+    }
+
+    /**
+     * 计算去掉站长、上级的作者实际金额数
+     *
+     * @param bool $getAuthorAmount 获取作者金额数
+     * @return float $bossAmount 上级实际分成金额数
+     */
+    public function calculateAuthorAmount($getAuthorAmount = false)
+    {
+        /**
+         * 获取 站长->作者 分成
+         * ( 注册付费站点时 master_amount 是0 )
+         */
+        $actualAmount = $this->amount - $this->master_amount;
+
+        $bossAmount = 0;
+        // 计算 作者->上级 分成
+        if ($this->isScale()) {
+            $beScale = $this->be_scale / 10;
+
+            // 上级实际分到金额
+            $bossAmount = number_format($actualAmount * $beScale, 2, '.', '');
+            // 去掉上级分成 作者实际得到金额
+            $actualAmount = number_format($actualAmount - $bossAmount, 2, '.', '');
+        }
+
+        $this->author_amount = $actualAmount;
+
+        return $getAuthorAmount ?  $this->author_amount : $bossAmount ;
+    }
+
+    /**
+     * 计算站长和作者实际金额数
+     *
+     * @return float $bossAmount 上级实际分成金额数
+     */
+    public function calculateMasterAmount()
+    {
+        $settings = app(SettingsRepository::class);
+
+        // 站长作者分成配置
+        $site_author_scale = $settings->get('site_author_scale');
+
+        $order_amount = $this->amount; // 订单金额
+        $author_ratio = $site_author_scale / 10;
+
+        $payee_amount = sprintf('%.2f', ($order_amount * $author_ratio));
+        $this->master_amount = $order_amount - $payee_amount; // 站长分成金额
+
+        return $bossAmount = $this->calculateAuthorAmount(); // 作者实际分成金额
     }
 
     /**

@@ -14,6 +14,7 @@ use App\Api\Controller as ApiController;
 */
 
 $route->get('/uc', 'uc', ApiController\Ucenter\UcenterController::class);
+$route->post('/uc/login', 'uc.login', ApiController\Ucenter\LoginController::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -123,6 +124,7 @@ $route->get('/export/users', 'export.users', ApiController\Users\ExportUserContr
 
 $route->post('/sms/send', 'sms.send', ApiController\Mobile\SendController::class);
 $route->post('/sms/verify', 'sms.verify', ApiController\Mobile\VerifyController::class);
+$route->post('/mobile/bind/miniprogram', 'mobile.miniprogram', ApiController\Mobile\BindWchatMiniprogramMobileController::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -248,6 +250,7 @@ $route->delete('/notification/{id}', 'notification.delete', ApiController\Notifi
 */
 
 $route->get('/invite', 'invite.list', ApiController\Invite\ListInviteController::class);
+$route->get('/invite/users', 'invite.user.list', ApiController\Invite\ListInviteUsersController::class);
 $route->get('/invite/{code}', 'invite.resource', ApiController\Invite\ResourceInviteController::class);
 $route->get('/userInviteCode', 'invite.userInviteCode', ApiController\Invite\UserInviteCodeController::class);
 $route->post('/invite', 'invite.create.admin', ApiController\Invite\CreateAdminInviteController::class);
@@ -323,7 +326,8 @@ $route->get('/topics', 'topics.list', ApiController\Topic\ListTopicController::c
 $route->get('/topics/{id}', 'topics.resource', ApiController\Topic\ResourceTopicController::class);
 $route->delete('/topics/{id}', 'topics.delete', ApiController\Topic\DeleteTopicController::class);
 $route->delete('/topics/batch/{ids}', 'topics.batchDelete', ApiController\Topic\BatchDeleteTopicController::class);
-
+$route->patch('/topics/{id}', 'topics.update', ApiController\Topic\UpdateTopicController::class);
+$route->patch('/topics/batch/{ids}', 'topics.batchUpdate', ApiController\Topic\BatchUpdateTopicController::class);
 /*
 |--------------------------------------------------------------------------
 | System
