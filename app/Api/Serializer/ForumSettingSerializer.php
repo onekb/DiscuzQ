@@ -21,7 +21,6 @@ namespace App\Api\Serializer;
 use App\Models\Category;
 use App\Models\User;
 use App\Settings\ForumSettingField;
-use Carbon\Carbon;
 use Discuz\Api\Serializer\AbstractSerializer;
 use Discuz\Contracts\Setting\SettingsRepository;
 use Discuz\Http\UrlGenerator;
@@ -69,7 +68,7 @@ class ForumSettingSerializer extends AbstractSerializer
                 'site_background_image' => $backgroundImage ?: '',
                 'site_url' => $siteUrl,
                 'site_stat' => $this->settings->get('site_stat') ?: '',
-                'site_author' => User::where('id', $this->settings->get('site_author'))->first(['id', 'username', 'avatar']),
+                'site_author' => User::query()->where('id', $this->settings->get('site_author'))->first(['id', 'username', 'avatar']),
                 'site_install' => $this->settings->get('site_install'), // 安装时间
                 'site_record' => $this->settings->get('site_record'),
                 'site_cover' => $this->settings->get('site_cover') ?: '',
@@ -136,6 +135,7 @@ class ForumSettingSerializer extends AbstractSerializer
                 'can_create_thread_long' => $this->actor->can('createThreadLong'),
                 'can_create_thread_video' => $this->actor->can('createThreadVideo'),
                 'can_create_thread_image' => $this->actor->can('createThreadImage'),
+                'can_create_thread_audio' => $this->actor->can('createThreadAudio'),
                 'can_create_thread_in_category' => (bool)Category::getIdsWhereCan($this->actor, 'createThread'),
                 'can_create_audio' => $this->actor->can('createAudio'),
                 'can_create_dialog' => $this->actor->can('dialog.create'),
@@ -151,6 +151,15 @@ class ForumSettingSerializer extends AbstractSerializer
                 'initialized_pay_password' => (bool)$this->actor->pay_password,  // 是否初始化支付密码
                 'can_invite_user_scale' => $this->actor->can('other.canInviteUserScale'),
             ],
+
+            'lbs' => [
+                'lbs' => (bool) $this->settings->get('lbs', 'lbs'),         // 位置服务开关
+                'qq_lbs_key' => $this->settings->get('qq_lbs_key', 'lbs'),  // 腾讯位置服务 key
+            ],
+
+            'ucenter' => [
+                'ucenter' => (bool) $this->settings->get('ucenter', 'ucenter'),
+            ]
         ];
 
         // 站点开关 - 满足条件返回
@@ -205,6 +214,9 @@ class ForumSettingSerializer extends AbstractSerializer
 
                 // 水印设置
                 $attributes['watermark'] = $this->forumField->getWatermarkSettings();
+
+                // UCenter设置
+                $attributes['ucenter'] += $this->forumField->getUCenterSettings();
             }
         }
 

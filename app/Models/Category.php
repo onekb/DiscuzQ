@@ -26,20 +26,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @package App\Models
- *
  * @property int $id
  * @property string $name
  * @property string $description
  * @property string $icon
  * @property int $sort
  * @property int $property
- * @property int thread_count
- * @property string ip
- * @property Carbon updated_at
- * @property Carbon created_at
- * @method truncate()
- * @method insert(array $array)
+ * @property int $thread_count
+ * @property string $moderators
+ * @property string $ip
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 class Category extends Model
 {
@@ -122,6 +119,7 @@ class Category extends Model
                 'createThreadLong',
                 'createThreadVideo',
                 'createThreadImage',
+                'createThreadAudio',
             ], false);
         } else {
             $hasGlobalPermission = $user->hasPermission($permission);

@@ -33,11 +33,20 @@ class CategoryPolicy extends AbstractPolicy
     /**
      * @param User $actor
      * @param string $ability
+     * @param Category $category
      * @return bool|null
      */
-    public function can(User $actor, $ability)
+    public function can(User $actor, $ability, Category $category)
     {
         if ($actor->hasPermission('category.' . $ability)) {
+            return true;
+        }
+
+        if (
+            $category->exists
+            // && in_array($actor->id, explode(',', $category->moderators))
+            && $actor->hasPermission('category' . $category->id . '.' . $ability)
+        ) {
             return true;
         }
     }
@@ -79,6 +88,7 @@ class CategoryPolicy extends AbstractPolicy
                 'createThreadLong',
                 'createThreadVideo',
                 'createThreadImage',
+                'createThreadAudio',
             ], false)
             && $actor->hasPermission('category'.$category->id.'.viewThreads')
             && $actor->hasPermission('category'.$category->id.'.createThread')

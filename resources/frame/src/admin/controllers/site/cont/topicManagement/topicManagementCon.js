@@ -70,6 +70,27 @@ export default {
       recommentbtn: true,
       recomment1: '推荐',
       recomment2: '取消推荐',
+      options: [
+        {
+          value: 1,
+          label: '是',
+        },
+        {
+          value: 0,
+          label: '否',
+        }
+      ],
+      value: '',
+      checkedAll: false,
+      recommentNumber: '',
+      recommentParams: 'createdAt',
+      radio: [],
+      themeOperation: [],
+      themeOperations: [],
+      recommend: [],
+      cancelrecomend: [],
+      detelethem: [],
+      sobj:'',
     }
   },
   computed: mapState({
@@ -85,18 +106,18 @@ export default {
       this.showViewer = false
     },
 
-    handleCheckAllChange(val) {
-      this.checkedTheme = val ? this.themeListAll : [];
-      this.isIndeterminate = false;
-    },
+    // handleCheckAllChange(val) {
+    //   this.checkedTheme = val ? this.themeListAll : [];
+    //   this.isIndeterminate = false;
+    // },
 
-    handleCheckedCitiesChange(index, id, status) {
+    // handleCheckedCitiesChange(index, id, status) {
 
-      let checkedCount = this.checkedTheme.length;
-      this.checkAll = checkedCount === this.themeListAll.length;
-      this.isIndeterminate = checkedCount > 0 && checkedCount < this.themeListAll.length;
+    //   let checkedCount = this.checkedTheme.length;
+    //   this.checkAll = checkedCount === this.themeListAll.length;
+    //   this.isIndeterminate = checkedCount > 0 && checkedCount < this.themeListAll.length;
 
-    },
+    // },
 
     /*
     * 格式化日期
@@ -145,9 +166,7 @@ export default {
     * 请求接口
     * */
     getThemeList(pageNumber) {
-      console.log('请求');
       let searchData = this.searchData;
-
       this.appFetch({
         url: 'topics',
         method: 'get',
@@ -155,6 +174,7 @@ export default {
           include: ['user'],
           'filter[content]':searchData.topicContent,
           'page[number]': pageNumber,
+          'filter[recommended]': this.value,
           'page[size]': searchData.pageSelect,
           'filter[q]': searchData.themeKeyWords,
           'sort': '-createdAt',
@@ -171,7 +191,6 @@ export default {
         if (res.errors) {
           this.$message.error(res.errors[0].code);
         } else {
-          console.log(this.themeList,'列表');
           this.themeList = res.readdata;
           this.total = res.meta.total;
           this.pageCount = res.meta.pageCount;
@@ -184,22 +203,152 @@ export default {
       }).catch(err => {
       })
     },
+
+    /**
+     * 删除话题
+     */
+    deteleTopic(id) {
+      this.appFetch({
+        url: 'topics',
+        method: 'delete',
+        splice: '/' + id,
+        }).then(res => {
+          this.$message.success("删除成功");
+          this.getThemeList();
+        })
+    },
+
     // 全部删除
-    deleteClick() {
-      const ids = this.checkedTheme.join(',');
+    deleteClick(ids, nums) {
+      const whole = ids.join(',');
       this.appFetch({
         url: 'deleteTopics',
         method: 'delete',
         splice: '/' + ids,
         }).then(res => {
-          this.$message.success("删除成功");
+          if(nums === 1) {
+            this.$message.success("删除成功");
+          }
           this.getThemeList();
         })
     },
     
     // 推荐
     recommentBtn() {
-       this.recommentbtn = !this.recommentbtn;
+      this.recommentbtn = !this.recommentbtn;
+    },
+    
+    /**
+     * 推荐事件
+    */
+    btnrecomment(id,comment){
+      if(comment) {
+        this.recommentNumber = 0;
+      } else {
+        this.recommentNumber = 1;
+      }
+      this.appFetch({
+        url: `topics`,
+        splice: '/' + id,
+        method: "patch",
+        data:{
+          "data": {
+            "type": "topics",
+            "attributes": {
+              "recommended": this.recommentNumber,
+            }
+          }      
+        }
+      })
+      .then((res) => {
+        if(res.data.attributes.recommended === 1) {
+          this.$message.success("推荐成功");
+        } else {
+          this.$message.success("取消推荐成功");
+        }
+        this.getThemeList();
+      })
+    },
+    
+    /**
+     *全部推荐 
+     */
+    allRecomment(num,isds, nums) {
+      const whole = isds.join(',');
+      this.appFetch({
+        url: 'deleteTopics',
+        method: "patch",
+        splice: '/' + whole,
+        data:{
+          data: {
+            ids: whole,
+            type: "topics",
+            attributes: {
+              "recommended": num,
+            }
+          }      
+        }
+      })
+      .then((res) => {
+        if(nums === 1) {
+          if (num === 1) {
+            this.$message.success("全部推荐成功");
+          } else {
+            this.$message.success("全部取消推荐成功");
+          }
+        }
+        this.getThemeList();
+      })
+    },
+
+    /**
+     * 全部选中
+    */
+    btninformation(res) {
+      this.checkedAll = res;
+    },
+    /**
+     * 获取提交id
+    */
+    themidpost(e,res) {
+      // console.log(e,res);
+      const obj = {type: e, themid: res};
+      if(this.themeOperations.indexOf(res) === -1) {
+        this.themeOperations.push(res);
+        this.themeOperation.push({type: e, themid: res});
+      } else {
+        this.themeOperation.forEach((value,index) => {
+          if(value.themid == res) {
+            this.themeOperation[index].type = e;       
+          }
+        })
+      }
+    },
+
+    /**
+      * 点击提交
+    */
+    btnSubmit() {
+      this.themeOperation.forEach((value,index) => {
+        if (value.type === 1) {
+          this.recommend.push(value.themid);
+        } else if(value.type === 2) {
+          this.cancelrecomend.push(value.themid);
+        } else if (value.type === 3) {
+          this.detelethem.push(value.themid);
+        }
+      })
+      if(this.recommend.length >= 1) {
+        this.allRecomment(1,this.recommend, 2);
+      }
+      if(this.detelethem.length >= 1) {
+        this.deleteClick(this.detelethem, 2);
+      }
+      if(this.cancelrecomend.length >= 1) {
+        this.allRecomment(0,this.cancelrecomend, 2);
+      }
+      this.$message.success("提交成功");
+      this.radio = [];
     }
   },
 

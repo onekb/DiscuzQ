@@ -147,8 +147,9 @@ class CreateThread
         }
 
         // 经纬度及地理位置
-        $thread->longitude = Arr::get($this->data, 'attributes.longitude', 0);
-        $thread->latitude = Arr::get($this->data, 'attributes.latitude', 0);
+        $thread->longitude = (float) Arr::get($this->data, 'attributes.longitude', 0);
+        $thread->latitude = (float) Arr::get($this->data, 'attributes.latitude', 0);
+        $thread->address = Arr::get($this->data, 'attributes.address', '');
         $thread->location = Arr::get($this->data, 'attributes.location', '');
 
         $thread->setRelation('user', $this->actor);
@@ -215,17 +216,15 @@ class CreateThread
                 break;
             case Thread::TYPE_OF_LONG:
                 $this->assertCan($this->actor, 'createThreadLong');
-
-                // 是否有权发布音频
-                if (Arr::get($this->data, 'attributes.file_id', '')) {
-                    $this->assertCan($this->actor, 'createAudio');
-                }
                 break;
             case Thread::TYPE_OF_VIDEO:
                 $this->assertCan($this->actor, 'createThreadVideo');
                 break;
             case Thread::TYPE_OF_IMAGE:
                 $this->assertCan($this->actor, 'createThreadImage');
+                break;
+            case Thread::TYPE_OF_AUDIO:
+                $this->assertCan($this->actor, 'createThreadAudio');
                 break;
             default:
                 // TODO 是否允许发布其他未知类型主题

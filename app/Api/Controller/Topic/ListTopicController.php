@@ -115,6 +115,9 @@ class ListTopicController extends AbstractListController
             $topicIds = $topics->pluck('id');
             $threadTopic = ThreadTopic::query()
                 ->selectRaw(' `topic_id`, MAX(`thread_id`) as thread_id')
+                ->join('threads', 'id', '=', 'thread_id')
+                ->whereNull('deleted_at')
+                ->whereNotNull('threads.user_id')
                 ->whereIn('topic_id', $topicIds)
                 ->groupBy('topic_id')
                 ->get();
@@ -185,6 +188,9 @@ class ListTopicController extends AbstractListController
 
         if ($viewCountEnd = Arr::get($filter, 'viewCountEnd')) {
             $query->where('topics.view_count', '<=', $viewCountEnd);
+        }
+        if (Arr::has($filter, 'recommended') && Arr::get($filter, 'recommended') != '') {
+            $query->where('topics.recommended', (int)Arr::get($filter, 'recommended'));
         }
 
         foreach ((array) $sort as $field => $order) {

@@ -22,7 +22,6 @@ use App\Events\Post\Hidden;
 use App\Events\Post\Restored;
 use App\Events\Post\Revised;
 use App\Formatter\Formatter;
-use App\Formatter\MarkdownFormatter;
 use Carbon\Carbon;
 use DateTime;
 use Discuz\Database\ScopeVisibilityTrait;
@@ -57,6 +56,7 @@ use Illuminate\Support\Str;
  * @property bool $is_comment
  * @property bool $is_approved
  * @property Collection $images
+ * @property Collection $attachments
  * @property Thread $thread
  * @property User $user
  * @property User $replyUser
@@ -126,13 +126,6 @@ class Post extends Model
     protected static $formatter;
 
     /**
-     * The markdown text formatter instance.
-     *
-     * @var MarkdownFormatter
-     */
-    protected static $markdownFormatter;
-
-    /**
      * datetime 时间转换
      *
      * @param $timeAt
@@ -186,11 +179,7 @@ class Post extends Model
      */
     public function getContentAttribute($value)
     {
-        if ($this->is_first && $this->thread->type === Thread::TYPE_OF_LONG) {
-            return static::$markdownFormatter->unparse($value);
-        } else {
-            return static::$formatter->unparse($value);
-        }
+        return static::$formatter->unparse($value);
     }
 
     /**
@@ -210,11 +199,7 @@ class Post extends Model
      */
     public function setContentAttribute($value)
     {
-        if ($this->is_first && $this->thread->type === Thread::TYPE_OF_LONG) {
-            $this->attributes['content'] = strlen($value) ? static::$markdownFormatter->parse($value, $this) : null;
-        } else {
-            $this->attributes['content'] = strlen($value) ? static::$formatter->parse($value, $this) : null;
-        }
+        $this->attributes['content'] = $value ? static::$formatter->parse($value, $this) : null;
     }
 
     /**
@@ -234,15 +219,7 @@ class Post extends Model
      */
     public function formatContent()
     {
-        $content = $this->attributes['content'] ?: '';
-
-        if ($this->is_first && $this->thread->type === Thread::TYPE_OF_LONG) {
-            $content = $content ? static::$markdownFormatter->render($content) : '';
-        } else {
-            $content = $content ? static::$formatter->render($content) : '';
-        }
-
-        return $content;
+        return static::$formatter->render($this->attributes['content']);
     }
 
     /**
@@ -502,7 +479,7 @@ class Post extends Model
     }
 
     /**
-     * Define the relationship with the post's attachments.
+     * Define the relationship with the post's images.
      *
      * @return HasMany
      */
@@ -560,16 +537,6 @@ class Post extends Model
     }
 
     /**
-     * Get the markdown text formatter instance.
-     *
-     * @return MarkdownFormatter
-     */
-    public static function getMarkdownFormatter()
-    {
-        return static::$markdownFormatter;
-    }
-
-    /**
      * Set the text formatter instance.
      *
      * @param Formatter $formatter
@@ -577,15 +544,5 @@ class Post extends Model
     public static function setFormatter(Formatter $formatter)
     {
         static::$formatter = $formatter;
-    }
-
-    /**
-     * Set the markdown text formatter instance.
-     *
-     * @param MarkdownFormatter $formatter
-     */
-    public static function setMarkdownFormatter(MarkdownFormatter $formatter)
-    {
-        static::$markdownFormatter = $formatter;
     }
 }

@@ -19,7 +19,7 @@
   vertical-align: middle;
   margin-right: 10PX;
 }
-.pay-set-type-box {
+.pay-set-type-box,.other-service-set-box {
   display: flex;
   align-items: center;
   .table-con-box {
@@ -42,6 +42,28 @@
       margin-top: 7PX;
     }
   }
+  .iconucenter {
+    background: #FF9501;
+    color: #fff;
+    width: 40PX;
+    height: 40PX;
+    font-size: 14PX;
+    line-height: 40PX;
+    text-align: center;
+    border-radius: 50%;
+  }
+}
+.other-service-set-box {
+  margin-top: 15PX;
+  .el-table__body {
+    width:100%;
+  }
+  .iconweizhi1 {
+    background-color: $blue;
+    color: #fff;
+    border-radius: 50%;
+  }
+ 
 }
 
 .icon-add {
@@ -491,5 +513,11 @@
         margin-right: 68PX;
       }
     }
+  }
+}
+
+.span-right {
+  .card-row-rf {
+    padding: 0 !important;
   }
 }

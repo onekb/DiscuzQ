@@ -29,6 +29,7 @@ use App\Models\Group;
 use App\Models\GroupPaidUser;
 use App\Models\UserActionLogs;
 use App\Models\User;
+use App\Models\UserWechat;
 use App\Notifications\System;
 use App\Repositories\UserRepository;
 use App\Validators\UserValidator;
@@ -85,6 +86,7 @@ class UpdateUser
      * @return mixed
      * @throws \Discuz\Auth\Exception\PermissionDeniedException
      * @throws TranslatorException
+     * @throws \Exception
      */
     public function __invoke()
     {
@@ -130,6 +132,11 @@ class UpdateUser
                 // 当原支付密码为空时，视为初始化支付密码，不需要验证 pay_password_token
                 // 当原支付密码不为空时，则需验证 pay_password_token
                 if ($user->pay_password) {
+                    // 验证新密码与原密码不能相同
+                    if ($user->checkWalletPayPassword($payPassword)) {
+                        throw new TranslatorException('user_update_error', ['cannot_use_the_same_password']);
+                    }
+
                     $this->validator->setUser($user);
                     $validator['pay_password_token'] = Arr::get($attributes, 'pay_password_token');
                 }
@@ -155,7 +162,7 @@ class UpdateUser
             // 传空的话不需要验证
             if (!empty($mobile)) {
                 // 判断(除自己)手机号是否已经被绑定
-                if (User::where('mobile', $mobile)->whereNotIn('id', [$user->id])->exists()) {
+                if (User::query()->where('mobile', $mobile)->whereNotIn('id', [$user->id])->exists()) {
                     throw new \Exception('mobile_is_already_bind');
                 }
             }
@@ -167,6 +174,11 @@ class UpdateUser
             $this->assertCan($this->actor, 'edit.status', $user);
             $status = Arr::get($attributes, 'status');
             $user->changeStatus($status);
+
+            // 禁用、拒审时清理微信绑定关系
+            if ($status == 1 || $status == 3) {
+                UserWechat::query()->where('user_id', $user->id)->delete();
+            }
 
             // 记录用户状态操作日志
             $logMsg = Arr::get($attributes, 'refuse_message', ''); // 拒绝原因
@@ -214,9 +226,9 @@ class UpdateUser
                     $deleteGroups = array_diff($oldGroups->keys()->toArray(), $newGroups->toArray());
                     if ($deleteGroups) {
                         //删除付费用户组
-                        $groupsPaid = Group::whereIn('id', $deleteGroups)->where('is_paid', Group::IS_PAID)->pluck('id')->toArray();
+                        $groupsPaid = Group::query()->whereIn('id', $deleteGroups)->where('is_paid', Group::IS_PAID)->pluck('id')->toArray();
                         if (!empty($groupsPaid)) {
-                            GroupPaidUser::whereIn('group_id', $groupsPaid)
+                            GroupPaidUser::query()->whereIn('group_id', $groupsPaid)
                                 ->where('user_id', $user->id)
                                 ->update(['operator_id' => $this->actor->id, 'deleted_at' => Carbon::now(), 'delete_type' => GroupPaidUser::DELETE_TYPE_ADMIN]);
                         }
@@ -224,7 +236,7 @@ class UpdateUser
                     $newPaidGroups = $user->groups()->where('is_paid', Group::IS_PAID)->get();
                     if ($newPaidGroups->count()) {
                         //新增付费用户组处理
-                        foreach ($newPaidGroups as $paidgGroupKey => $paidGroupVal) {
+                        foreach ($newPaidGroups as $paidGroupVal) {
                             $this->events->dispatch(
                                 new PaidGroup($paidGroupVal->id, $user, null, $this->actor)
                             );
@@ -233,7 +245,7 @@ class UpdateUser
 
                     // 发送系统通知
                     $notifyData = [
-                        'new' => Group::find($newGroups),
+                        'new' => Group::query()->find($newGroups),
                         'old' => $oldGroups,
                     ];
 
