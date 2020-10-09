@@ -59,6 +59,7 @@ use Illuminate\Support\Stringable;
  * @property bool|null $is_paid
  * @property bool $is_sticky
  * @property bool $is_essence
+ * @property bool $is_site
  * @property Post $firstPost
  * @property Topic|Collection $topic
  * @property User $user
@@ -225,7 +226,7 @@ class Thread extends Model
     public function setLastPost(Post $post)
     {
         $this->last_posted_user_id = $post->user_id;
-        $this->updated_at = $post->created_at;
+        $this->updated_at = $post->created_at->gt($this->updated_at) ? $post->created_at : $this->updated_at;
 
         return $this;
     }

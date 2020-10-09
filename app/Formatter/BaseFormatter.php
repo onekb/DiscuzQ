@@ -132,8 +132,6 @@ class BaseFormatter
     {
         $configurator = new Configurator;
 
-        $configurator->enableJavaScript();
-
         $configurator->rootRules->enableAutoLineBreaks();
 
         $configurator->rendering->engine = 'PHP';

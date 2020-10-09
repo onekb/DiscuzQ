@@ -34,6 +34,11 @@ use Tobscure\JsonApi\Exception\InvalidParameterException;
 
 class RelateThreadsController extends AbstractListController
 {
+    /**
+     * 缓存数据倍数
+     */
+    const DATA_MULTIPLE = 10;
+
     use AssertPermissionTrait;
 
     /**
@@ -95,35 +100,48 @@ class RelateThreadsController extends AbstractListController
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $threadId = (int)Arr::get($request->getQueryParams(), 'id');
-        $limit = Arr::get($request->getQueryParams(), 'limit');
+        $limit = (int)Arr::get($request->getQueryParams(), 'limit');
         $include = $this->extractInclude($request);
 
         $thread = $this->threads->findOrFail($threadId);
         $topicIdArr = $thread->topic()->pluck('id');
 
-        $cacheKey = 'relateThreads_'.$threadId;
+        $cacheKey = 'threads_relateThreads_'.$threadId;
         $cacheData = $this->cache->get($cacheKey);
-        if ($cacheData < $limit) {
-            $cacheData = [];
+
+        $dataLimit = $limit * self::DATA_MULTIPLE;
+        if ($cacheData && count($cacheData) >= $dataLimit) {
+            $cacheData = Arr::random($cacheData, $limit);
+        } else {
+            //缓存不存在、数据不够时 重新创建缓存，设置缓存数据池条数
+            $cacheData = null;
         }
 
         //话题主题
-        $threads = $this->search($limit, [$threadId], null, $topicIdArr, $cacheData);
+        $threads = $this->search($dataLimit, [$threadId], null, $topicIdArr, $cacheData);
 
-        if ($threads->count() < $limit) {
+        if (!$cacheData && $threads->count() < $dataLimit) {
             //分类主题
             $excludeThreads = array_merge($threads->pluck('id')->toArray(), [$threadId]);
-            $categoryThreads = $this->search($limit-$threads->count(), $excludeThreads, $thread->category_id);
+            $categoryThreads = $this->search($dataLimit - $threads->count(), $excludeThreads, $thread->category_id);
             $threads = $threads->merge($categoryThreads);
         }
-        if ($threads->count() < $limit) {
+        if (!$cacheData && $threads->count() < $dataLimit) {
             //全站主题
             $excludeThreads = array_merge($threads->pluck('id')->toArray(), [$threadId]);
-            $totalThreads = $this->search($limit-$threads->count(), $excludeThreads);
+            $totalThreads = $this->search($dataLimit - $threads->count(), $excludeThreads);
             $threads = $threads->merge($totalThreads);
         }
 
-        $this->cache->put($cacheKey, $threads->pluck('id')->toArray(), 360);
+        if (!$cacheData) {
+            if ($threads->count() == $dataLimit) {
+                $this->cache->put($cacheKey, $threads->pluck('id')->toArray(), 360);
+            }
+
+            if ($threads->count() >= $limit) {
+                $threads = $threads->random($limit);
+            }
+        }
 
         // 加载关联
         $threads->loadMissing($include);
@@ -147,20 +165,21 @@ class RelateThreadsController extends AbstractListController
             ->where('is_approved', true)
             ->whereNotIn('id', $excludeThreads)
             ->orderBy('threads.view_count', 'desc');
+
         // cache
         if ($cacheData) {
             $query->whereIn('id', $cacheData);
-        }
+        } else {
+            // 分类
+            if ($category_id) {
+                $query->where('category_id', $category_id);
+            }
 
-        // 分类
-        if ($category_id) {
-            $query->where('category_id', $category_id);
-        }
-
-        // 话题
-        if ($topicIdArr) {
-            $query->join('thread_topic', 'threads.id', '=', 'thread_topic.thread_id')
-                ->whereIn('thread_topic.topic_id', $topicIdArr);
+            // 话题
+            if ($topicIdArr) {
+                $query->join('thread_topic', 'threads.id', '=', 'thread_topic.thread_id')
+                    ->whereIn('thread_topic.topic_id', $topicIdArr);
+            }
         }
 
         return $query->take($limit)->get();
