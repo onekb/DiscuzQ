@@ -26,13 +26,17 @@ use App\Events\Users\Logind;
 use App\Exceptions\NoUserException;
 use App\MessageTemplate\Wechat\WechatRegisterMessage;
 use App\Models\SessionToken;
+use App\Models\User;
 use App\Models\UserWechat;
 use App\Notifications\System;
 use App\Settings\SettingsRepository;
 use App\User\Bound;
 use Discuz\Api\Controller\AbstractResourceController;
 use Discuz\Auth\AssertPermissionTrait;
+use Discuz\Auth\Exception\PermissionDeniedException;
+use Discuz\Auth\Guest;
 use Discuz\Contracts\Socialite\Factory;
+use Exception;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Events\Dispatcher as Events;
@@ -78,11 +82,14 @@ abstract class AbstractWechatUserController extends AbstractResourceController
      * @param Document $document
      * @return mixed
      * @throws NoUserException
-     * @throws \Discuz\Auth\Exception\PermissionDeniedException
+     * @throws PermissionDeniedException
+     * @throws Exception
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $sessionId = Arr::get($request->getQueryParams(), 'sessionId');
+
+        $sessionToken = Arr::get($request->getQueryParams(), 'session_token', null);
 
         $request = $request->withAttribute('session', new SessionToken())->withAttribute('sessionId', $sessionId);
 
@@ -100,21 +107,30 @@ abstract class AbstractWechatUserController extends AbstractResourceController
 
         $wxuser = $driver->user();
 
+        /** @var User $actor */
         $actor = $request->getAttribute('actor');
 
         /** @var UserWechat $wechatUser */
         $wechatUser = UserWechat::where($this->getType(), $wxuser->getId())->orWhere('unionid', Arr::get($wxuser->getRaw(), 'unionid'))->first();
 
+        // 换绑时直接返回token供后续操作使用
+        if ($rebind = Arr::get($request->getQueryParams(), 'rebind', 0)) {
+            $this->error($wxuser, new Guest(), $wechatUser, $rebind, $sessionToken);
+        }
+
         if (!$wechatUser || !$wechatUser->user) {
-            // 站点关闭
-            $this->assertPermission((bool)$this->settings->get('register_close'));
+            // 更新微信用户信息
+            if (!$wechatUser) {
+                $wechatUser = new UserWechat();
+            }
+            $wechatUser->setRawAttributes($this->fixData($wxuser->getRaw(), $actor));
 
             // 自动注册
-            if (Arr::get($request->getQueryParams(), 'register', 0)) {
-                if (!$wechatUser) {
-                    $wechatUser = new UserWechat();
+            if (Arr::get($request->getQueryParams(), 'register', 0) && $actor->isGuest()) {
+                // 站点关闭注册
+                if (!(bool)$this->settings->get('register_close')) {
+                    throw new PermissionDeniedException('register_close');
                 }
-                $wechatUser->setRawAttributes($this->fixData($wxuser->getRaw(), $actor));
 
                 $data['code'] = Arr::get($request->getQueryParams(), 'inviteCode');
                 $data['username'] = Str::of($wechatUser->nickname)->substr(0, 15);
@@ -132,7 +148,23 @@ abstract class AbstractWechatUserController extends AbstractResourceController
                     // 在注册绑定微信后 发送注册微信通知
                     $user->notify(new System(WechatRegisterMessage::class));
                 }
+            } else {
+                if (!$actor->isGuest() && is_null($actor->wechat)) {
+                    // 登陆用户且没有绑定||换绑微信 添加微信绑定关系
+                    $wechatUser->user_id = $actor->id;
+                    $wechatUser->setRelation('user', $actor);
+                    $wechatUser->save();
+                }
             }
+        } else {
+            // 登陆用户和微信绑定不同时，微信已绑定用户，抛出异常
+            if (!$actor->isGuest() && $actor->id != $wechatUser->user_id) {
+                throw new Exception('account_has_been_bound');
+            }
+
+            // 登陆用户和微信绑定相同，更新微信信息
+            $wechatUser->setRawAttributes($this->fixData($wxuser->getRaw(), $wechatUser->user));
+            $wechatUser->save();
         }
 
         if ($wechatUser && $wechatUser->user) {
@@ -159,24 +191,25 @@ abstract class AbstractWechatUserController extends AbstractResourceController
 
             // bound
             if (Arr::has($request->getQueryParams(), 'session_token')) {
-                $sessionToken = Arr::get($request->getQueryParams(), 'session_token');
                 $accessToken = $this->bound->pcLogin($sessionToken, $accessToken, ['user_id' => $wechatUser->user->id]);
             }
 
             return $accessToken;
         }
 
-        $this->error($wxuser, $actor, $wechatUser);
+        $this->error($wxuser, $actor, $wechatUser, null, $sessionToken);
     }
 
     /**
      * @param $wxuser
      * @param $actor
      * @param UserWechat $wechatUser
+     * @param null $rebind 换绑时返回新的code供前端使用
+     * @param null $sessionToken
      * @return mixed
      * @throws NoUserException
      */
-    private function error($wxuser, $actor, $wechatUser)
+    private function error($wxuser, $actor, $wechatUser, $rebind = null, $sessionToken = null)
     {
         $rawUser = $wxuser->getRaw();
 
@@ -197,6 +230,23 @@ abstract class AbstractWechatUserController extends AbstractResourceController
         $noUserException = new NoUserException();
         $noUserException->setToken($token);
         $noUserException->setUser(Arr::only($wechatUser->toArray(), ['nickname', 'headimgurl']));
+        $rebind && $noUserException->setCode('rebind_mp_wechat');
+
+        // 存储异常 PC 端使用
+        if (!is_null($sessionToken)) {
+            $sessionTokenQuery = SessionToken::query()->where('token', $sessionToken)->first();
+            if (!empty($sessionTokenQuery)) {
+                /** @var SessionToken $sessionTokenQuery */
+                $sessionTokenQuery->payload = [
+                    'token' => $token,
+                    'code' => $noUserException->getCode() ?: 'no_bind_user',
+                    'user' => $noUserException->getUser(),
+                    'rebind' => $rebind,
+                ];
+                $sessionTokenQuery->save();
+            }
+        }
+
         throw $noUserException;
     }
 

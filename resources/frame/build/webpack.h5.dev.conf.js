@@ -13,7 +13,6 @@ const VERSION = new Date().getTime();
 module.exports = {
   devtool: "#source-map",
   entry: {
-    app: resolve("src/h5-main.js"),
     admin: resolve("src/admin-main.js")
   },
   externals: {
@@ -137,13 +136,13 @@ module.exports = {
         { from: /.*/, to: "/index.html" },
       ]
     },
-    port: 443,
-    http2: true,
-    disableHostCheck: true,
+    // port: 443,
+    // http2: true,
+    // disableHostCheck: true,
     contentBase: false,
     proxy: {
       "/api": {
-        target: "https://discuz.run",
+        target: "https://dq.comsenz-service.com",
         changeOrigin: true,
         secure: false,
       }

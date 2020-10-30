@@ -58,6 +58,7 @@ use Illuminate\Support\Str;
  * @property int $follow_count
  * @property int $fans_count
  * @property int $liked_count
+ * @property int $question_count
  * @property Carbon $login_at
  * @property Carbon $avatar_at
  * @property Carbon $joined_at
@@ -66,12 +67,13 @@ use Illuminate\Support\Str;
  * @property Carbon $updated_at
  * @property string $identity
  * @property string $realname
+ * @property bool $denyStatus
  * @property Collection $groups
  * @property userFollow $follow
  * @property UserWallet $userWallet
  * @property UserWechat $wechat
  * @property UserDistribution $userDistribution
- * @package App\Models
+ * @property User $deny
  * @method truncate()
  * @method hasAvatar()
  */
@@ -343,23 +345,26 @@ class User extends Model
      */
     public function getAvatarAttribute($value)
     {
-        if ($value) {
-            if (strpos($value, '://') === false) {
-                $value = app(UrlGenerator::class)->to('/storage/avatars/' . $value)
-                    . '?' . Carbon::parse($this->avatar_at)->timestamp;
-            } else {
-                /** @var SettingsRepository $settings */
-                $settings = app(SettingsRepository::class);
-
-                $path = 'public/avatar/' . Str::after($value, '://');
-
-                $value = (bool) $settings->get('qcloud_cos_sign_url', 'qcloud', true)
-                    ? app(Filesystem::class)->disk('avatar_cos')->temporaryUrl($path, Carbon::now()->addHour())
-                    : app(Filesystem::class)->disk('avatar_cos')->url($path);
-            }
+        if (empty($value)) {
+            return $value;
         }
 
-        return $value;
+        if (strpos($value, '://') === false) {
+            return app(UrlGenerator::class)->to('/storage/avatars/' . $value)
+                . '?' . Carbon::parse($this->avatar_at)->timestamp;
+        }
+
+        /** @var SettingsRepository $settings */
+        $settings = app(SettingsRepository::class);
+
+        $path = 'public/avatar/' . Str::after($value, '://');
+
+        if ($settings->get('qcloud_cos_sign_url', 'qcloud', true)) {
+            return app(Filesystem::class)->disk('avatar_cos')->temporaryUrl($path, Carbon::now()->addDay());
+        } else {
+            return app(Filesystem::class)->disk('avatar_cos')->url($path)
+                . '?' . Carbon::parse($this->avatar_at)->timestamp;
+        }
     }
 
     public function getMobileAttribute($value)
@@ -392,7 +397,28 @@ class User extends Model
     {
         $this->thread_count = $this->threads()
             ->where('is_approved', Thread::APPROVED)
+            ->where('type', '<>', Thread::TYPE_OF_QUESTION)
             ->whereNull('deleted_at')
+            ->count();
+
+        return $this;
+    }
+
+    /**
+     * 刷新用户问答数，包括提问与回答
+     *
+     * @return $this
+     */
+    public function refreshQuestionCount()
+    {
+        $this->question_count = Thread::query()
+            ->join('questions', 'threads.id', '=', 'questions.thread_id')
+            ->where('threads.type', Thread::TYPE_OF_QUESTION)
+            ->where('threads.is_approved', Thread::APPROVED)
+            ->whereNull('threads.deleted_at')
+            ->where(function (Builder $query) {
+                $query->where('threads.user_id', $this->id)->orWhere('questions.be_user_id', $this->id);
+            })
             ->count();
 
         return $this;

@@ -30,9 +30,14 @@ use Illuminate\Support\Str;
  * @property string $payload
  * @property Carbon $created_at
  * @property Carbon $expired_at
+ * @property User|null $user
  */
 class SessionToken extends Model
 {
+    const WECHAT_PC_LOGIN = 'wechat_pc_login'; // 微信 PC 扫码登陆
+
+    const WECHAT_PC_BIND = 'wechat_pc_bind'; // 微信 PC 绑定
+
     /**
      * {@inheritdoc}
      */

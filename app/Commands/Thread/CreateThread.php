@@ -22,6 +22,7 @@ use App\Censor\Censor;
 use App\Commands\Post\CreatePost;
 use App\Events\Thread\Created;
 use App\Events\Thread\Saving;
+use App\Models\Post;
 use App\Models\PostMod;
 use App\Models\Thread;
 use App\Models\User;
@@ -98,7 +99,7 @@ class CreateThread
     {
         $this->events = $events;
 
-        $thread->type = (int) Arr::get($this->data, 'attributes.type', Thread::TYPE_OF_TEXT);
+        $thread->type = (int)Arr::get($this->data, 'attributes.type', Thread::TYPE_OF_TEXT);
 
         $this->canCreateThread($thread->type);
 
@@ -106,7 +107,7 @@ class CreateThread
         $title = $censor->checkText(Arr::get($this->data, 'attributes.title'));
         $content = $censor->checkText(Arr::get($this->data, 'attributes.content'));
 
-        // 视频帖、图片帖不传内容时设置默认内容
+        // 视频帖、图片帖、语音帖不传内容时设置默认内容
         if (! $content) {
             switch ($thread->type) {
                 case Thread::TYPE_OF_VIDEO:
@@ -114,6 +115,12 @@ class CreateThread
                     break;
                 case Thread::TYPE_OF_IMAGE:
                     $content = '分享图片';
+                    break;
+                case Thread::TYPE_OF_AUDIO:
+                    $content = '分享语音';
+                    break;
+                case Thread::TYPE_OF_GOODS:
+                    $content = '分享商品';
                     break;
             }
         }
@@ -131,24 +138,35 @@ class CreateThread
         // 长文帖需要设置标题
         if ($thread->type === Thread::TYPE_OF_LONG) {
             $thread->title = $title;
+
+            // 只有长文有附件，可以设置价格
+            if ($thread->attachment_price = (float) Arr::get($this->data, 'attributes.attachment_price', 0)) {
+                $this->assertCan($this->actor, 'createThreadPaid');
+            }
         }
 
         // 非文字贴可设置价格
         if ($thread->type !== Thread::TYPE_OF_TEXT) {
             // 是否有权发布付费贴
-            if ($thread->price = (float) Arr::get($this->data, 'attributes.price', 0)) {
+            if ($thread->price = (float)Arr::get($this->data, 'attributes.price', 0)) {
                 $this->assertCan($this->actor, 'createThreadPaid');
             }
 
             // 付费长文帖可设置免费阅读字数
             if ($thread->type === Thread::TYPE_OF_LONG && $thread->price) {
-                $thread->free_words = (int) Arr::get($this->data, 'attributes.free_words', 0);
+                $thread->free_words = (int)Arr::get($this->data, 'attributes.free_words', 0);
             }
         }
 
+        // 是否匿名
+        $thread->is_anonymous = (bool) Arr::get($this->data, 'attributes.is_anonymous', false);
+
+        // 是否显示
+        $thread->is_display = $thread->type !== Thread::TYPE_OF_QUESTION;
+
         // 经纬度及地理位置
-        $thread->longitude = (float) Arr::get($this->data, 'attributes.longitude', 0);
-        $thread->latitude = (float) Arr::get($this->data, 'attributes.latitude', 0);
+        $thread->longitude = (float)Arr::get($this->data, 'attributes.longitude', 0);
+        $thread->latitude = (float)Arr::get($this->data, 'attributes.latitude', 0);
         $thread->address = Arr::get($this->data, 'attributes.address', '');
         $thread->location = Arr::get($this->data, 'attributes.location', '');
 
@@ -179,8 +197,8 @@ class CreateThread
                 new CreatePost($thread->id, $this->actor, $this->data, $this->ip, $this->port)
             );
         } catch (Exception $e) {
+            Post::query()->where('thread_id', $thread->id)->delete();
             $thread->delete();
-
             throw $e;
         }
 
@@ -225,6 +243,12 @@ class CreateThread
                 break;
             case Thread::TYPE_OF_AUDIO:
                 $this->assertCan($this->actor, 'createThreadAudio');
+                break;
+            case Thread::TYPE_OF_QUESTION:
+                $this->assertCan($this->actor, 'createThreadQuestion');
+                break;
+            case Thread::TYPE_OF_GOODS:
+                $this->assertCan($this->actor, 'createThreadGoods');
                 break;
             default:
                 // TODO 是否允许发布其他未知类型主题

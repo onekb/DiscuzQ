@@ -73,7 +73,8 @@ class WechatQrcodeLoginController implements RequestHandlerInterface
         $sessionToken = Arr::get($request->getQueryParams(), 'session_token');
         $token = SessionToken::get($sessionToken);
         if (empty($token)) {
-            throw new Exception(trans('user.pc_qrcode_time_out'));
+            // 二维码已失效，扫码超时
+            throw new Exception('pc_qrcode_time_out');
         }
 
         $response = $this->bus->dispatch(
@@ -85,9 +86,11 @@ class WechatQrcodeLoginController implements RequestHandlerInterface
         if ($response->getStatusCode() === 200) {
             // build
             $token->payload = $accessToken;
+            $token->user_id = $actor->id;
             $token->save();
         } else {
-            throw new Exception(trans('user.pc_qrcode_time_fail'));
+            // 扫码登陆失败
+            throw new Exception('pc_qrcode_time_fail');
         }
 
         // return $accessToken;

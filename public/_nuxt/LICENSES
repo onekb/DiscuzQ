@@ -107,18 +107,17 @@
  * @license MIT
  */
 
+/*! @name @videojs/http-streaming @version 2.2.3 @license Apache-2.0 */
+
 /*! @name @videojs/vhs-utils @version 1.3.0 @license MIT */
+
+/*! @name @videojs/vhs-utils @version 2.2.0 @license MIT */
+
+/*! @name @videojs/vhs-utils @version 2.2.1 @license MIT */
 
 /*! @name aes-decrypter @version 3.0.2 @license Apache-2.0 */
 
-/*! @name m3u8-parser @version 4.4.0 @license Apache-2.0 */
-
-/**
- * @videojs/http-streaming
- * @version 1.13.4
- * @copyright 2020 Brightcove, Inc
- * @license Apache-2.0
- */
+/*! @name pkcs7 @version 1.0.4 @license Apache-2.0 */
 
 /**
  * Checks if an event is supported in the current execution environment.

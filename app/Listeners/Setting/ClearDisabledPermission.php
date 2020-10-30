@@ -42,23 +42,36 @@ class ClearDisabledPermission
      */
     public function handle(Saved $event)
     {
+        // 修改设置时，需要清理的权限
+        $permissions = [];
+
         // 关闭微信支付时
         if (! $this->settings->get('wxpay_close', 'wxpay')) {
             // 站点模式设为公开模式
             $this->settings->set('site_mode', 'public');
 
-            // 清除 「发布付费贴和被支付」权限
-            Permission::query()->where('permission', 'createThreadPaid')->delete();
+            $permissions[] = 'createThreadPaid';            // 发布付费内容
+            $permissions[] = 'canBeReward';                 // 允许被打赏
         }
 
-        // 关闭腾讯云短信时，清除「发布内容需先绑定手机」权限
+        // 关闭腾讯云短信时
         if (! $this->settings->get('qcloud_sms', 'qcloud')) {
-            Permission::query()->where('permission', 'publishNeedBindPhone')->delete();
+            // 注册模式如果是「手机号优先」则设为「用户名优先」
+            if ($this->settings->get('register_type') == 1) {
+                $this->settings->set('register_type', 0);
+            }
+
+            $permissions[] = 'publishNeedBindPhone';        // 发布内容需先绑定手机
         }
 
-        // 关闭腾讯云实名认证时，清除「发布内容需先实名认证」权限
+        // 关闭腾讯云实名认证时
         if (! $this->settings->get('qcloud_faceid', 'qcloud')) {
-            Permission::query()->where('permission', 'publishNeedRealName')->delete();
+            $permissions[] = 'publishNeedRealName';         // 发布内容需先实名认证
+        }
+
+        // 清理权限
+        if ($permissions) {
+            Permission::query()->whereIn('permission', $permissions)->delete();
         }
     }
 }

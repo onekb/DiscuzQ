@@ -201,6 +201,7 @@ return [
         'cash_max_sum'          => '单次提现最大金额',
         'cash_sum_limit'        => '每日提现总金额上限',
         'cash_apply_amount'     => '提现金额',
+        'site_price'            => '加入价格',
 
         // settings - watermark 水印设置
         'watermark'             => '水印开关',
@@ -219,6 +220,7 @@ return [
         'sms_type'  => '验证码类型',
 
         // user
+        'signature'                 => '签名',
         'pay_password'              => '支付密码',
         'pay_password_confirmation' => '支付密码',
         'groupId'                   => '用户组',
@@ -231,11 +233,13 @@ return [
         'price'     => '价格',
         'captcha'   => '验证码',
         'type'      => '类型',
+        'attachment_price'   => '附件价格',
 
         // NotificationTpl
         'template_id' => '模板ID',
 
         // 会话 会话消息
+        'dialog'        => '短消息',
         'dialog_id'     => '会话',
         'message_text'  => '消息内容',
         'attachment_id' => '附件',
