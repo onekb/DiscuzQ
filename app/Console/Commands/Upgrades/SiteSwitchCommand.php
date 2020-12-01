@@ -35,11 +35,12 @@ class SiteSwitchCommand extends AbstractCommand
                 'value' => '[{"key":1,"desc":"PC端","value":true},{"key":2,"desc":"H5端","value":true},{"key":3,"desc":"小程序端","value":true}]',                 // 默认开启
                 'tag' => 'default',
             ]);
-            echo $setting->save() ? '新增成功' : '新增失败';
-            echo PHP_EOL;
+            $info = $setting->save() ? '新增成功' : '新增失败';
         } else {
-            echo '不必添加' . PHP_EOL;
+            $info = '不必添加';
         }
+        $this->info('');
+        $this->info($info);
     }
 
 }
