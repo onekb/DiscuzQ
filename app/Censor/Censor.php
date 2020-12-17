@@ -145,12 +145,13 @@ class Censor
         $content = Str::of($content);
 
         // init
-        $size = 4900;
-        $repeat = 100;
+        $size = 4900;               // 分块长度
+        $repeat = 100;              // 重复长度
+        $valid = $size - $repeat;   // 有效长度
 
         $array = [];
         for ($i = 0; ; $i++) {
-            $start = $i ? $i * ($size - $repeat) : 0;
+            $start = $i * $valid;
 
             if ($start >= $length) {
                 break;
@@ -158,7 +159,7 @@ class Censor
 
             $replaced = $this->tencentCloudCheck($content->substr($start, $size)->__toString());
 
-            $array[] = Str::of($replaced)->substr(0, -$repeat)->__toString();
+            $array[] = Str::of($replaced)->substr(0, $valid)->__toString();
         }
 
         return implode('', $array);

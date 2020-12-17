@@ -3,12 +3,14 @@ const webpack = require("webpack");
 const { VueLoaderPlugin } = require("vue-loader");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
-
+const conditionalLoader = require("./conditional.loader.config");
 function resolve(dir) {
   return path.resolve(__dirname, "../" + dir);
 }
 
 const VERSION = new Date().getTime();
+
+
 
 module.exports = {
   devtool: "#source-map",
@@ -94,7 +96,8 @@ module.exports = {
           limit: 10000,
           name: "static/img/[name].[hash:7].[ext]"
         }
-      }
+      },
+      conditionalLoader()
     ]
   },
   plugins: [
@@ -143,8 +146,8 @@ module.exports = {
     proxy: {
       "/api": {
         // target: "https://discuz.run",
-        // target: "https://dq.comsenz-service.com/",
-        target: "http://dev.discuz.com/",
+        target: "https://dq.comsenz-service.com/",
+        // target: "http://dev.discuz.com/",
         changeOrigin: true,
         secure: false,
       }
