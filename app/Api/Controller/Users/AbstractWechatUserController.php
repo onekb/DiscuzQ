@@ -184,8 +184,11 @@ abstract class AbstractWechatUserController extends AbstractResourceController
                 new GenJwtToken($params)
             );
 
+            //微信扫码登录，待审核状态
             if ($response->getStatusCode() === 200) {
-                $this->events->dispatch(new Logind($wechatUser->user));
+                if($wechatUser->user->status!=User::STATUS_MOD){
+                    $this->events->dispatch(new Logind($wechatUser->user));
+                }
             }
 
             $accessToken = json_decode($response->getBody());

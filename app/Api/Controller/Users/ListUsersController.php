@@ -19,6 +19,7 @@
 namespace App\Api\Controller\Users;
 
 use App\Api\Serializer\UserSerializer;
+use App\Models\UserSignInFields;
 use App\Repositories\UserRepository;
 use App\Traits\UserTrait;
 use Discuz\Api\Controller\AbstractListController;
@@ -42,7 +43,7 @@ class ListUsersController extends AbstractListController
     /**
      * {@inheritdoc}
      */
-    public $include = ['groups'];
+    public $include = ['groups','extFields'];
 
     /**
      * {@inheritdoc}

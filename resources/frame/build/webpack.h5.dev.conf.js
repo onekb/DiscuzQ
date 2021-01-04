@@ -146,8 +146,9 @@ module.exports = {
     proxy: {
       "/api": {
         // target: "https://discuz.run",
-        target: "https://dq.comsenz-service.com/",
+        // target: "https://dq.comsenz-service.com/",
         // target: "http://dev.discuz.com/",
+        target: "https://discuz-dev.dnspod.dev/",
         changeOrigin: true,
         secure: false,
       }

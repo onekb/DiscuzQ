@@ -23,6 +23,7 @@ use App\Commands\Users\AutoRegisterUser;
 use App\Commands\Users\GenJwtToken;
 use App\Events\Users\Logind;
 use App\Exceptions\NoUserException;
+use App\Models\User;
 use App\Settings\SettingsRepository;
 use App\User\Bind;
 use Discuz\Api\Controller\AbstractResourceController;
@@ -155,8 +156,11 @@ class WechatMiniProgramLoginController extends AbstractResourceController
             new GenJwtToken($params)
         );
 
+        //小程序无感登录，待审核状态
         if ($response->getStatusCode() === 200) {
-            $this->events->dispatch(new Logind($user));
+            if($user->status!=User::STATUS_MOD){
+                $this->events->dispatch(new Logind($user));
+            }
         }
 
         return json_decode($response->getBody());

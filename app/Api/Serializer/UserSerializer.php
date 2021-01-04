@@ -19,6 +19,7 @@
 namespace App\Api\Serializer;
 
 use App\Models\User;
+use App\Models\UserSignInFields;
 use App\Repositories\UserFollowRepository;
 use Discuz\Api\Serializer\AbstractSerializer;
 use Discuz\Contracts\Setting\SettingsRepository;
@@ -177,6 +178,10 @@ class UserSerializer extends AbstractSerializer
         return $this->hasMany($user, GroupSerializer::class);
     }
 
+    public function extFields($user)
+    {
+        return $this->hasMany($user, UserSignInSerializer::class);
+    }
     /**
      * @param $user
      * @return Relationship

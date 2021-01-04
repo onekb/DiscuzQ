@@ -1,5 +1,6 @@
 <template>
   <div class="financial-box">
+    <!-- 统计数据 -->
     <div class="financial-statistics">
       <div class="financial" v-for="(item,index) in financialList" :key="index">
         <div class="financial-head">
@@ -7,11 +8,12 @@
           <span class="iconfont" :class="item.icon"></span>
           <span class="financial-con">
             <span v-if="item.iconShow">¥</span>
-            <span class="financial-num">{{item.num}}</span>
+            <span class="financial-num" :title="item.num">{{item.num}}</span>
           </span>
         </div>
       </div>
     </div>
+    <!-- 盈利统计 -->
     <div class="financial-profit">
       <div class="financial-profit-title">
         <div class="financial-profit-title-left">
@@ -58,6 +60,7 @@
       <div class="noData" v-show="noData">暂无数据</div>
       <div class="financial-profit-chart" ref="financialProfitEcharts"></div>
     </div>
+    <!-- 订单统计 -->
     <div class="financial-order">
       <div class="financial-profit-title">
         <div class="financial-profit-title-left">

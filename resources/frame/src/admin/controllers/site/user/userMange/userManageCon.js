@@ -40,7 +40,9 @@ export default {
           label: '审核拒绝'
         }
       ],
-      value: ''
+      value: '',
+      checkList: [],    // 多选值
+      singleChoice: '', // 单选值
     }
   },
 

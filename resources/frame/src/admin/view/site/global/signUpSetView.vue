@@ -14,7 +14,14 @@
         <el-radio v-model="register_type" :label="2" :disabled="qcloud_wx">微信无感模式</el-radio>
       </CardRow>
     </Card>
-
+    
+    <Card header="扩展信息：">
+      <CardRow description="注册时需要用户填写的额外信息">
+        <el-checkbox :disabled="extendsBtn" v-model="extensionOn">注册扩展信息</el-checkbox>
+        <span class="registration-btn" @click="configurat">配置字段</span>
+      </CardRow>
+    </Card>
+    
     <Card header="新用户审核：">
       <CardRow description="设置新注册的用户是否需要审核">
         <el-checkbox v-model="register_validate">新用户注册审核</el-checkbox>

@@ -43,11 +43,18 @@ export default {
         {
           value: 3,
           label: "审核拒绝"
+        },
+        {
+          value: 10,
+          label: "待填写注册扩展信息"
         }
       ],
       value: "",
       query: {},
-      deleBtn: false
+      deleBtn: false,
+      expandUsers:[],
+      expandDatas: [],
+      exends: [],
     };
   },
 
@@ -55,6 +62,7 @@ export default {
     this.query = this.$route.query;
     this.getUserDetail();
     this.getUserList();
+    this.expandInformation();
   },
 
   methods: {
@@ -101,6 +109,56 @@ export default {
           }
         }
       } catch (err) {}
+    },
+
+    // 扩展信息查询
+    expandInformation() {
+      this.appFetch({
+        url: 'signInFields',
+        method: 'get',
+        data: {},
+      }).then(res => {
+        res.readdata.forEach(item => {
+          if (item._data.status == 1) {
+            this.expandDatas.push(item);
+          }
+        })
+        this.userExpandInformation();
+      }) 
+    },
+
+    // 用户扩展信息查询
+    userExpandInformation() {
+      let userId = this.query.id;
+      this.appFetch({
+        url: 'userSigninfields',
+        method: 'get',
+        splice: `/${userId}`,
+      }).then((res) => {
+        if (res.readdata && res.readdata._data.length > 0) {
+          res.readdata._data.forEach((item, index) => {
+            if (item.type > 1 && item.fields_ext) {
+              item.fields_ext = JSON.parse(item.fields_ext);
+              this.expandUsers.push(item);
+            } else {
+              if (item.fields_ext !== '') {
+                this.expandUsers.push(item);
+              }
+            }
+          })
+        } else {
+          this.expandUsers = [];
+        }
+      })
+    },
+    extendName(data) {
+      let userName = '';
+      this.expandDatas.forEach(items => {
+        if (data === items._data.id) {
+          userName = items._data.name;
+        }
+      })
+      return userName;
     },
     handleRemove(file, fileList) {},
     deleteImage() {
@@ -180,6 +238,7 @@ export default {
       // if (!reg.test(mobile)) { //手机号不合法
       // return  this.$toast("您输入的手机号码不合法，请重新输入");
       // }
+      this.userExtensionModification();
       this.appFetch({
         url: "users",
         method: "patch",
@@ -237,7 +296,65 @@ export default {
       if (value != 1) {
         this.reasonsForDisable = "";
       }
-    }
+    },
+    extendUsers(code) {
+      let extendArr = '';
+      if (code.fields_ext.options) {
+        code.fields_ext.options.forEach(item => {
+          if (item.checked) {
+            extendArr += item.value + ' ';
+          }
+        })
+      } else {
+        code.fields_ext.forEach(item => {
+          if (item.checked) {
+            extendArr += item.value + ' ';
+          }
+        })
+      }
+      return extendArr;
+    },
+
+    userExtensionModification() {
+      this.exends = [];
+      this.expandUsers.forEach(item => {
+        let data = {
+          "type": "user_sign_in",
+          "attributes": {
+            "aid": item.aid,
+            "fields_desc": item.fields_desc,
+            "id": item.id,
+            "remark": "",
+            "status": item.status,
+            "type": item.type,
+            "user_id": item.user_id,      
+          }
+        };
+        if (item.type > 1 && item.fields_ext) {
+          data.attributes.fields_ext = JSON.stringify(item.fields_ext);
+          this.exends.push(data);
+        } else {
+          data.attributes.fields_ext = item.fields_ext;
+          this.exends.push(data);
+        }
+      })
+      // console.log(this.exends);
+      // this.modificationUsers(this.exends);
+    },
+
+    modificationUsers(data) {
+      let userId = this.query.id;
+      this.appFetch({
+        url: 'userSigninfields',
+        method: 'post',
+        splice: `/${userId}`,
+        data: {
+          data
+        }
+      }).then(res => {
+        console.log(res);
+      })
+    },
   },
 
   components: {

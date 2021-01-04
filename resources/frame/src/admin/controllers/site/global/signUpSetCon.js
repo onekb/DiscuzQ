@@ -21,10 +21,13 @@ export default {
       privacy_content:'',
       registerFull: false,
       privacyFull: false,
+      extensionOn: false,
+      extendsBtn: false,
     }
   },
   created(){
     this.signUpSet()//获取前台信息
+    this.extendFun();
   },
   methods:{
     signUpSet(){
@@ -39,6 +42,7 @@ export default {
           this.$message.error(res.errors[0].code);
         }else {
           const agreement = res.readdata._data.agreement;
+          console.log(res);
           // this.pwdLength = res.readdata._data.setreg.password_length
           this.checked = res.readdata._data.set_reg.register_close;
           this.register_validate = res.readdata._data.set_reg.register_validate;
@@ -50,6 +54,7 @@ export default {
           this.register = agreement.register ? "1" : "0";
           this.register_content = agreement.register_content;
           this.privacy_content = agreement.privacy_content;
+          this.extensionOn = res.readdata._data.set_site.open_ext_fields === '1' ? true : false;
           // 旧注册登陆模式的禁用控制
           if(res.readdata._data.qcloud.qcloud_sms == true) {
             this.qcloud_sms = false
@@ -89,6 +94,49 @@ export default {
     },
     changeSize(obj){
        this[obj]= !this[obj];
+    },
+    extendFun() {
+      this.appFetch({
+        url: 'signInFields',
+        method: 'get',
+        data: {},
+      }).then(res => {
+        if (res.readdata.length < 1) {
+          this.extensionOn = false;
+          this.extendsBtn = true;
+          this.extendConfing();
+        } else {
+          this.extendsBtn = false;
+        }
+      }) 
+    },
+    extendConfing() {
+      this.appFetch({
+        url:'settings',
+        method:'post',
+        data:{
+          "data" :[
+            {
+              "attributes":{
+                "key":'open_ext_fields',
+                "value": this.extensionOn ? 1 : 0,
+                "tag": 'default'
+              }
+            }
+          ],
+        }
+      }).then(res => {
+        if (res.errors){
+          if (res.errors[0].detail){
+            this.$message.error(res.errors[0].code + '\n' + res.errors[0].detail[0])
+          } else {
+            this.$message.error(res.errors[0].code);
+          }
+          // this.$message.error(data.errors[0].code);
+        }else {
+          this.signUpSet();
+        }
+      })
     },
     submission(){ //提交注册信息接口
       var reg = /^\d+$|^\d+[.]?\d+$/;
@@ -176,6 +224,13 @@ export default {
                 "tag": 'default'
                }
             },
+            {
+              "attributes":{
+                "key":'open_ext_fields',
+                "value": this.extensionOn ? 1 : 0,
+                "tag": 'default'
+               }
+            },
            ]
         }
       }).then(data=>{
@@ -191,6 +246,12 @@ export default {
         }
       })
 
+    },
+    configurat() {
+      console.log('配置信息');
+      this.$router.push({
+        path: "/admin/registration-btn",
+      });
     }
   },
   components:{

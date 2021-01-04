@@ -66,7 +66,7 @@ export default {
 
 				},
 
-			],
+			],                         //财务统计数据
 			financialEcharts: null,    //盈利图标
 			financiaOrderEchart: null, //订单图标
 			pickerOptions: {
@@ -95,7 +95,7 @@ export default {
 						picker.$emit('pick', [start, end]);
 					}
 				}]
-			},
+			},                        //盈利统计时间
 			financialTime: ['', ''],  //申请时间
 			orderTime: ['', ''],      //申请时间
 			valueMouth: ['', ''],       //盈利按月统计时间
@@ -119,14 +119,17 @@ export default {
 		}
 	},
 	created() {
-		this.statistic()           //获取资金概况
+		this.statistic();           //获取资金概况
 	},
 	mounted() {
-		this.earningsStatistics(); //盈利统计
-		this.orderStatistics();   //订单统计
+		this.earningsStatistics();  //盈利统计
+		this.orderStatistics();     //订单统计
 	},
 	methods: {
-		tab(index) {             //盈利统计切换日期
+		/*
+    * 盈利统计切换日期
+    * */
+		tab(index) {
 			this.istrue = index
 			if (index == 0 || index == 1) {
 				this.dayTab = true;
@@ -140,7 +143,10 @@ export default {
 			}
 			this.earningsStatistics();
 		},
-		tabOrder(index) {        //订单统计切换日期
+		/*
+    * 订单统计切换日期
+    * */
+		tabOrder(index) {
 			this.istrueOder = index
 			if (index == 0 || index == 1) {
 				this.dayOderTab = true;
@@ -154,6 +160,9 @@ export default {
 			}
 			this.orderStatistics();
 		},
+		/*
+    * 获取资金概况统计
+    * */
 		statistic() {
 			this.appFetch({
 				url: 'statistic',
@@ -162,7 +171,6 @@ export default {
 
 				}
 			}).then(res => {
-				// this.financialList = res.readdata._data;
 				var oArr = Object.entries(res.readdata._data);
 				for (var i = 0; i < this.financialList.length; i++) {
 					for (var j = 0; j < oArr.length; j++) {
@@ -173,13 +181,22 @@ export default {
 				}
 			})
 		},
-		change() {   //盈利统计日\周
+		/*
+    * 盈利统计日\周
+    * */
+		change() {
 			this.earningsStatistics();
 		},
-		changeOrder() {  //订单统计日\周
+		/*
+    * 订单统计日\周
+    * */
+		changeOrder() {
 			this.orderStatistics();
 		},
-		changeMouth() {   //盈利统计月
+		/*
+    * 盈利统计月
+    * */
+		changeMouth() {
 			if (this.valueMouth == null) {
 				this.valueMouth = ['', '']
 			} else if (this.valueMouth[0] !== '' && this.valueMouth[1] !== '') {
@@ -189,10 +206,16 @@ export default {
 			// this.currentPaga = 1;
 			this.earningsStatistics();
 		},
-		changeOrderMouth() {   //订单统计月
+		/*
+    * 订单统计月
+    * */
+		changeOrderMouth() {
 			this.orderStatistics();
 		},
-		earningsStatistics() {  //数据请求传给图标
+		/*
+    * 盈利统计数据请求传给图表
+    * */
+		earningsStatistics() {
 			var dataStatistics = {    //盈利统计按日、周统计
 				'filter[type]': this.istrue + 1,
 				'filter[createdAtBegin]': this.financialTime[0],
@@ -235,7 +258,10 @@ export default {
 
 			})
 		},
-		orderStatistics() {  //订单数据请求
+		/*
+    * 订单数据请求
+    * */
+		orderStatistics() {
 			var dataDay = {
 				'filter[type]': this.istrueOder + 1,
 				'filter[createdAtBegin]': this.orderTime[0],
@@ -277,6 +303,9 @@ export default {
 			})
 
 		},
+		/*
+    * 绘制盈利统计图表
+    * */
 		earningsEcharts(date, total_profit, withdrawal_profit, master_portion, register_profit) {
 			//初始化Echarts实例
 			if (!this.financialEcharts) {
@@ -284,9 +313,6 @@ export default {
 			}
 			//绘制图表
 			var option = {
-				title: {
-					// text: '堆叠区域图'
-				},
 				tooltip: {
 					trigger: 'axis',
 					axisPointer: {
@@ -357,6 +383,9 @@ export default {
 			};
 			this.financialEcharts.setOption(option);
 		},
+		/*
+    * 绘制订单统计图表
+    * */
 		orderEcharts(date, order_count, order_amount) {
 			//初始化Echarts实例
 			if (!this.financiaOrderEchart) {
@@ -364,9 +393,6 @@ export default {
 			}
 			//绘制图表
 			var option = {
-				title: {
-					// text: '堆叠区域图'
-				},
 				tooltip: {
 					trigger: 'axis',
 					axisPointer: {

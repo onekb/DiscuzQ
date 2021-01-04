@@ -171,6 +171,36 @@
     <Card header="实名认证身份证号：" v-show="realname">
       <p>{{ userInfo.identity }}</p>
     </Card>
+  
+    <Card
+      v-for="(items, index) in expandUsers"
+      :header="items.name + '：'"
+      :class="(items.type === 4 || items.type === 5) ? 'upload-demo-img' : ''"
+      :key="index">
+      <p class="user-details-box-extend" v-if="items.type === 0 || items.type === 1">{{items.fields_ext}}</p>
+      <div v-if="items.type === 3 || items.type === 2">
+        <span>{{extendUsers(items)}}</span>
+      </div>
+      <div v-if="items.type === 4">
+        <el-upload
+          class="upload-demo"
+          :on-preview="handlePreview"
+          :on-remove="handleRemove"
+          :file-list="items.fields_ext"
+          list-type="picture">
+        </el-upload>
+      </div>
+      <div v-if="items.type === 5">
+        <el-upload
+          class="upload-demo"
+          ref="upload"
+          :on-preview="handlePreview"
+          :on-remove="handleRemove"
+          :file-list="items.fields_ext"
+          :auto-upload="false">
+        </el-upload>
+      </div>
+    </Card>
 
     <Card class="footer-btn">
       <el-button type="primary" size="medium" @click="submission"
