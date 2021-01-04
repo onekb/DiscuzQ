@@ -44,7 +44,6 @@ class UpdatePostController extends AbstractResourceController
         'lastThreeComments',
         'lastThreeComments.user',
         'lastThreeComments.replyUser',
-        'lastThreeComments.commentUser',
     ];
 
     /**

@@ -75,6 +75,7 @@ class RegisterController extends AbstractCreateController
         if (!(bool)$this->settings->get('register_close')) {
             throw new PermissionDeniedException('register_close');
         }
+
         $attributes = Arr::get($request->getParsedBody(), 'data.attributes', []);
         $attributes['register_ip'] = ip($request->getServerParams());
         $attributes['register_port'] = Arr::get($request->getServerParams(), 'REMOTE_PORT', 0);
@@ -107,13 +108,14 @@ class RegisterController extends AbstractCreateController
         if ($mobileToken = Arr::get($attributes, 'mobileToken')) {
             $this->bind->mobile($mobileToken, $user);
         }
+
         // 注册后的登录检查
-        if (!(bool)$this->settings->get('register_validate')) {
-            $this->events->dispatch(new RegisteredCheck($user));
-        }
+        $this->events->dispatch(new RegisteredCheck($user));
+
         $response = $this->bus->dispatch(
             new GenJwtToken(Arr::only($attributes, 'username'))
         );
+
         return json_decode($response->getBody());
     }
 }

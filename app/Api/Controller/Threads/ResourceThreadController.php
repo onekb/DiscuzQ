@@ -65,7 +65,6 @@ class ResourceThreadController extends AbstractResourceController
         'posts',
         'posts.user',
         'posts.replyUser',
-        'posts.commentUser',
         'posts.thread',
         'posts.images',
     ];

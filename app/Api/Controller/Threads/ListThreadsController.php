@@ -75,7 +75,6 @@ class ListThreadsController extends AbstractListController
         'lastThreePosts',
         'lastThreePosts.user',
         'lastThreePosts.replyUser',
-        'lastThreePosts.commentUser',
         'rewardedUsers',
         'paidUsers',
         'lastDeletedLog',

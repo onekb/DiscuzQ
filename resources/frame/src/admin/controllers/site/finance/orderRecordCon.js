@@ -10,7 +10,7 @@ import webDb from 'webDbHelper';
 export default {
   data:function () {
     return {
-      tableData: [],          //订单记录列表数据
+      tableData: [],
       pickerOptions: {
         shortcuts: [{
           text: '最近一周',
@@ -37,17 +37,18 @@ export default {
             picker.$emit('pick', [start, end]);
           }
         }]
-      },                      //搜索-订单时间
+      },
 
-      orderNumber:'',         //搜索-订单号
-      operationUser:'',       //搜索-发起方
-      commodity:'',           //搜索-商品
-      orderTime:['',''],      //搜索-订单时间范围
-      incomeSide: '',         //搜索-收入方
+      orderNumber:'',
+      operationUser:'',
+      commodity:'',
+      orderTime:['',''],
 
-      pageCount:0,            //总页数
-      currentPaga:1,          //第几页
-      total:0,                //总数
+      pageCount:0,
+      currentPaga:1,
+      total:0,
+
+      incomeSide: '',
 
       options: [
         {
@@ -58,14 +59,13 @@ export default {
           value: '1',
           label: '已付款'
         }
-      ],                     //搜索-订单状态选项
-      value: '',             //搜索-订单状态值
+      ],
+      value: '',
+      status:'2'
     }
   },
   methods:{
-    /*
-    * 跳转到话题详情
-    * */
+
     viewClick(id){
       if (id){
         let routeData = this.$router.resolve({
@@ -74,9 +74,7 @@ export default {
         window.open(routeData.href, '_blank');
       }
     },
-    /*
-    * 订单状态转换
-    * */
+
     cashStatus(status){
       switch (status){
         case 0:
@@ -86,12 +84,11 @@ export default {
           return "已付款";
           break;
         default:
+          //获取状态失败，请刷新页面
           return "未知状态";
       }
     },
-    /*
-    * 搜索
-    * */
+
     searchClick(){
       if (this.orderTime == null){
         this.orderTime = ['','']
@@ -102,9 +99,7 @@ export default {
       this.currentPaga = 1;
       this.getOrderList();
     },
-     /*
-    * 切换页码
-    * */
+
     handleCurrentChange(val){
       this.currentPaga = val;
       this.getOrderList();
@@ -118,7 +113,7 @@ export default {
     },
 
     /*
-    * 请求接口 - 获取订单记录
+    * 请求接口
     * */
     getOrderList(){
       this.appFetch({
@@ -157,6 +152,10 @@ export default {
       };
       this.getOrderList();
     }
+  },
+  created(){
+    // this.currentPaga = Number(webDb.getLItem('currentPag'))||1;
+    // this.getOrderList(Number(webDb.getLItem('currentPag'))||1);
   },
   beforeRouteEnter (to,from,next){
     next(vm => {

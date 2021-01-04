@@ -52,7 +52,6 @@ class ListPostsController extends AbstractListController
     public $include = [
         'user',
         'replyUser',
-        'commentUser',
         'images',
     ];
 
@@ -66,7 +65,6 @@ class ListPostsController extends AbstractListController
         'lastThreeComments',
         'lastThreeComments.user',
         'lastThreeComments.replyUser',
-        'lastThreeComments.commentUser',
         'lastThreeComments.images',
         'deletedUser',
         'lastDeletedLog',
