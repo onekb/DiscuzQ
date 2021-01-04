@@ -54,7 +54,6 @@
 .order-record-box{
 
   .order-record__search-box{
-    //padding: 15PX 0;
     padding-top: 15PX;
     display: flex;
     flex-direction: row;
@@ -80,10 +79,6 @@
         margin-right: 8PX;
       }
 
-      //&:first-of-type{
-      //  margin-bottom: 15PX;
-      //}
-
       &:last-of-type{
         flex: 0;
       }
@@ -99,7 +94,6 @@
 .withdrawal-application-box{
 
   .withdrawal-application__search-box{
-    //padding: 15PX 0;
     padding-top: 15PX;
     display: flex;
     flex-direction: row;
@@ -145,40 +139,22 @@
 
 
 /*
-  提现设置
-*/
-.withdrawal-setting-box{
-
-  //.el-button {
-  //  margin-right: 40PX;
-  //}
-}
-/*
   财务统计
 */
 .financial-box{
   position: relative;
-  // &::before{content:'';width:49PX;height:100%;position: absolute;top:0;left:-49PX;background:rgba(244,247,249,1);};
-  // &::after{content:'';width:49PX;height:100%;position: absolute;top:0;right:-49PX;background:rgba(244,247,249,1);};
-  // margin-left:-49PX;
-  // margin-right:-49PX;
-  // background:rgba(244,247,249,1);
   .financial-statistics{
     display: flex;
     justify-content:space-between;
     flex-wrap:wrap;
     padding-top: 18PX;
     .financial{
-      // width:235PX;
       width:23%;
       height:131PX;
       background:rgba(255,255,255,1);
-      // box-shadow:0px 0px 8px 0px rgba(0,0,0,0.1);
       border:1PX solid rgba(220,223,230,1);
       border-radius:4px;
       margin-bottom:14PX;
-      // margin-left:24PX;
-      // background:red;
       position: relative;
       .financial-head{
         width:100%;
@@ -199,17 +175,20 @@
       .financial-con{
         position: absolute;
         color:#3E4043;
-        // margin:0 auto;
-        left:14PX;
+        padding: 0PX 14PX;
         top:50%;
-        font-size: 30PX;
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 28PX;
+        overflow: hidden;
+        text-overflow:ellipsis;
+        white-space: nowrap;
       }
    
     }
   }
   .financial-profit,.financial-order{
     background:rgba(255,255,255,1);
-    // box-shadow:0px 0px 8px 0px rgba(0,0,0,0.1);
     border:1PX solid rgba(220,223,230,1);
     border-radius:4px;
     height:560PX;
@@ -241,7 +220,6 @@
           padding-right: 30PX;
           font-size: 14PX;
           cursor: pointer;  
-          // text-align: center;   
       }
       .input-class{
         width:300PX;
@@ -252,13 +230,11 @@
     .noData{
       position: absolute;
       height:473PX;
-      // background:red;
       line-height: 473PX;
       left:50%;
     }
     .financial-profit-chart{
       height:473PX;
-      // background: pink;
       margin:17px 15px 21PX 14PX;
     }
   }

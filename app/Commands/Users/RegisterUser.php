@@ -51,6 +51,7 @@ class RegisterUser
      */
     public $data;
 
+
     /**
      * @param User $actor The user performing the action.
      * @param array $data The attributes of the new user.
@@ -95,14 +96,13 @@ class RegisterUser
         $censor->checkText(Arr::get($this->data, 'username'), 'username');
 
         // 注册原因
-        if ($settings->get('register_validate', 'default', false)) {
-            if (!Arr::has($this->data, 'register_reason')) {
-                throw new TranslatorException('setting_fill_register_reason');
-            }
-        }
+//        if ($settings->get('register_validate', 'default', false)) {
+//            if (!Arr::has($this->data, 'register_reason')) {
+//                throw new TranslatorException('setting_fill_register_reason');
+//            }
+//        }
 
         $user = User::register(Arr::only($this->data, ['username', 'password', 'register_ip', 'register_port', 'register_reason']));
-
         // 注册验证码(无感模式不走验证码，开启也不走)
         $captcha = '';  // 默认为空将不走验证
         if ((bool)$settings->get('register_captcha') &&
@@ -133,10 +133,10 @@ class RegisterUser
         if ($password === '') {
             unset($attrs_to_validate['password']);
         }
+        unset($attrs_to_validate['register_reason']);
         $validator->valid($attrs_to_validate);
 
         $user->save();
-
         $user->raise(new Registered($user, $this->actor, $this->data));
 
         $this->dispatchEventsFor($user, $this->actor);

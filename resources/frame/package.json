@@ -7,12 +7,12 @@
   "scripts": {
     "dev-old": "webpack-dev-server --max-new-space-size=4096 --mode development --inline --progress --config build/webpack.dev.conf.js --host 0.0.0.0",
     "build-old": "node --max_old_space_size=4096 build/build.js",
-    "build": "SCENE=default node --max_old_space_size=4096 build/build.h5.js",
-    "dev": "SCENE=default webpack-dev-server --progress --config build/webpack.h5.dev.conf.js --host 0.0.0.0",
-    "build-admin": "SCENE=default node --max_old_space_size=4096 build/build.admin.js",
-    "build:pay": "SCENE=pay node --max_old_space_size=4096 build/build.h5.js",
-    "dev:pay": "SCENE=pay webpack-dev-server --progress --config build/webpack.h5.dev.conf.js --host 0.0.0.0",
-    "build-admin:pay": "SCENE=pay node --max_old_space_size=4096 build/build.admin.js"
+    "build": "cross-env SCENE=default node --max_old_space_size=4096 build/build.h5.js",
+    "dev": "cross-env SCENE=default webpack-dev-server --progress --config build/webpack.h5.dev.conf.js --host 0.0.0.0",
+    "build-admin": "cross-env SCENE=default node --max_old_space_size=4096 build/build.admin.js",
+    "build:pay": "cross-env SCENE=pay node --max_old_space_size=4096 build/build.h5.js",
+    "dev:pay": "cross-env SCENE=pay webpack-dev-server --progress --config build/webpack.h5.dev.conf.js --host 0.0.0.0",
+    "build-admin:pay": "cross-env SCENE=pay node --max_old_space_size=4096 build/build.admin.js"
   },
   "dependencies": {
     "@github/markdown-toolbar-element": "^1.2.0",
@@ -51,6 +51,7 @@
     "chalk": "^2.0.1",
     "concurrently": "^5.2.0",
     "copy-webpack-plugin": "^5.1.1",
+    "cross-env": "^7.0.3",
     "css-loader": "^3.5.3",
     "exif-js": "^2.3.0",
     "fibers": "^4.0.3",

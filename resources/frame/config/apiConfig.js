@@ -11,6 +11,8 @@ module.exports = {
   wechat: "/oauth/wechat/user", //微信接口
   authority: "/groups", //权限列表
   wxPcLogin: "/oauth/wechat/pc/user", // 微信登录列表
+  signInFields: "/admin/signinfields",  // 注册扩展信息字段配置
+  userSigninfields: "/user/signinfields", // 用户信息展示扩展字段信息
 
   categories: "/categories", //分类列表
   categoriesDelete: "/categories", //分类单个删除

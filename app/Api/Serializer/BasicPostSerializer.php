@@ -68,7 +68,10 @@ class BasicPostSerializer extends AbstractSerializer
         )->unique()->values();
 
         $attributes = [
+            'replyPostId'       => $model->reply_post_id,
             'replyUserId'       => $model->reply_user_id,
+            'commentPostId'     => $model->comment_post_id,
+            'commentUserId'     => $model->comment_user_id,
             'summary'           => $model->summary,
             'summaryText'       => $model->summary_text,
             'content'           => $model->content,
@@ -127,6 +130,15 @@ class BasicPostSerializer extends AbstractSerializer
      * @return Relationship
      */
     protected function replyUser($post)
+    {
+        return $this->hasOne($post, UserSerializer::class);
+    }
+
+    /**
+     * @param $post
+     * @return Relationship
+     */
+    protected function commentUser($post)
     {
         return $this->hasOne($post, UserSerializer::class);
     }

@@ -28,4 +28,7 @@ class CacheKey
     public const THREAD_RESOURCE_BY_ID = 'thread_resource_by_id_';
 
     public const POST_RESOURCE_BY_ID = 'post_resource_by_id_';
+
+    //记录用户是否新注册用户
+    public const NEW_USER_LOGIN = 'new_user_login_';
 }

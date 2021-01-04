@@ -1,5 +1,6 @@
 <template>
   <div class="order-record-box">
+    <!-- 搜索条件 -->
     <div class="order-record__search-box">
       <div class="order-record__search-condition">
         <span class="order-record__search-condition__title">订单号：</span>
@@ -71,7 +72,7 @@
         >
       </div>
     </div>
-
+    <!-- 订单记录列表 -->
     <div class="order-record-table">
       <el-table :data="tableData" style="width: 100%">
         <el-table-column prop="_data.order_sn" label="订单号" min-width="110">

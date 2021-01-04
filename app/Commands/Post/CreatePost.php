@@ -64,6 +64,20 @@ class CreatePost
     public $replyUserId;
 
     /**
+     * The id of the post waiting to be replied.
+     *
+     * @var int
+     */
+    public $commentPostId;
+
+    /**
+     * The id of the post waiting to be replied.
+     *
+     * @var int
+     */
+    public $commentUserId;
+
+    /**
      * The user performing the action.
      *
      * @var User
@@ -92,6 +106,11 @@ class CreatePost
     public $port;
 
     /**
+     * @var Validator
+     */
+    protected $validator;
+
+    /**
      * @param int $threadId
      * @param User $actor
      * @param array $data
@@ -102,6 +121,7 @@ class CreatePost
     {
         $this->threadId = $threadId;
         $this->replyPostId = Arr::get($data, 'attributes.replyId', null);
+        $this->commentPostId = Arr::get($data, 'attributes.commentPostId', null);
         $this->actor = $actor;
         $this->data = $data;
         $this->ip = $ip;
@@ -144,21 +164,37 @@ class CreatePost
                     throw new ModelNotFoundException;
                 }
             }
+
+            // 回复中回复，确保回复在同一主题下
+            if (! empty($this->commentPostId)) {
+                $this->commentUserId = $post->newQuery()
+                    ->where('id', $this->commentPostId)
+                    ->where('thread_id', $thread->id)
+                    ->value('user_id');
+
+                if (! $this->commentUserId) {
+                    throw new ModelNotFoundException;
+                }
+            }
         }
 
         $post = $post->reply(
             $thread->id,
-            trim($censor->checkText(Arr::get($this->data, 'attributes.content'))),
+            trim(Arr::get($this->data, 'attributes.content')),
             $this->actor->id,
             $this->ip,
             $this->port,
             $this->replyPostId,
             $this->replyUserId,
+            $this->commentPostId,
+            $this->commentUserId,
             $isFirst,
             (bool) Arr::get($this->data, 'attributes.isComment')
         );
 
-        // 存在审核敏感词时，将回复内容放入待审核
+        $post->content = $censor->checkText($post->content);
+
+        // 存在审核敏感词时，将回复放入待审核
         if ($censor->isMod) {
             $post->is_approved = Post::UNAPPROVED;
         } else {

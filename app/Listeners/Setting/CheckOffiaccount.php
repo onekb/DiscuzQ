@@ -82,7 +82,7 @@ class CheckOffiaccount
                             try {
                                 $this->offiaccount($value)->access_token->getToken();
                             } catch (\EasyWeChat\Kernel\Exceptions\HttpException $e) {
-                                $fail(trans('setting.offiaccount_error') . ($e->formattedResponse['errcode'] ?? ''));
+                                $fail(trans('setting.offiaccount_error') . ($e->formattedResponse['errcode'] ?? '').$e->getMessage());
                             }
                         }
 

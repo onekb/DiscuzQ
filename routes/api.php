@@ -400,3 +400,25 @@ $route->get('/offiaccount/transform', 'offiaccount.threads.transform', ApiContro
 |--------------------------------------------------------------------------
 */
 $route->delete('/cache', 'cache.clear', ApiController\Cache\CacheController::class);
+
+/*
+|--------------------------------------------------------------------------
+| 后台扩展字段
+|--------------------------------------------------------------------------
+*/
+$route->get('/admin/signinfields','admin.signinfields.list',ApiController\SignInFields\ListAdminSignInController::class);
+$route->post('/admin/signinfields','admin.signinfields.create',ApiController\SignInFields\CreateAdminSignInController::class);
+//管理员审核用户扩展信息
+$route->get('/user/signinfields/{id}','user.signinfields.resource',ApiController\SignInFields\ResourceUserSignInController::class);
+$route->post('/user/signinfields/{id}','admin.signinfields.update',ApiController\SignInFields\UpdateUserSignInController::class);
+/*
+|--------------------------------------------------------------------------
+| 前台扩展字段
+|--------------------------------------------------------------------------
+*/
+//查询扩展字段列表（用户注册后显示）
+$route->get('/user/signinfields','user.signinfields.list',ApiController\SignInFields\ListUserSignInController::class);
+//用户首次提交扩展字段信息或者被驳回之后再次提交
+$route->post('/user/signinfields','user.signinfields.create',ApiController\SignInFields\CreateUserSignInController::class);
+
+

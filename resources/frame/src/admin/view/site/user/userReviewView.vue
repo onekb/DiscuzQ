@@ -7,35 +7,125 @@
           tooltip-effect="dark"
           style="width: 100%"
           @selection-change="handleSelectionChange">
+
           <el-table-column
             type="selection"
             width="55">
           </el-table-column>
+
           <el-table-column
             label="编号"
             prop="_data.id"
             width="100">
           </el-table-column>
+
           <el-table-column
             prop="_data.username"
             label="用户名"
-            width="200">
+            width="150">
           </el-table-column>
-          <el-table-column
+
+          <!-- <el-table-column
             prop="_data.registerReason"
             label="注册原因"
+            width="150"
             show-overflow-tooltip>
-          </el-table-column>
+          </el-table-column> -->
+          
           <el-table-column
+            width="200"
             label="注册时间">
             <template slot-scope="scope">{{ formatDate(scope.row._data.createdAt) }}</template>
           </el-table-column>
+          
           <el-table-column
-            label=""
+            prop="_data.originalMobile"
+            label="手机号"
+            width="150">
+          </el-table-column>
+
+          <el-table-column
+            :key="index"
+            width="150"
+            label="扩展字段">
+            <template slot-scope="scope">
+                <el-button type="text" @click="dialogTableVisibleFun(scope)">查看</el-button>
+                <el-dialog title="扩展信息" :visible.sync="visibleExtends[scope.$index].dialogTableVisible">
+                  <el-table
+                  class="user-review-table__box"
+                    ref="multipleTable"
+                    :data="gridDataFun(scope)"
+                    tooltip-effect="dark"
+                    max-height="400"
+                    :border="true"
+                    @selection-change="handleSelectionChange">
+                    <el-table-column
+                      class="user-review-table__trbox"
+                      label="字段名称"
+                      prop="_data.name"
+                      width="100">
+                       <template slot-scope="scope">
+                         <div class="user-review-table__tdbox">{{scope.row._data.name}}</div>
+                       </template>
+                    </el-table-column>
+
+                    <el-table-column
+                      label="字段信息"
+                      width="571">
+                      <template slot-scope="scopes">
+                        <div class="user-review-table__exdent">
+                            <p v-if="scopes.row._data.type === 0 || scopes.row._data.type === 1">
+                                {{ scopes.row._data.fields_ext }}
+                            </p>
+                            <p v-if="scopes.row._data.type === 2 || scopes.row._data.type === 3">
+                                {{ optionFun(scopes.row._data.fields_ext)}}
+                            </p>
+                            <div v-if="scopes.row._data.type === 4 || scopes.row._data.type === 5">
+                              <p v-for="(iamge, indexImg) in scopes.row._data.fields_ext" :key="indexImg">
+                                <a :href="iamge.url"  target="_blank">{{ iamge.name }}</a>
+                              </p>
+                            </div>
+                          </div>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </el-dialog>
+              <!-- <el-collapse v-model="activeNames" @change="handleChange">
+                <el-collapse-item title="查看" name="1">
+                  <div v-for="(extend, index) in scope.row.extFields" :key="index"  class="user-review-table__exdent">
+                    <p v-if="extend._data.type === 0 || extend._data.type === 1">
+                      <span class="user-review-table__span">
+                        {{extend._data.name + '：'}}
+                      </span>
+                      <span>
+                        {{ extend._data.fields_ext }}
+                      </span>
+                    </p>
+                    <p v-if="extend._data.type === 2 || extend._data.type === 3">
+                      <span class="user-review-table__span">
+                        {{extend._data.name + '：'}}
+                      </span>
+                      <span>
+                        {{ optionFun(extend._data.fields_ext)}}
+                      </span>
+                    </p>
+                    <div v-if="extend._data.type === 4 || extend._data.type === 5">
+                      <p v-for="(iamge, indexImg) in extend._data.fields_ext" :key="indexImg">
+                        <a :href="iamge.url"  target="_blank">{{ iamge.name }}</a>
+                      </p>
+                    </div>
+                  </div>
+                </el-collapse-item>
+              </el-collapse> -->
+            </template>
+          </el-table-column>
+
+          <el-table-column
+            label="操作"
             width="230">
             <template slot-scope="scope">
-              <el-button type="text" @click="singleOperation('pass',scope.row._data.id)" >通过</el-button>
-              <el-button type="text" @click="singleOperation('no',scope.row._data.id)" >否决</el-button>
+              <el-button type="text" @click="singleOperation('pass',scope.row._data.id, scope)" >通过</el-button>
+              <el-button type="text" @click="singleOperation('no',scope.row._data.id, scope)" >否决</el-button>
 
               <el-popover
                 width="100"

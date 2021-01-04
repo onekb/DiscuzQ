@@ -252,7 +252,87 @@
 // .sign-up-set-box{
 
 // }
+.registration-btn {
+  margin-left: 14PX;
+  color: #3571A5;
+  cursor: pointer;
+}
+.register-option-box {
+  .has-gutter {
+    tr {
+      th {
+        .cell {
+          padding-left: 18PX;
+          box-sizing: border-box;
+        }
+      }
+    }
+  }
+  
+  .el-table__body {
+    tr {
+      position: relative;
+      td {
+        vertical-align: top;
+        .cell {
+          text-align: center;
+          position: relative;
+          overflow: visible;
+          .register-option-table__type {
+            position: relative;
+            z-index: 10;
+            width: 300PX;
+            margin-top: 15px;
+            .register-option-table__son {
+              width: 300PX;
+              .el-textarea__inner {
+                width: 266PX;
+                height: 120PX;
+              }
+            }
+          }
+          .register-option-table__enable {
+            text-align: left;
+            .register-option-table__field {
+              margin-left: 26PX;
+            }
+          }
+          .register-option-table__detele {
+            text-align: left;
+          }
+        }
+      }
+      .el-table-column--selection {
+        padding-top: 20PX;
+      }
+    }
+  }
+  .egister-option-btn {
+    margin-left: 66PX;
+    width: 85PX;
+    text-align: center;
+  }
+  .el-icon-circle-plus-outline {
+    color: #336699;
+    font-size: 15PX;
+    cursor: pointer;
+  }
+  .egister-option-increase {
+    color: #336699;
+    font-size: 14PX;
+    cursor: pointer;
+    font-weight: 400;
+  }
+  .register-option__button {
+    background: #fff;
+    color: #336699;
+  }
+}
 
+.delete-field {
+  color: #3571A5;
+  cursor: pointer;
+}
 /**
   附件设置
  */

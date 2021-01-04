@@ -142,10 +142,12 @@ class VerifyMobile
             $this->bind->bindMiniprogram($js_code, $iv, $encryptedData, null, $this->mobileCode->user);
         }
 
-
-        $this->events->dispatch(
-            new Logind($this->mobileCode->user)
-        );
+        //手机号登录需要填写扩展字段审核的场景
+        if($this->mobileCode->user->status!=User::STATUS_MOD){
+            $this->events->dispatch(
+                new Logind($this->mobileCode->user)
+            );
+        }
         //login
         $this->controller->serializer = TokenSerializer::class;
         $params = [

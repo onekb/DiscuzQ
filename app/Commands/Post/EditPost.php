@@ -19,19 +19,21 @@
 namespace App\Commands\Post;
 
 use App\Censor\Censor;
+use App\Censor\CensorNotPassedException;
 use App\Events\Post\PostWasApproved;
 use App\Events\Post\Revising;
 use App\Events\Post\Saved;
 use App\Events\Post\Saving;
 use App\Models\Post;
 use App\Models\PostMod;
-use App\Models\Thread;
 use App\Models\User;
 use App\Repositories\PostRepository;
 use App\Validators\PostValidator;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Foundation\EventsDispatchTrait;
+use EasyWeChat\Kernel\Exceptions\InvalidConfigException;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
@@ -82,6 +84,9 @@ class EditPost
      * @return Post
      * @throws PermissionDeniedException
      * @throws ValidationException
+     * @throws CensorNotPassedException
+     * @throws InvalidConfigException
+     * @throws GuzzleException
      */
     public function handle(Dispatcher $events, PostRepository $posts, Censor $censor, PostValidator $validator)
     {
@@ -96,29 +101,14 @@ class EditPost
 
             $post->raise(new Revising($post, $this->actor, $this->data));
 
-            // 敏感词校验
-            $content = $censor->checkText($attributes['content']);
+            $post->revise(trim($attributes['content']), $this->actor);
 
-            // 视频帖、图片帖不传内容时设置默认内容
-            if ($post->is_first && empty(trim($content))) {
-                switch ($post->thread->type) {
-                    case Thread::TYPE_OF_VIDEO:
-                        $content = '分享视频';
-                        break;
-                    case Thread::TYPE_OF_IMAGE:
-                        $content = '分享图片';
-                        break;
-                    default:
-                        $content = '分享';
-                }
-            }
+            $post->content = $censor->checkText($post->content);
 
             // 存在审核敏感词时，将主题放入待审核
             if ($censor->isMod) {
                 $post->is_approved = Post::UNAPPROVED;
             }
-
-            $post->revise($content, $this->actor);
         } else {
             // 不修改内容时，不更新修改时间
             $post->timestamps = false;

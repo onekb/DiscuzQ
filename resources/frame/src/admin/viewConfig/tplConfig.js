@@ -52,6 +52,18 @@ export default {
               attribution: "全局"
             }
           },
+          "registration-btn" : {
+            comLoad: function (resolve) {
+              require([
+                "../view/site/global/registrationLoginPage/expandPageView"
+              ], resolve);
+            },
+            metaInfo: {
+              title: "注册与登录设置",
+              name: "signUpSet",
+              attribution: "全局"
+            }
+          },
           "worth-mentioning-set": {
             comLoad: function (resolve) {
               require([

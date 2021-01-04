@@ -141,13 +141,11 @@ class ExportUserController implements RequestHandlerInterface
         }])->get($userField);
 
         $sex = ['', '男', '女'];
-        $status = ['正常', '禁用', '审核中', '审核拒绝', '审核忽略'];
-
-        return $users->map(function (User $user) use ($columnMap, $sex, $status) {
+        return $users->map(function (User $user) use ($columnMap, $sex) {
             // 前面加空格，避免科学计数法
             $user->originalMobile = ' ' . $user->getRawOriginal('mobile');
             $user->sex = $sex[$user->wechat ? $user->wechat->sex : 0];
-            $user->status = $status[$user->status] ?? '';
+            $user->status = User::$statusMap[$user->status] ?? '';
             if (!is_null($user->groups)) {
                 $user->groups = $user->groups->pluck('name')->implode(',');
             }

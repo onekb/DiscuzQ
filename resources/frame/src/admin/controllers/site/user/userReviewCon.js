@@ -19,6 +19,9 @@ export default {
       total:0,                    //主题列表总条数
       pageCount:1,                //总页数
       btnLoading:false,           //按钮状态
+      extendedAudit: [],          //扩展字段信息
+      gridData: [],
+      visibleExtends: [],
     }
   },
 
@@ -36,17 +39,16 @@ export default {
       this.multipleSelection = val;
     },
 
-    singleOperation(val,id){
+    singleOperation(val,id,user){
       if (val === 'pass'){
-        this.editUser(id,0)
+        this.editUser(id,0);
       }else if (val === 'no'){
         this.$MessageBox.prompt('', '提示', {
           confirmButtonText: '提交',
           cancelButtonText: '取消',
           inputPlaceholder:'请输入否决原因'
         }).then((value)=>{
-          // console.log(value);
-          this.editUser(id,3,value.value)
+            this.editUser(id,3,value.value);
         }).catch((err) => {
         });
       }else if (val === 'del'){
@@ -56,7 +58,6 @@ export default {
 
     allOperation(val){
       let userList = [];
-
       if (val === 'pass'){
         this.btnLoading = true;
         if (this.multipleSelection.length < 1){
@@ -139,11 +140,27 @@ export default {
           'page[size]':10,
         }
       }).then(res=>{
-        // console.log(res);
+        console.log(res);
         this.total = res.meta.total;
         this.pageCount = res.meta.pageCount;
+        this.visibleExtends = [];
+        res.readdata.forEach((item, index) => {
+          this.visibleExtends.push({
+            dialogTableVisible: false,
+          })
+          if (item.extFields.length > 0) {
+            item.extFields.forEach((extend, list) => {
+              if (extend._data.type > 1 && extend._data.fields_ext) {
+                extend._data.fields_ext = JSON.parse(extend._data.fields_ext);
+              }
+            })
+          }
+        })
         this.tableData = res.readdata;
       })
+    },
+    dialogTableVisibleFun(code) {
+      this.visibleExtends[code.$index].dialogTableVisible = true;
     },
     editUser(id,status,message){
       this.appFetch({
@@ -172,6 +189,7 @@ export default {
       }).catch(err=>{
       })
     },
+
     patchEditUser(dataList){
       this.appFetch({
         method: 'PATCH',
@@ -193,6 +211,7 @@ export default {
       }).catch(err=>{
       })
     },
+
     patchDeleteUser(dataList){       //批量忽略接口
       this.appFetch({
         url:'users',
@@ -251,11 +270,51 @@ export default {
       } else {
         this.getUserList(Number(webDb.getLItem('currentPag'))||1);
       }
-    }
+    },
+    
+    // 扩展信息查询
+    auditQuery() {
+      this.appFetch({
+        url: 'signInFields',
+        method: 'get',
+        data: {},
+      }).then(res => {
+        this.extendedAudit = [];
+        res.readdata.forEach(item => {
+          if (item._data.status == 1) {
+            this.extendedAudit.push(item);
+          }
+        })
+      }) 
+    },
 
+    optionFun(code) {
+      // console.log(code);
+      let extendArr = '';
+      if (code.options) {
+        code.options.forEach(item => {
+          if (item.checked) {
+            extendArr += item.value + ' ';
+          }
+        })
+      } else {
+        code.forEach(item => {
+          if (item.checked) {
+            extendArr += item.value + ' ';
+          }
+        })
+      }
+      return extendArr;
+    },
+
+    gridDataFun(code) {
+      let gridData = code.row.extFields;
+      return gridData;
+    },
   },
   created(){
     // this.getUserList();
+    this.auditQuery();
   },
   beforeRouteEnter(to,from,next){
     next(vm => {

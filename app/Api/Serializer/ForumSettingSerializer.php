@@ -67,6 +67,7 @@ class ForumSettingSerializer extends AbstractSerializer
                 'site_keywords' => $this->settings->get('site_keywords'),
                 'site_introduction' => $this->settings->get('site_introduction'),
                 'site_mode' => $this->settings->get('site_mode'), // pay public
+                'open_ext_fields'=>$this->settings->get('open_ext_fields'),
 //                'site_close' => (bool)$this->settings->get('site_close'),
                 'site_manage' => json_decode($this->settings->get('site_manage'), true),
                 'site_close_msg'=>$this->settings->get('site_close_msg'),
