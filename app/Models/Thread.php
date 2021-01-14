@@ -658,19 +658,8 @@ class Thread extends Model
 
     private function deleteCacheKey()
     {
-        $cache = app(Cache::class);
-        //删除帖子缓存
-        $cache->delete(CacheKey::THREAD_RESOURCE_BY_ID . $this->id);
-        $keys = $cache->get(CacheKey::LIST_THREAD_KEYS);
-        if (empty($keys)) {
-            return false;
-        }
-        $keys = json_decode($keys, true);
-        foreach ($keys as $key) {
-            $cache->delete($key);
-        }
-        $cache->delete(CacheKey::LIST_THREAD_KEYS);
-        return true;
+        $cache = app('cache');
+        $cache->clear();
     }
 
 }

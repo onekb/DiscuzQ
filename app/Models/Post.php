@@ -614,6 +614,8 @@ class Post extends Model
         $cacheKey0 = CacheKey::POST_RESOURCE_BY_ID . '0' . $threadId;
         $cacheKey1 = CacheKey::POST_RESOURCE_BY_ID . '1' . $threadId;
         $cache = app('cache');
-        return $cache->delete($cacheKey0) || $cache->delete($cacheKey1);
+        $f1 = $cache->delete($cacheKey0);
+        $f2 = $cache->delete($cacheKey1);
+        return $f1 || $f2;
     }
 }
