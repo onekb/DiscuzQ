@@ -129,7 +129,7 @@ class ResourceThreadController extends AbstractResourceController
 
 
         $cacheKey = CacheKey::THREAD_RESOURCE_BY_ID.$threadId;
-        $cache = app(Cache::class);
+        $cache = app('cache');
         $cacheData = $cache->get($cacheKey);
         if(!empty($cacheData)){
             $cacheThread = unserialize($cacheData);

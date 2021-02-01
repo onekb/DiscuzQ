@@ -44,6 +44,13 @@ class CreatePostController extends AbstractCreateController
     ];
 
     /**
+     * {@inheritdoc}
+     */
+    public $optionalInclude = [
+        'commentUser',
+    ];
+
+    /**
      * @var Dispatcher
      */
     protected $bus;

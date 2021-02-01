@@ -69,10 +69,10 @@ class CheckOrder extends AbstractRule
             throw new Exception(trans('post.post_question_payment_amount_fail'));
         }
 
-        // 判断如果是钱包支付 验证钱包余额
+        // 判断如果是钱包支付 验证冻结金额的余额
         if ($order->payment_type == Order::PAYMENT_TYPE_WALLET) {
-            if ($this->actor->userWallet->available_amount < $this->price) {
-                throw new Exception(trans('wallet.available_amount_error')); // 钱包余额不足
+            if ($this->actor->userWallet->freeze_amount < $this->price) {
+                throw new Exception(trans('wallet.freeze_amount_error')); // 钱包冻结余额不足
             }
         }
 

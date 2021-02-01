@@ -99,7 +99,19 @@ export default {
       return value1 - value2;
       }
     },
-
+    changInput(e) {
+      if (e !== '' && !this.isNumber(e)) {
+        this.$message.error('请输入整数');
+      }
+    },
+    isNumber(value) {
+      const patrn = /^(-)?\d+(\.\d+)?$/;
+      if (patrn.exec(value) == null) {
+        return false
+      } else {
+        return true
+      }
+    },
     obtainValue(e) {
       this.value = e;
     },
@@ -112,8 +124,13 @@ export default {
             "status": 0
           },
         }
-        data.attributes.id = item.id;
-        this.arrsLiist.push(data);
+        if (item.newly) {
+          let arrData = [];
+          arrData.push(item);
+        } else {
+          data.attributes.id = item.id;
+          this.arrsLiist.push(data);
+        }
       })
     },
     
@@ -163,13 +180,17 @@ export default {
     },
     // 点击右侧删除事件
     operationDelete(index) {
-      this.$confirm('删除后，则此字段及其历史用户信息，将从系统钟彻底删除，且无法恢复，请谨慎操作，点击确认删除，则删除', {
+      this.$confirm('删除后，则此字段及其历史用户信息，将从系统中彻底删除，且无法恢复，请谨慎操作，点击确认删除，则删除', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.groupsList.splice(index.$index, 1);
-        this.deleteField(index);
+        if (index.row.newly) {
+          this.groupsList.splice(index.$index, 1);
+        } else {
+          this.groupsList.splice(index.$index, 1);
+          this.deleteField(index);
+        }
       }).catch(() => {
         this.$message({
           type: 'info',
@@ -189,6 +210,7 @@ export default {
         introduce: '',  // 字段介绍
         enable: false,      // 是否启用
         required: false,   // 是否必填
+        newly: 1,  // 用作判断是否新增
       })
     },
 
@@ -218,7 +240,7 @@ export default {
             }
           }
           let fieldsExtData = {"options": this.arr};
-          data.attributes.fields_ext = JSON.stringify(fieldsExtData),
+          data.attributes.fields_ext = JSON.stringify(fieldsExtData);
           this.dataList.push(data);
         } else {
           // let fieldsExtData = {"necessary": this.groupsList[i].required};
@@ -229,9 +251,39 @@ export default {
       }
       this.addRegistration(this.dataList);
     },
-    
+    testDataRun() {
+      let num = true;
+      this.groupsList.forEach(item => {
+        if (item.name === '') {
+          this.$message.error('字段名称未填写');
+          num = false;
+          return
+        }
+        if (item.description === '') {
+          this.$message.error('字段类型未填写');
+          num = false;
+          return
+        }
+        if (item.description === 2 || item.description === 3) {
+          if (item.content === '') {
+            this.$message.error('字段选项未填写');
+            num = false;
+            return
+          }
+        }
+        if (item.sort === '') {
+          this.$message.error('字段排序未填写');
+          num = false;
+          return
+        }
+      })
+      return num;
+    },
     // 添加数据请求
     addRegistration(data) {
+      if (!this.testDataRun()) {
+        return;
+      }
       this.appFetch({
         url: "signInFields",
         method: "post",
@@ -252,7 +304,7 @@ export default {
     },
     submitDetele() {
       if (this.arrsLiist.length > 0) {
-        this.$confirm('删除后，则此字段及其历史用户信息，将从系统钟彻底删除，且无法恢复，请谨慎操作，点击确认删除，则删除', {
+        this.$confirm('删除后，则此字段及其历史用户信息，将从系统中彻底删除，且无法恢复，请谨慎操作，点击确认删除，则删除', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'

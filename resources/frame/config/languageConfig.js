@@ -25,6 +25,7 @@ const config = {
   order_create_failure: '订单创建失败',
   status_cash_freeze: '钱包已冻结提现',
   available_amount_error: '钱包可用金额不足',
+  freeze_amount_error: '钱包冻结金额不足',
   operate_type_error: '操作类型不存在',
   wallet_status_error: '钱包状态有误',
   file_type_not_allow: '文件类型不允许',

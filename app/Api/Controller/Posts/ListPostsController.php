@@ -113,6 +113,7 @@ class ListPostsController extends AbstractListController
     protected $tablePrefix;
     protected $cache;
     private $postCache;
+
     /**
      * @param PostRepository $posts
      * @param UrlGenerator $url
@@ -137,7 +138,7 @@ class ListPostsController extends AbstractListController
         $filter = $this->extractFilter($request);
         $sort = $this->extractSort($request);
         //设置评论列表第一页缓存
-        list($cacheKey, $posts) = $this->getCache($params,$filter, $document);
+        list($cacheKey, $posts) = $this->getCache($params, $filter, $document);
         if ($posts) {
             return $posts;
         }
@@ -182,9 +183,9 @@ class ListPostsController extends AbstractListController
             });
         }
         $posts->loadMissing($include);
-        if($this->canCache($params)){
+        if ($this->canCache($params)) {
             $this->postCache->setPosts($posts);
-            $this->cache->put($cacheKey, serialize( $this->postCache), 5*60);
+            $this->cache->put($cacheKey, serialize($this->postCache), 5 * 60);
         }
         return $posts;
     }
@@ -219,11 +220,11 @@ class ListPostsController extends AbstractListController
     private function canCache($params)
     {
         //pc端倒序不允许使用缓存
-        if($params['sort'] == '-createdAt'){
+        if (isset($params['sort']) && $params['sort'] == '-createdAt') {
             return false;
         }
         if (isset($params['filter'])) {
-            if(!isset($params['filter']['isComment'])){
+            if (!isset($params['filter']['isComment'])) {
                 return false;
             }
             if (strtolower($params['filter']['isComment']) == 'yes') {
@@ -285,7 +286,7 @@ class ListPostsController extends AbstractListController
 
         $query->skip($offset)->take($limit);
 
-        foreach ((array) $sort as $field => $order) {
+        foreach ((array)$sort as $field => $order) {
             $query->orderBy(Str::snake($field), $order);
         }
 

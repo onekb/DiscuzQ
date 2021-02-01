@@ -184,6 +184,9 @@ class ResourceAnalysisGoodsController extends AbstractResourceController
          *
          * @see PostGoodsTrait
          */
+        if(empty($this->goodsType['value'])){
+            throw new TranslatorException('post_goods_fail_url');
+        }
         $this->{$this->goodsType['value']}();
 
         /**

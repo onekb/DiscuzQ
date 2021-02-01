@@ -119,8 +119,13 @@ class EditThread
                 $this->assertCan($this->actor, 'createThreadPaid');
             }
         }
-        // 非文字贴可设置价格
-        if (isset($attributes['price']) && $thread->type !== Thread::TYPE_OF_TEXT) {
+
+        // 文字贴与问答帖不能修改价格
+        if (
+            isset($attributes['price'])
+            && $thread->type !== Thread::TYPE_OF_TEXT
+            && $thread->type !== Thread::TYPE_OF_QUESTION
+        ) {
             $this->assertCan($this->actor, 'edit', $thread);
 
             // 是否有权发布付费贴

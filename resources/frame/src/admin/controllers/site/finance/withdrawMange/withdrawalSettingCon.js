@@ -17,13 +17,16 @@ export default {
     }
   },
   methods:{
+    /*
+    * 提交提现设置
+    * */
     submitClick(){
       this.subLoading = true;
       this.postWithdrawalSettings();
     },
 
     /*
-    * 请求接口
+    * 提交请求
     * */
     postWithdrawalSettings(){
       this.appFetch({
@@ -88,6 +91,9 @@ export default {
         this.$message.error('操作失败！');
       })
     },
+    /*
+    * 获取提现设置数据
+    * */
     getForum(){
       this.appFetch({
         url:'forum',

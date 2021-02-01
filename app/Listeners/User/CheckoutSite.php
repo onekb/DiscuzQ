@@ -34,11 +34,12 @@ class CheckoutSite
     }
 
     /**
+     * 启用site_manage，弃用site_close
      * @param Logind $event
      * @throws \Discuz\Auth\Exception\PermissionDeniedException
      */
     public function handle(Logind $event)
     {
-        (bool)$this->settings->get('site_close') && $this->assertAdmin($event->user);
+//        (bool)$this->settings->get('site_close') && $this->assertAdmin($event->user);
     }
 }

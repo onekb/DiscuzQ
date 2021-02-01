@@ -28,6 +28,7 @@ use App\Models\Group;
 use App\Models\GroupPaidUser;
 use App\Models\User;
 use App\Models\UserActionLogs;
+use App\Models\UserSignInFields;
 use App\Notifications\Messages\Database\GroupMessage;
 use App\Notifications\System;
 use App\Repositories\UserRepository;
@@ -373,10 +374,19 @@ class UpdateUser
         $logMsg = Arr::get($attributes, 'refuse_message', '');
 
         // 审核后系统通知事件
+        $this->setRefuseMessage($user,$logMsg);
         $this->events->dispatch(new ChangeUserStatus($user, $logMsg));
 
         // 记录用户状态操作日志
         UserActionLogs::writeLog($this->actor, $user, User::enumStatus($status), $logMsg);
+    }
+
+    //记录拒绝原因
+    private function setRefuseMessage(User &$user,$refuseMessage){
+        if ($user->status == User::STATUS_REFUSE) {
+            $user->reject_reason = $refuseMessage;
+            $user->save();
+        }
     }
 
     /**

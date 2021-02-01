@@ -41,7 +41,7 @@
 
         <el-table-column label="字段排序">
           <template slot-scope="scope">
-            <el-input type="number" clearable v-model="scope.row.sort" />
+            <el-input type="number" @input="changInput" @keydown.native="channelInputLimit" clearable v-model="scope.row.sort" />
           </template>
         </el-table-column>
 

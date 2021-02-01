@@ -101,12 +101,18 @@ export default {
         method: 'get',
         data: {},
       }).then(res => {
-        if (res.readdata.length < 1) {
+        let arr = [];
+        res.readdata.forEach(element => {
+          if (element._data.status === 1) {
+            arr.push(element);
+          }
+        });
+        if (res.readdata.length > 0 && arr.length > 0) {
+          this.extendsBtn = false;   
+        } else {
           this.extensionOn = false;
           this.extendsBtn = true;
           this.extendConfing();
-        } else {
-          this.extendsBtn = false;
         }
       }) 
     },

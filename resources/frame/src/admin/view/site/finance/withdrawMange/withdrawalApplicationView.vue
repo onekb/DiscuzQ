@@ -1,5 +1,6 @@
 <template>
     <div class="withdrawal-application-box">
+      <!-- 提现申请 搜索条件 -->
       <div class="withdrawal-application__search-box">
         <div class="withdrawal-application__search-condition">
           <span class="withdrawal-application__search-condition__title">流水号：</span>
@@ -41,7 +42,7 @@
           <el-button  type="primary" size="medium" @click="searchClick">搜索</el-button>
         </div>
       </div>
-
+      <!-- 提现申请 列表 -->
       <div class="withdrawal-application-table">
         <el-table
           :data="tableData"
@@ -116,12 +117,11 @@
                 </div>
               </div>
               <p v-else>{{auditstatus(scope.row._data.cash_status)}}</p>
-              <!--<el-button v-if="scope.row._data.cash_status !== '1'" type="text" size="small">审核</el-button>-->
             </template>
           </el-table-column>
 
         </el-table>
-
+        <!-- 提现申请 分页 -->
         <Page
           v-if="pageCount > 1"
           @current-change="handleCurrentChange"

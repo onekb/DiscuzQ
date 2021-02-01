@@ -23,9 +23,11 @@ use App\Models\Order;
 use App\Models\UserWalletCash;
 use Carbon\Carbon;
 use Discuz\Console\AbstractCommand;
+use Discuz\Qcloud\QcloudStatisticsTrait;
 
 class FinanceCreateCommand extends AbstractCommand
 {
+    use QcloudStatisticsTrait;
     protected $signature = 'finance:create';
 
     protected $description = 'Count the financial situation of the previous day.';
@@ -41,12 +43,12 @@ class FinanceCreateCommand extends AbstractCommand
         $this->finance = $finance;
         $this->order = $order;
         $this->userWalletCash = $userWalletCash;
-
         parent::__construct();
     }
 
     public function handle()
     {
+        $this->postStatisData();
         $date = Carbon::parse('-1 day')->toDateString();
         $dateTimeBegin = $date . ' 00:00:00';
         $dateTimeEnd = $date . ' 23:59:59';
@@ -72,7 +74,7 @@ class FinanceCreateCommand extends AbstractCommand
                 'withdrawal_profit' => $withdrawal_profit
             ]
         );
-
         $this->info($date . ' ' . $this->signature);
+        $this->uinStatis();
     }
 }

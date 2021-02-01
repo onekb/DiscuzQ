@@ -165,4 +165,18 @@ class UserSignInFields extends DzqModel
             ->get()->all();
     }
 
+    public function getUserRejectReason($userId)
+    {
+        $data = self::query()->where(['user_id' => $userId, 'status' => self::STATUS_REJECT])->get();
+        if ($data->isEmpty()) {
+            return false;
+        }
+        $reason = [];
+        $data->each(function (UserSignInFields $item) use (&$reason) {
+            $remark = $item->remark;
+            !in_array($remark, $reason) && $reason[] = $remark;
+        });
+        return $reason;
+    }
+
 }

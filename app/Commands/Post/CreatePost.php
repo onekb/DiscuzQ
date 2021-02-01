@@ -152,6 +152,22 @@ class CreatePost
             // 非首帖，检查是否有权回复
             $this->assertCan($this->actor, 'reply', $thread);
 
+            // 回复中回复，确保回复在同一主题下
+            if (! empty($this->commentPostId)) {
+                /** @var Post $comment */
+                $comment = $post->newQuery()
+                    ->where('id', $this->commentPostId)
+                    ->where('thread_id', $thread->id)
+                    ->first(['user_id', 'reply_post_id']);
+
+                $this->commentUserId = $comment->user_id;
+                $this->replyPostId = $comment->reply_post_id;
+
+                if (! $this->commentUserId) {
+                    throw new ModelNotFoundException;
+                }
+            }
+
             // 回复他人
             if (! empty($this->replyPostId)) {
                 // 被回复人，确保回复在同一主题下
@@ -161,18 +177,6 @@ class CreatePost
                     ->value('user_id');
 
                 if (! $this->replyUserId) {
-                    throw new ModelNotFoundException;
-                }
-            }
-
-            // 回复中回复，确保回复在同一主题下
-            if (! empty($this->commentPostId)) {
-                $this->commentUserId = $post->newQuery()
-                    ->where('id', $this->commentPostId)
-                    ->where('thread_id', $thread->id)
-                    ->value('user_id');
-
-                if (! $this->commentUserId) {
                     throw new ModelNotFoundException;
                 }
             }

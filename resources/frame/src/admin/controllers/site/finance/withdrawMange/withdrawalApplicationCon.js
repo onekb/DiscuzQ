@@ -9,8 +9,8 @@ import webDb from 'webDbHelper';
 export default {
   data:function () {
     return {
-      tableData: [],
-      cashSn:'',                  //流水号
+      tableData: [],              //列表数据
+      cashSn:'',                  //搜索-流水号
       pickerOptions: {
         shortcuts: [{
           text: '最近一周',
@@ -37,7 +37,7 @@ export default {
             picker.$emit('pick', [start, end]);
           }
         }]
-      },
+      },                          //搜索-申请时间
       applicationTime: ['',''],   //申请时间
       operationUser:'',           //操作用户
       statusOptions: [
@@ -65,20 +65,21 @@ export default {
           value: '6',
           label: '打款失败'
         }
-      ],
+      ],                          //搜索-状态
       statusSelect: '1',          //状态选中
       visible:false,
 
       total:0,                    //总数
       pageCount:0,                //总页数
       currentPaga:1,               //第几页
-      openid: '',
-      type1: '微信零钱',
-      type2: '人工打款',
+      type1: '微信零钱',            //打款方式-微信零钱
+      type2: '人工打款',            //打款方式-人工打款
     }
   },
   methods:{
-
+    /**
+     * 状态码转换为中文
+     */
     cashStatus(status,data){
       switch (status){
         case 1:
@@ -104,10 +105,12 @@ export default {
           return "打款失败，原因：" + data.error_message;
           break;
         default:
-          //获取状态失败，请刷新页面
           return "未知状态";
       }
     },
+    /**
+     * 收款账号
+     */
     accountNumber(num) {
       if (num._data.cash_type === 1) {
         if (num.wechat) {
@@ -128,6 +131,9 @@ export default {
         return false;
       }
     },
+    /**
+     * 操作-不通过
+     */
     noReviewClick(id){
       let data = {id:[]};
       this.$MessageBox.prompt('', '提示', {
@@ -142,14 +148,18 @@ export default {
       }).catch((err) => {
       });
     },
-
+     /**
+     * 操作-通过
+     */
     reviewClick(id){
       let data = {id:[]};
       data.id.push(id);
       data.status = 2;
       this.postReview(data);
     },
-
+     /**
+     * 操作-标记已打款
+     */
     reviewClicks(id){
       let data = {id:[]};
       data.id.push(id);
@@ -177,11 +187,12 @@ export default {
           return "打款失败"
           break;
         default:
-          //获取状态失败，请刷新页面
           return "未知状态";
       }
     },
-
+    /**
+     * 提现申请搜索
+     */
     searchClick(){
       if (this.applicationTime == null){
         this.applicationTime = ['','']
@@ -192,7 +203,9 @@ export default {
       this.currentPaga = 1;
       this.getReflectList();
     },
-
+    /*
+    * 切换页码
+    * */
     handleCurrentChange(val){
       this.currentPaga = val;
       this.getReflectList();
@@ -206,7 +219,7 @@ export default {
     },
 
     /*
-    * 请求接口
+    * 获取提现申请列表
     * */
     getReflectList(){
       this.appFetch({
@@ -235,6 +248,9 @@ export default {
       }).catch(err=>{
       })
     },
+    /*
+    * 提交操作
+    * */
     postReview(data){
       this.appFetch({
         url:'review',

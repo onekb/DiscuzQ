@@ -63,7 +63,7 @@
           </CardRow>
         </Card>
 
-        <Card header="实名认证生份证号：">
+        <Card header="实名认证身份证号：">
           <CardRow>
             <el-input v-model="userPhone"></el-input>
           </CardRow>

@@ -18,7 +18,9 @@
 
 namespace App\Listeners\User;
 
+use App\Models\User;
 use Discuz\Auth\Exception\PermissionDeniedException;
+use Discuz\Http\DiscuzResponseFactory;
 
 class BanLogin
 {
@@ -30,7 +32,17 @@ class BanLogin
                 throw new PermissionDeniedException('ban_user');
                 break;
             case 3:
-                throw new PermissionDeniedException('validate_reject');
+                $response = [
+                    'errors' => [
+                        [
+                            'status' => '401',
+                            'code' => 'validate_reject',
+                            'data' => User::getUserReject($user->id)
+                        ]
+                    ]
+                ];
+                return DiscuzResponseFactory::JsonResponse($response)->withStatus(401);
+//                throw new PermissionDeniedException('validate_reject');
                 break;
             case 4:
                 throw new PermissionDeniedException('validate_ignore');

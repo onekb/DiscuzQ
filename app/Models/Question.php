@@ -293,8 +293,8 @@ class Question extends Model
      */
     private function clearThreadCache()
     {
-        $cache = app(Cache::class);
+        $cache = app('cache');
         //删除帖子缓存
-        $cache->delete(CacheKey::THREAD_RESOURCE_BY_ID . $this->thread_id);
+        $cache->forget(CacheKey::THREAD_RESOURCE_BY_ID . $this->thread_id);
     }
 }

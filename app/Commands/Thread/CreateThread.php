@@ -130,13 +130,15 @@ class CreateThread
 
         // 非文字帖可设置价格
         if ($thread->type !== Thread::TYPE_OF_TEXT) {
-            // 是否有权发布付费贴
-            if ($thread->price = (float) Arr::get($attributes, 'price', 0)) {
+            $thread->price = (float) Arr::get($attributes, 'price', 0);
+
+            // 非问答帖检查「发布付费内容」权限
+            if ($thread->price > 0 && $thread->type !== Thread::TYPE_OF_QUESTION) {
                 $this->assertCan($this->actor, 'createThreadPaid');
             }
 
             // 付费长文帖可设置免费阅读字数
-            if ($thread->type === Thread::TYPE_OF_LONG && $thread->price) {
+            if ($thread->price > 0 && $thread->type === Thread::TYPE_OF_LONG) {
                 $thread->free_words = (float) Arr::get($this->data, 'attributes.free_words', 0);
             }
         }

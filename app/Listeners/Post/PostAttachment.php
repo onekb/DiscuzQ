@@ -108,12 +108,10 @@ class PostAttachment
     {
         $post = $event->post;
         $actor = $event->actor;
+        $content = Arr::get($event->data, 'attributes.content');
 
         // 长文帖从内容中解析图片 ID，否则根据传入关系处理附件
-        if (
-            $post->thread->type === Thread::TYPE_OF_LONG
-            && ($post->wasRecentlyCreated || $post->wasChanged('content'))
-        ) {
+        if ($post->thread->type === Thread::TYPE_OF_LONG && ! is_null($content)) {
             $ids = Utils::getAttributeValues($post->getRawOriginal('content'), 'IMG', 'title');
         } elseif (! Arr::has($event->data, 'relationships.attachments.data')) {
             return;

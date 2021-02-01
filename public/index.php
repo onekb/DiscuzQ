@@ -16,12 +16,17 @@
  * limitations under the License.
  */
 
-define('DISCUZ_START', microtime(true));
+if (!isset($_SERVER['HTTP_API_SCOPE'])) {
+    define('DISCUZ_START', microtime(true));
 
-require __DIR__ . '/../vendor/autoload.php';
+    require __DIR__ . '/../vendor/autoload.php';
 
-$app = new Discuz\Foundation\Application(dirname(__DIR__));
+    $app = new Discuz\Foundation\Application(dirname(__DIR__));
 
-$app->singleton(Discuz\Http\Server::class, Discuz\Http\Server::class);
+    $app->singleton(Discuz\Http\Server::class, Discuz\Http\Server::class);
 
-$app->make(Discuz\Http\Server::class)->listen();
+    $app->make(Discuz\Http\Server::class)->listen();
+} else {
+    require __DIR__ . '/../vendor/lumen/public/index.php';
+}
+

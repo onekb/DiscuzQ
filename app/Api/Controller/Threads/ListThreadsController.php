@@ -162,7 +162,9 @@ class ListThreadsController extends AbstractListController
         $actor = $request->getAttribute('actor');
         $params = $request->getQueryParams();
         $filter = $this->extractFilter($request);
-
+        if (!(isset($filter['viewCountGt']) || isset($filter['viewCountLt']) || isset($filter['postCountGt']) || isset($filter['postCountLt']))) {
+            app()->instance('isCalled', true);
+        }
         // 获取推荐到站点信息页数据时 不检查权限
         if (Arr::get($filter, 'isSite', '') !== 'yes') {
             // 没有任何一个分类的查看权限时，判断是否有全局权限
@@ -180,7 +182,14 @@ class ListThreadsController extends AbstractListController
             $params['userRole'] = $group['id'];
         }
         $cacheKey = CacheKey::LIST_THREAD_HOME_INDEX . md5(json_encode($params, 256));
-        $data = $this->cache->get($cacheKey);
+        $keys = $this->cache->get(CacheKey::LIST_THREAD_KEYS);
+        $data = null;
+        if(!empty($keys)){
+            $keys = json_decode($keys,true);
+            if($keys && in_array($cacheKey,$keys)){
+                $data = $this->cache->get($cacheKey);
+            }
+        }
         if (!empty($data)) {
             $obj  = unserialize($data);
             $metaLinks = $obj->getMetaLinks();
@@ -272,7 +281,7 @@ class ListThreadsController extends AbstractListController
         }
         if ($canCache) {
             $this->threadCache->setThreads($threads);
-            $this->cache->put($cacheKey, serialize($this->threadCache), 1800);
+            $this->cache->put($cacheKey, serialize($this->threadCache), 1800)&&
             $this->appendCache(CacheKey::LIST_THREAD_KEYS, $cacheKey, 1800);
         }
         return $threads;
@@ -643,7 +652,6 @@ class ListThreadsController extends AbstractListController
             ->whereIn('thread_id', $threadIds)
             ->whereNull('deleted_at')
             ->where('is_first', false)
-            ->where('is_comment', false)
             ->where('is_approved', Post::APPROVED)
             ->orderBy('updated_at', 'desc')
             ->get()
