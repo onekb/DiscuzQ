@@ -18,6 +18,7 @@
 
 namespace App\Api\Controller\Cache;
 
+use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Http\DiscuzResponseFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -25,9 +26,12 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class CacheController implements RequestHandlerInterface
 {
+    use AssertPermissionTrait;
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        $actor = $request->getAttribute('actor');
+        $this->assertAdmin($actor);
         $cache = app('cache');
         $cache->clear();
         return DiscuzResponseFactory::JsonResponse(['status' => "SUCCESS"]);
