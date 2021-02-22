@@ -25,6 +25,29 @@
 
   .cont-class-table {
     margin-top: 15PX;
+    /*二级分类*/ 
+    .el-table {
+      .el-table__row td:nth-child(2) .cell{
+        position: relative;
+        display:flex;
+        align-items:center;
+        .el-table__expand-icon{
+          position: absolute;
+          left:-2PX;
+          top:10PX;
+          .el-icon-arrow-right{
+            color:#333;
+          }
+        }
+      }
+      .el-table__row td:last-child .cell .el-button{
+          width:60PX;
+          text-align:center;
+      }
+      .el-table__row--level-1 td:last-child .cell .el-button{
+          color:$commentColor;
+      }
+    }
   }
 }
 
@@ -517,6 +540,11 @@
           width: 100%;
           margin-right: 10PX;
         }
+
+        .el-cascader{
+          width: 100%;
+          margin-right: 10PX;
+        }
       }
 
       div:first-of-type {
@@ -719,6 +747,11 @@
 
         .el-select--medium {
           //width: 140PX;
+          width: 100%;
+          margin-right: 10PX;
+        }
+
+        .el-cascader{
           width: 100%;
           margin-right: 10PX;
         }

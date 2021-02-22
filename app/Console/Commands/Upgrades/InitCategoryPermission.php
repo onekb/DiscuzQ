@@ -9,7 +9,7 @@ namespace App\Console\Commands\Upgrades;
 
 use App\Models\Category;
 use App\Models\Group;
-use App\Models\GroupPermission;
+use App\Models\Permission;
 use Discuz\Console\AbstractCommand;
 use Illuminate\Support\Collection;
 
@@ -23,7 +23,7 @@ class InitCategoryPermission extends AbstractCommand
     /**
      * @var string
      */
-    protected $description = '初始化分类权限';
+    protected $description = 'Initialize category permissions.';
 
     /**
      * {@inheritdoc}
@@ -61,7 +61,7 @@ class InitCategoryPermission extends AbstractCommand
             ]);
         }, $guestPermission);
 
-        GroupPermission::query()->insertOrIgnore($permissions->toArray());
+        Permission::query()->insertOrIgnore($permissions->toArray());
 
         $this->info('success');
     }

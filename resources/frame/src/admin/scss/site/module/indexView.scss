@@ -229,10 +229,15 @@
           span{
             color: $descColor;
             cursor: pointer;
+            /*IFTRUE_pay*/
+            margin-right: 20PX;
+            /*FITRUE_pay*/
           }
+          /*IFTRUE_default*/ 
           span:first-of-type{
             margin-right: 20PX;
           }
+          /*FITRUE_deafult*/ 
 
           .is-active{
             color: $main;

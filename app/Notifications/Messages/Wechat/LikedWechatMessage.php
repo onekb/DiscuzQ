@@ -2,18 +2,25 @@
 
 namespace App\Notifications\Messages\Wechat;
 
-use Carbon\Carbon;
+use App\Models\Post;
+use App\Models\Thread;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Contracts\Routing\UrlGenerator;
-use Illuminate\Support\Arr;
 
+/**
+ * Class LikedWechatMessage
+ * (内容点赞通知)
+ *
+ * @package App\Notifications\Messages\Wechat
+ */
 class LikedWechatMessage extends SimpleMessage
 {
-    protected $post;
-
     protected $actor;
 
-    protected $data;
+    /**
+     * @var Post
+     */
+    protected $post;
 
     /**
      * @var UrlGenerator
@@ -27,28 +34,19 @@ class LikedWechatMessage extends SimpleMessage
 
     public function setData(...$parameters)
     {
-        [$firstData, $actor, $post, $data] = $parameters;
+        [$firstData, $actor, $post] = $parameters;
         // set parent tpl data
         $this->firstData = $firstData;
 
         $this->actor = $actor;
         $this->post = $post;
-        $this->data = $data;
 
         $this->template();
     }
 
     public function template()
     {
-        $build =  [
-            'title' => $this->getTitle(),
-            'content' => $this->getContent($this->data),
-            'raw' => Arr::get($this->data, 'raw'),
-        ];
-
-        Arr::set($build, 'raw.tpl_id', $this->firstData->id);
-
-        return $build;
+        return ['content' => $this->getWechatContent()];
     }
 
     protected function titleReplaceVars()
@@ -58,23 +56,40 @@ class LikedWechatMessage extends SimpleMessage
 
     public function contentReplaceVars($data)
     {
-        $message = Arr::get($data, 'message', '');
-        $threadId = Arr::get($data, 'raw.thread_id', 0);
-        $actorName = Arr::get($data, 'raw.actor_username', '');  // 发送人姓名
+        $threadTitle = $this->post->thread->getContentByType(Thread::CONTENT_LENGTH, true);
 
-        // 主题ID为空时跳转到首页
-        if (empty($threadId)) {
-            $threadUrl = $this->url->to('');
-        } else {
-            $threadUrl = $this->url->to('/topic/index?id=' . $threadId);
-        }
+        /**
+         * 设置父类 模板数据
+         * @parem $user_id 点赞人用户ID
+         * @parem $user_name 点赞人姓名
+         * @parem $thread_id 主题ID （可用于跳转参数）
+         * @parem $thread_title 主题标题/首帖内容 (如果有title是title，没有则是首帖内容)
+         * @parem $post_content 帖子内容
+         */
+        $this->setTemplateData([
+            '{$user_id}'             => $this->actor->id,
+            '{$user_name}'           => $this->actor->username,
+            '{$thread_id}'           => $this->post->thread->id,
+            '{$thread_title}'        => $this->strWords($threadTitle),
+            '{$post_content}'        => $this->strWords($this->post->content),
+        ]);
 
-        return [
-            $actorName,
-            $this->strWords($message),
-            Carbon::now()->toDateTimeString(),
-            $threadUrl,
+        /**
+         * build data
+         *
+         * @template array $build
+         * @parem 'first' => '{user_name} {option} 了你',
+         * @parem 'keyword1' => '{xxx}',
+         * @parem 'keyword2' => '{xxx}',
+         * @parem 'keyword3' => '{xxx}',
+         * @parem 'remark' => '点击查看',
+         * @parem 'redirect_url' => '{to_url}',
+         */
+        $expand = [
+            'redirect_url' => $this->url->to('/topic/index?id=' . $this->post->thread_id),
         ];
+
+        return $this->compiledArray($expand);
     }
 
 }

@@ -100,6 +100,8 @@ class UpdatePostController extends AbstractResourceController
                 ->get()
         );
 
+        $post->rewards = floatval(sprintf('%.2f', $post->getPostReward()));
+
         return $post->loadMissing($this->extractInclude($request));
     }
 }

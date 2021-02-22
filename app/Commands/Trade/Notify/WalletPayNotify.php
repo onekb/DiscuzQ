@@ -102,6 +102,20 @@ class WalletPayNotify
                     $change_type = UserWalletLog::TYPE_EXPEND_ATTACHMENT;
                     $change_type_lang = 'wallet.expend_attachment';
                     break;
+                case Order::ORDER_TYPE_TEXT:
+                    $change_type = UserWalletLog::TYPE_TEXT_FREEZE;
+                    $change_type_lang = 'wallet.freeze_text';
+                    // 钱包&钱包日志 增加文字帖红包冻结金额数
+                    $userWallet->freeze_amount = $userWallet->freeze_amount + $this->data['amount'];
+                    $freezeAmount = $this->data['amount'];
+                    break;
+                case Order::ORDER_TYPE_LONG:
+                    $change_type = UserWalletLog::TYPE_LONG_FREEZE;
+                    $change_type_lang = 'wallet.freeze_long';
+                    // 钱包&钱包日志 增加长文帖红包冻结金额数
+                    $userWallet->freeze_amount = $userWallet->freeze_amount + $this->data['amount'];
+                    $freezeAmount = $this->data['amount'];
+                    break;
                 default:
                     $change_type = $this->data['type'];
                     $change_type_lang = '';

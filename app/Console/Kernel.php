@@ -24,6 +24,8 @@ use App\Console\Commands\FinanceCreateCommand;
 use App\Console\Commands\InviteExpireCommand;
 use App\Console\Commands\QueryWechatOrderConmmand;
 use App\Console\Commands\QuestionClearCommand;
+use App\Console\Commands\ThreadRewardExpireCommand;
+use App\Console\Commands\RedPacketExpireCommand;
 use Discuz\Console\Kernel as ConsoleKernel;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -36,6 +38,8 @@ class Kernel extends ConsoleKernel
         QueryWechatOrderConmmand::class,
         InviteExpireCommand::class,
         QuestionClearCommand::class,
+        ThreadRewardExpireCommand::class,
+        RedPacketExpireCommand::class
     ];
 
     /**
@@ -49,10 +53,13 @@ class Kernel extends ConsoleKernel
         $schedule->command('finance:create')->daily();
         $schedule->command('order:query')->everyMinute()->withoutOverlapping();
         $schedule->command('invite:expire')->everyMinute()->withoutOverlapping();
+        $schedule->command('reward:expire')->everyMinute()->withoutOverlapping();
+        $schedule->command('redPacket:expire')->everyMinute()->withoutOverlapping();
 
         // 维护清理
         $schedule->command('clear:attachment')->daily();
         $schedule->command('clear:video')->daily();
         $schedule->command('clear:question')->daily();
+        $schedule->command('clear:thread_draft')->daily();
     }
 }

@@ -24,6 +24,7 @@ use App\Models\UserWalletLog;
 use App\Repositories\UserWalletLogsRepository;
 use Discuz\Api\Controller\AbstractListController;
 use Discuz\Auth\AssertPermissionTrait;
+use Discuz\Auth\Exception\PermissionDeniedException;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Database\Eloquent\Builder;
@@ -133,7 +134,12 @@ class ListUserWalletLogsController extends AbstractListController
         $limit = $this->extractLimit($request);
         $offset = $this->extractOffset($request);
         $include = $this->extractInclude($request);
-
+        //如果用户不是管理员，那么就只能看自己的提现记录
+        if(!$actor->isAdmin() && !empty($filter['user'])){
+            if($filter['user'] != $actor->id){
+                throw new PermissionDeniedException;
+            }
+        }
         $walletLogs = $this->search($actor, $filter, $sort, $limit, $offset);
 
         $document->addPaginationLinks(

@@ -115,7 +115,7 @@
 }
 
 /**
-  站点信息
+  站点设置 - 站点信息
  */
 .site-set-box {
 //   /*.site-set__logo{
@@ -237,6 +237,73 @@
   }
 }
 
+/*
+* 站点设置  - 主题设置
+*/
+.site-theme-box{
+  padding: 20PX;
+  font-size: 14PX;
+  color: #333;
+  .site-theme-head{
+    margin-bottom: 10PX;
+  }
+  .site-theme-content{
+    display: flex;
+    padding-bottom: 20PX;
+    margin-bottom: 20PX;
+    border-bottom: 1PX solid #eee;
+    .left{
+      flex: 1;
+      .el-radio{
+        position: relative;
+        width: 300PX;
+        height: 20PX;
+        padding-top: 255PX;
+        text-align: center;
+        overflow: hidden;
+        .theme-img{
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 240px;
+          object-fit: cover;
+        }
+      }
+    }
+    .right{
+      flex-basis: 400PX;
+      align-self: center;
+      line-height: 20PX;
+      text-indent: 2em;
+      letter-spacing: 2PX;
+    }
+  }
+  .preview-box{
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: rgba(0,0,0,.7);
+    width: 100%;
+    height: 100%;
+    .preview-img-wrap{
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      margin: auto;
+      width: 100%;
+      height: calc(100% - 80PX);
+      overflow: auto;
+    }
+    .preview-img{
+      width: 100%;
+      object-fit: cover;
+    }
+  }
+}
+
 .card-radio-con .card-row-lf {
   padding-top: 8PX;
   line-height: 20PX;
@@ -245,6 +312,174 @@
 .elinput{
   margin: 0 10PX;
 }
+
+/*IFTRUE_pay*/
+/*
+* 站点设置  - 功能设置
+*/
+.site-function-set-box {
+
+  .card-row-box .card-row-lf{
+      padding-top: 8PX;
+      line-height: 20PX;
+    }
+
+  .publishing-title {
+    .card-row-rf span {
+      color:#303133;
+    }
+    &.other {
+      margin-top: 30px;
+    }
+  } 
+
+  .el-checkbox .el-checkbox__inner {
+    border-color:#666;
+  }
+
+  .el-button {
+    margin:30PX 0;
+  }
+}
+
+/*
+* 站点设置  - 首页数据排序配置
+*/
+.site-sort-set-box{
+  .sort-desc{
+    line-height:20PX;
+    padding:20PX 0;
+    color:$titleColor;
+  }
+  .el-card{
+    border:none;
+    .sort-class-item{
+      margin-top:10PX;
+      padding-bottom:10PX;
+      border-bottom:1PX solid #EBEEF5;
+      .el-checkbox{
+        width:30%;
+      }
+    }
+  }
+  .card-box{
+    .card-box__header{
+      padding:10PX 0;
+      border-bottom:1PX solid #e5e5e5;
+    }
+    .card-row-box {
+      .card-row-lf {
+        position:relative;
+        .sort-item-wrap{
+          display: flex;
+          justify-content:space-between;
+          align-items:center;
+          .el-input{
+            width:224PX;
+          }
+        }
+        .el-checkbox{
+          color:$descColor;
+        }
+        .is-checked{
+          color:$selectFontColor;
+        }
+        .sort-select-btn{
+          position: absolute;
+          left:100%;
+          top:0;
+          width:100PX;
+          line-height:40PX;
+          padding-left:14PX;
+          color:$selectColor;
+          cursor:pointer;
+        }
+      }
+    }
+  }
+  // 设置深色底边框 
+  .sort-border-bottom{
+    border-color:#e5e5e5;
+    margin-bottom:20PX;
+    .el-select{
+      overflow: hidden;
+      .el-input__suffix{
+        display:none;
+        width:0;
+      }
+    }
+  }
+  // 用户、话题选择
+  .select-box{
+    .el-tag{
+      margin:10PX;
+    }
+    .recommend-tag{
+      cursor: pointer;
+    }
+    .el-button{
+      margin-top:30PX;
+    }
+  }
+  // 智能排序开关
+  .sort-switch-box{
+    display:flex;
+    justify-content: flex-start;
+    align-items:center;
+    margin-bottom:30PX;
+    .sort-switch{
+      flex-basis:180PX;
+    }
+    .el-switch{
+      margin-left:20PX;
+      transform: scale(1.5);
+    }
+    .sort-switch-desc{
+      line-height:20PX;
+      color:$descColor;
+    }
+  }
+}
+
+/**
+  全局 - 操作日志
+ */
+.operation-log-box{
+  padding:20PX 0;
+  .log-search{
+    display:flex;
+    align-items:center;
+    padding-bottom:10PX;
+    margin-bottom:20PX;
+    border-bottom: 1PX solid #E5E5E5;
+    .log-search-item{
+      display:flex;
+      align-items:center;
+      width:22%;
+      margin-right:15PX;
+    }
+    .log-search-time{
+      width:40%;
+      color:$commentColor;
+      .line{
+        width:30PX;
+        height:1px;
+        margin:0 10PX;
+        background:#333;
+      }
+    }
+    .log-search-title{
+      width:70PX;
+    }
+    .el-input{
+      width:160PX;
+    }
+    .el-button{
+      width:80PX;
+    }
+  }
+}
+/*FITRUE_pay*/
 
 /**
   注册设置
@@ -616,4 +851,54 @@
   .card-row-rf {
     padding: 0 !important;
   }
+}
+.system-notice {
+  .system-title {
+    color: #303133;
+    font-size: 16PX;
+    margin-top : 17PX;
+    font-weight: 600;
+  }
+}
+.applets {
+  display: flex;
+  flex: 2;
+  justify-content: center;
+  align-items: center;
+  padding-top: 20PX;
+}
+.applets-input {
+  // padding-left: 152PX;
+}
+.applets-title {
+  width:134PX;
+}
+.applets-titles {
+  width:134PX;
+  // margin-left:72PX;
+}
+.iconicon_delect {
+  // width: 40Px;
+  // height: 40Px;
+  font-size: 15.5PX !important;
+  color: #336699;
+  padding-left: 7PX;
+}
+.table-cont-add-box {
+  border-bottom: 0PX !important;
+}
+.table-cont-add-box p {
+  margin-left: 0PX !important;
+}
+.applets-box {
+  background:#F9F9F9;
+}
+.table-add {
+  padding-left:154PX;
+}
+.applets-box-content {
+  padding: 15PX 0 24PX 12PX;
+}
+.applets-radio {
+  width: 100%;
 }

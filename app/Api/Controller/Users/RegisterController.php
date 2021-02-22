@@ -22,6 +22,7 @@ use App\Api\Serializer\TokenSerializer;
 use App\Commands\Users\GenJwtToken;
 use App\Commands\Users\RegisterUser;
 use App\Events\Users\RegisteredCheck;
+use App\Models\SessionToken;
 use App\Notifications\Messages\Wechat\RegisterWechatMessage;
 use App\Notifications\System;
 use App\Repositories\UserRepository;
@@ -29,6 +30,7 @@ use App\User\Bind;
 use Discuz\Api\Controller\AbstractCreateController;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
+use Discuz\Auth\Exception\RegisterException;
 use Discuz\Contracts\Setting\SettingsRepository;
 use Discuz\Foundation\Application;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -78,15 +80,50 @@ class RegisterController extends AbstractCreateController
         $attributes = Arr::get($request->getParsedBody(), 'data.attributes', []);
         $attributes['register_ip'] = ip($request->getServerParams());
         $attributes['register_port'] = Arr::get($request->getServerParams(), 'REMOTE_PORT', 0);
+        $type = intval(Arr::get($attributes, 'register_type'));
+        //新增参数，注册类型
+        $registerType = $this->settings->get('register_type');
+
+        //若参数与配置不一致，抛异常不再执行
+        if($type != $registerType) {
+            throw new RegisterException('Register Type Error');
+        }
+
+        /**手机号模式下,或无感模式下只有微信可用**/
+        /**公众号使用**/
+        $token = Arr::get($attributes, 'token');
+        /**小程序使用**/
+        $js_code = Arr::get($attributes, 'js_code');
+        $iv = Arr::get($attributes, 'iv');
+        $encryptedData = Arr::get($attributes, 'encryptedData');
+
+        //手机号或者无感模式下，若公众号或小程序的参数都不存在，则不可使用该接口
+        if($registerType == 1 || $registerType == 2) {
+            if(empty($token) && empty($js_code) && empty($iv) && empty($encryptedData)) {
+                throw new RegisterException('Register Method Error');
+            }
+            if(! empty($token)) {
+                //校验token
+                if(empty(SessionToken::get($token))) {
+                    throw new RegisterException('Register Token Error');
+                }
+            }
+            /**小程序使用，三个参数必须都存在才可以使用**/
+            if((! empty($js_code) && (empty($iv) || empty($encryptedData)))  ||
+                (! empty($iv) && (empty($js_code) || empty($encryptedData))) ||
+                (! empty($encryptedData) && (empty($js_code) || empty($iv)))
+            ) {
+                throw new RegisterException('Register Mini Token Error');
+            }
+        }
 
         $user = $this->bus->dispatch(
             new RegisterUser($request->getAttribute('actor'), $attributes)
         );
 
         $rebind = Arr::get($attributes, 'rebind', 0);
-
         //绑定公众号
-        if ($token = Arr::get($attributes, 'token')) {
+        if ($token) {
             $this->bind->withToken($token, $user, $rebind);
             // 判断是否开启了注册审核
             if (!(bool)$this->settings->get('register_validate')) {
@@ -96,17 +133,15 @@ class RegisterController extends AbstractCreateController
         }
 
         //绑定小程序信息
-        $js_code = Arr::get($attributes, 'js_code');
-        $iv = Arr::get($attributes, 'iv');
-        $encryptedData = Arr::get($attributes, 'encryptedData');
         if ($js_code && $iv  && $encryptedData) {
             $this->bind->bindMiniprogram($js_code, $iv, $encryptedData, $rebind, $user);
         }
 
         //绑定手机号
-        if ($mobileToken = Arr::get($attributes, 'mobileToken')) {
-            $this->bind->mobile($mobileToken, $user);
-        }
+        /* if ($mobileToken = Arr::get($attributes, 'mobileToken')) {
+             $this->bind->mobile($mobileToken, $user);
+         }*/
+
         // 注册后的登录检查
         if (!(bool)$this->settings->get('register_validate')) {
             $this->events->dispatch(new RegisteredCheck($user));

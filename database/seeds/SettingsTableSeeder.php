@@ -95,6 +95,46 @@ class SettingsTableSeeder extends Seeder
                 'key' => 'miniprogram_video',   // 小程序视频开关：0 关闭，1 开启
                 'value' => 0,                   // 默认开启
                 'tag' => 'wx_miniprogram',
+            ],
+            [
+              'key' => 'site_open_sort',    // 是否开启智能排序，0不开启，1开启
+              'value' => 0,
+              'tag' => 'default',
+            ],
+            [
+              'key' => 'site_create_thread0',    // 允许发布文字帖(普通)，0为不允许，1为允许，以下一样
+              'value' => 1,
+              'tag' => 'default',
+            ],
+            [
+              'key' => 'site_create_thread1',    // 允许发布帖子(长文)
+              'value' => 1,
+              'tag' => 'default',
+            ],
+            [
+              'key' => 'site_create_thread2',    // 允许发布视频帖
+              'value' => 1,
+              'tag' => 'default',
+            ],
+            [
+              'key' => 'site_create_thread3',    //允许发布图片帖
+              'value' => 1,
+              'tag' => 'default',
+            ],
+            [
+              'key' => 'site_create_thread4',    // 允许发布语音帖
+              'value' => 1,
+              'tag' => 'default',
+            ],
+            [
+              'key' => 'site_create_thread5',    // 允许发布问答帖(悬赏帖)
+              'value' => 0,
+              'tag' => 'default',
+            ],
+            [
+              'key' => 'site_create_thread6',    // 允许发布商品帖
+              'value' => 1,
+              'tag' => 'default',
             ]
         ]);
     }

@@ -38,12 +38,19 @@ export default {
       ],  //操作列表
       operatingSelect: '',   //操作单选选择
 
+      // categoriesList: [
+      //   {
+      //     name: '所有分类',
+      //     id: 0
+      //   }
+      // ], //选择站点列表
       categoriesList: [
         {
-          name: '所有分类',
-          id: 0
+          label: '所有分类',
+          value: 0
         }
-      ], //选择站点列表
+      ],
+      moveCateList: [], // 批量移动的分类列表
       categoryId: '',        //选择站点选中
 
       toppingRadio: 2,       //是否置顶
@@ -92,7 +99,8 @@ export default {
       },
       searchData: {
         topicTypeId: '0',         //主题类型
-        categoryId: 0,            //主题分类ID
+        // categoryId: 0,            //主题分类ID
+        categoryId: [0],          //主题分类ID
         pageSelect: '10',         //每页显示数
         themeAuthor: '',          //主题作者
         themeKeyWords: '',        //主题关键词
@@ -276,7 +284,8 @@ export default {
       switch (this.operatingSelect) {
         case 'class':
           if (this.categoryId) {
-            relationships.category.data.id = this.categoryId;
+            // relationships.category.data.id = this.categoryId;
+            relationships.category.data.id = this.categoryId[this.categoryId.length -1];
           } else {
             selectStatus = true;
           }
@@ -414,7 +423,8 @@ export default {
           'filter[isDeleted]': 'no',
           'filter[isApproved]': '1',
           'filter[username]': searchData.themeAuthor,
-          'filter[categoryId]': searchData.categoryId,
+          // 'filter[categoryId]': searchData.categoryId,
+          'filter[categoryId]': searchData.categoryId[searchData.categoryId.length - 1],
           'page[number]': pageNumber,
           'page[size]': searchData.pageSelect,
           'filter[q]': searchData.themeKeyWords,
@@ -455,11 +465,41 @@ export default {
         if (res.errors) {
           this.$message.error(res.errors[0].code);
         } else {
-          res.data.forEach((item, index) => {
-            this.categoriesList.push({
-              name: item.attributes.name,
-              id: item.id
-            })
+          // res.data.forEach((item, index) => {
+          //   this.categoriesList.push({
+          //     name: item.attributes.name,
+          //     id: item.id
+          //   })
+          // })
+          res.data.forEach(item => {
+            if (item.attributes.children.length) {
+              const child = []
+              item.attributes.children.forEach(c => {
+                child.push({
+                  label: c.name,
+                  value: c.search_ids
+                })
+              })
+              this.categoriesList.push({
+                label: item.attributes.name,
+                value: item.attributes.search_ids,
+                children: child
+              })
+              this.moveCateList.push({
+                label: item.attributes.name,
+                value: item.id,
+                children: child
+              })
+            } else {
+              this.categoriesList.push({
+                label: item.attributes.name,
+                value: item.attributes.search_ids
+              })
+              this.moveCateList.push({
+                label: item.attributes.name,
+                value: item.id
+              })
+            }
           })
         }
       }).catch(err => {

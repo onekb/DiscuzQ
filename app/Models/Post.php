@@ -22,6 +22,7 @@ use App\Common\CacheKey;
 use App\Events\Post\Hidden;
 use App\Events\Post\Restored;
 use App\Events\Post\Revised;
+use App\Models\UserWalletLog;
 use App\Formatter\Formatter;
 use Carbon\Carbon;
 use DateTime;
@@ -63,10 +64,12 @@ use Illuminate\Support\Str;
  * @property Thread $thread
  * @property User $user
  * @property User $replyUser
+ * @property User $commentUser
  * @property User $deletedUser
  * @property PostMod $stopWords
- * @property Post replyPost
- * @property string parsedContent
+ * @property Post $replyPost
+ * @property Post $commentPost
+ * @property string $parsedContent
  * @package App\Models
  */
 class Post extends Model
@@ -147,8 +150,11 @@ class Post extends Model
     public function getSummaryAttribute()
     {
         $content = Str::of($this->content ?: '');
-
         if ($content->length() > self::SUMMARY_LENGTH) {
+            $subContent = $content->substr(0, self::SUMMARY_LENGTH);
+            if(stristr($subContent,'http')){
+                $content = Str::of(strip_tags($this->formatContent()));
+            }
             $content = static::$formatter->parse(
                 $content->substr(0, self::SUMMARY_LENGTH)->finish(self::SUMMARY_END_WITH)
             );
@@ -258,33 +264,28 @@ class Post extends Model
             'first_content' => '',
         ];
 
+        $this->content = $substr ? Str::of($this->content)->substr(0, $substr) : $this->content;
+        if ($parse) {
+            // 原文
+            $content = $this->content;
+        } else {
+            $content = $this->formatContent();
+        }
+
         /**
          * 判断是否是楼中楼的回复
          */
         if ($this->reply_post_id) {
-            $this->content = $substr ? Str::of($this->content)->substr(0, $substr) : $this->content;
-            if ($parse) {
-                // 原文
-                $content = $this->content;
-            } else {
-                $content = $this->formatContent();
-            }
+            // Do something
+            // TODO comment_post_id 评论回复 id
         } else {
             /**
              * 判断长文点赞通知内容为标题
              */
             if ($this->thread->type === Thread::TYPE_OF_LONG) {
-                $content = $this->thread->getContentByType(self::NOTICE_LENGTH, $parse);
+                $firstContent = $this->thread->getContentByType(self::NOTICE_LENGTH, $parse);
             } else {
-                $this->content = $substr ? Str::of($this->content)->substr(0, $substr) : $this->content;
-                if ($parse) {
-                    // 原文
-                    $content = $this->content;
-                } else {
-                    $content = $this->formatContent();
-                }
-
-                // 如果是首贴 firstContent === content 内容一样
+                // 如果是首帖 firstContent === content 内容一样
                 if ($this->is_first) {
                     $firstContent = $content;
                 } else {
@@ -315,8 +316,9 @@ class Post extends Model
      * @param int $isComment
      * @return static
      */
-    public static function reply($threadId, $content, $userId, $ip, $port, $replyPostId, $replyUserId, $commentPostId, $commentUserId, $isFirst, $isComment)
+    public static function reply( $threadId, $content, $userId, $ip, $port, $replyPostId, $replyUserId, $commentPostId, $commentUserId, $isFirst, $isComment, Post $post=null)
     {
+        if (!$post->id)
         $post = new static;
 
         $post->created_at = Carbon::now();
@@ -475,6 +477,16 @@ class Post extends Model
     }
 
     /**
+     * Define the relationship with the post's content post.
+     *
+     * @return BelongsTo
+     */
+    public function commentPost()
+    {
+        return $this->belongsTo(Post::class, 'comment_post_id');
+    }
+
+    /**
      * Define the relationship with the user who hid the post.
      *
      * @return BelongsTo
@@ -617,5 +629,18 @@ class Post extends Model
         $f1 = $cache->forget($cacheKey0);
         $f2 = $cache->forget($cacheKey1);
         return $f1 || $f2;
+    }
+
+    public function getPostReward()
+    {
+        $this->removePostCache();
+        $thread = Thread::query()->where('id', $this->thread_id)->first();
+        $this->rewards = 0;
+        if($thread->type == Thread::TYPE_OF_QUESTION){
+            $this->rewards = UserWalletLog::query()
+                ->where(['post_id' => $this->id, 'thread_id' => $this->thread_id])
+                ->sum('change_available_amount');
+        }
+        return $this->rewards;
     }
 }

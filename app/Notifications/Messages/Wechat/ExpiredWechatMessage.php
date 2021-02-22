@@ -3,10 +3,10 @@
 namespace App\Notifications\Messages\Wechat;
 
 use App\Models\Question;
-use Carbon\Carbon;
+use App\Models\Thread;
+use App\Models\User;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Contracts\Routing\UrlGenerator;
-use Illuminate\Support\Arr;
 
 /**
  * 过期通知 - 微信
@@ -17,11 +17,15 @@ class ExpiredWechatMessage extends SimpleMessage
 {
     public $tplId = 44;
 
+    /**
+     * @var Question $question
+     */
     protected $question;
 
-    protected $actor;
-
-    protected $data;
+    /**
+     * @var User $user
+     */
+    protected $user;
 
     /**
      * @var UrlGenerator
@@ -35,28 +39,19 @@ class ExpiredWechatMessage extends SimpleMessage
 
     public function setData(...$parameters)
     {
-        [$firstData, $actor, $question, $data] = $parameters;
+        [$firstData, $user, $question] = $parameters;
         // set parent tpl data
         $this->firstData = $firstData;
 
-        $this->actor = $actor;
+        $this->user = $user;
         $this->question = $question;
-        $this->data = $data;
 
         $this->template();
     }
 
     public function template()
     {
-        $build =  [
-            'title' => $this->getTitle(),
-            'content' => $this->getContent($this->data),
-            'raw' => Arr::get($this->data, 'raw'),
-        ];
-
-        Arr::set($build, 'raw.tpl_id', $this->firstData->id);
-
-        return $build;
+        return ['content' => $this->getWechatContent()];
     }
 
     protected function titleReplaceVars()
@@ -66,36 +61,36 @@ class ExpiredWechatMessage extends SimpleMessage
 
     public function contentReplaceVars($data)
     {
-        $name = '';
-        $detail = '';
-        $content = Arr::get($data, 'content', ''); // 主题内容
+        $threadTitle = $this->question->thread->getContentByType(Thread::CONTENT_LENGTH, true);
 
-        // 问答过期通知模型数据
-        if (Arr::get($data, 'raw.model') instanceof Question) {
-            /** @var Question $question */
-            $question = Arr::get($data, 'raw.model');
-            $name = '您的问题超时未收到回答';
-            $detail = '返还金额' . $question->price;    // 解冻金额
-        }
+        /**
+         * 设置父类 模板数据
+         * @parem $user_id 提问人用户ID (可用于跳转到用户信息)
+         * @parem $user_name 提问人
+         * @parem $be_user_name 被提问人
+         * @parem $question_price 提问价格 (解冻金额)
+         * @parem $question_created_at 提问创建时间
+         * @parem $question_expired_at 提问过期时间
+         * @parem $thread_id 主题ID
+         * @parem $thread_title 主题标题/首帖内容 (如果有title是title，没有则是首帖内容)
+         */
+        $this->setTemplateData([
+            '{$user_id}'             => $this->question->user->id,
+            '{$user_name}'           => $this->question->user->username,
+            '{$be_user_name}'        => $this->question->beUser->username,
+            '{$question_price}'      => $this->question->price,
+            '{$question_created_at}' => $this->question->created_at,
+            '{$question_expired_at}' => $this->question->expired_at,
+            '{$thread_id}'           => $this->question->thread_id,
+            '{$thread_title}'        => $this->strWords($threadTitle),
+        ]);
 
-        // 通知时间
-        $dateLine = Carbon::now()->toDateTimeString();
-
-        // 主题ID为空时跳转到首页
-        $threadId = Arr::get($data, 'raw.thread_id', 0);
-        if (empty($threadId)) {
-            $threadUrl = $this->url->to('');
-        } else {
-            $threadUrl = $this->url->to('/topic/index?id=' . $threadId);
-        }
-
-        return [
-            $name,          // {username}       谁
-            $detail,        // {detail}         xx已过期
-            $content,       // {content}        内容
-            $dateLine,      // {dateline}       通知时间
-            $threadUrl,     // {redirecturl}    跳转地址
+        // build data
+        $expand = [
+            'redirect_url' => $this->url->to('/topic/index?id=' . $this->question->thread_id),
         ];
+
+        return $this->compiledArray($expand);
     }
 
 }

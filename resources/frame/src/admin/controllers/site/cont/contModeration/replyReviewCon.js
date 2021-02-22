@@ -41,8 +41,15 @@ export default {
         }
       ],
       searchReviewSelect:0,       //审核状态选中
-      categoriesList:[],
-      categoriesListSelect:'',    //搜索分类选中
+      // categoriesList:[],
+      // categoriesListSelect:'',    //搜索分类选中
+      categoriesList: [
+        {
+          label: '所有分类',
+          value: 0
+        }
+      ],
+      categoriesListSelect:[0],    //搜索分类选中
       searchTime:[
         {
           value:1,
@@ -328,7 +335,8 @@ export default {
           'filter[isApproved]':this.searchReviewSelect,
           'filter[createdAtBegin]':this.relativeTime[1],
           'filter[createdAtEnd]':this.relativeTime[0],
-          'filter[categoryId]':this.categoriesListSelect,
+          // 'filter[categoryId]':this.categoriesListSelect,
+          'filter[categoryId]':this.categoriesListSelect[this.categoriesListSelect.length - 1],
           'filter[highlight]':this.showSensitiveWords?'yes':'no',
           'sort':'-updatedAt'
         }
@@ -370,12 +378,33 @@ export default {
         if (res.errors){
           this.$message.error(res.errors[0].code);
         }else {
-          this.categoriesList = [];
+          // this.categoriesList = [];
+          // res.data.forEach((item, index) => {
+          //   this.categoriesList.push({
+          //     name: item.attributes.name,
+          //     id: item.id
+          //   })
+          // })
           res.data.forEach((item, index) => {
-            this.categoriesList.push({
-              name: item.attributes.name,
-              id: item.id
-            })
+            if (item.attributes.children.length) {
+              const child = []
+              item.attributes.children.forEach(c => {
+                child.push({
+                  label: c.name,
+                  value: c.search_ids
+                })
+              })
+              this.categoriesList.push({
+                label: item.attributes.name,
+                value: item.attributes.search_ids,
+                children: child
+              })
+            } else {
+              this.categoriesList.push({
+                label: item.attributes.name,
+                value: item.attributes.search_ids
+              })
+            }
           })
         }
       }).catch(err=>{

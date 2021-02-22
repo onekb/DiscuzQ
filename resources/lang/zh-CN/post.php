@@ -46,4 +46,29 @@ return [
     'post_question_payment_amount_fail' => '问答支付金额异常',
     'post_question_ask_yourself_fail' => '不能向自己提问',
     'post_question_ask_be_user_permission_denied' => '被提问用户没有权限回答',
+
+    'post_thread_missing_parameter' => '帖子缺失参数',
+
+    'thread_reward_answer_id_is_null' => '问答帖的指定人不可为空',
+    'thread_reward_money_type_fail' => '悬赏金额必须为整数',
+    'thread_reward_money_min_limit_fail' => '悬赏金额应大于0.1元',
+    'thread_reward_money_max_limit_fail' => '悬赏金额不得超过10000元',
+    'thread_reward_expired_time_is_null' => '悬赏结束时间不可为空',
+    'thread_reward_expired_time_limit_fail' => '悬赏结束时间应大于一天',
+
+    'post_reward_does_not_have_type' => '未获取到问答帖类型：向所有人提问还是向指定人提问？',
+    'post_reward_does_not_have_thread_id' => '未获取到当前的帖子ID',
+    'post_reward_does_not_have_post_id' => '未获取到当前的评论ID',
+    'post_reward_post_user_id_limit' => '不可采纳自己的评论',
+    'post_reward_the_rewards_limit_fail' => '悬赏金额应大于0元',
+    'post_reward_detail_not_found' => '未获取到悬赏帖相关信息',
+    'post_reward_user_limit' => '您不是帖子主人，不可进行采纳回答的操作',
+    'post_reward_is_over' => '悬赏帖已到期',
+    'post_reward_the_rewards_is_use_up' => '悬赏金已发放完毕',
+    'post_reward_not_sufficient_funds' => '悬赏金余额不足',
+    'post_reward_thread_detail_not_found' => '该帖正在审核或者已被删除',
+    'post_reward_post_detail_not_found' => '该评论不是一级评论或者已被删除',
+    'post_reward_type_error' => '悬赏金额类型错误，必须是数字！',
+    'post_reward_order_error' => '悬赏帖订单信息错误，无法进行采纳！',
+    'post_reward_user_wallet_error' => '您的冻结金额不足，悬赏采纳失败！'
 ];

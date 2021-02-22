@@ -87,8 +87,16 @@ class CreateThreadVideo
 
         $fileId = Arr::get($attributes, 'file_id', '');
 
+        $threadId = $this->thread->id ?? 0;
+
         /** @var ThreadVideo $threadVideo */
-        $threadVideo = ThreadVideo::query()->where('thread_id', 0)->where('file_id', $fileId)->firstOrNew();
+        if ($threadId) {
+            $threadVideo = ThreadVideo::query()->where('thread_id', 0)->where('file_id', $fileId)->firstOrNew();
+        }
+
+        if (!$threadVideo) {
+            $threadVideo = ThreadVideo::query()->where('thread_id', $threadId)->where('file_id', $fileId)->firstOrNew();
+        }
 
         $threadVideo->user_id = $this->actor->id;
         $threadVideo->thread_id = $this->thread->id ?? 0;

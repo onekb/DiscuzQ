@@ -202,6 +202,12 @@ class PayOrder
             case Order::ORDER_TYPE_ATTACHMENT:
                 $order_info->body = trans('order.order_type_attachment');
                 break;
+            case Order::ORDER_TYPE_TEXT:
+                $order_info->body = trans('order.order_type_text');
+                break;
+            case Order::ORDER_TYPE_LONG:
+                $order_info->body = trans('order.order_type_long');
+                break;
             default:
                 $order_info->body = '';
                 break;

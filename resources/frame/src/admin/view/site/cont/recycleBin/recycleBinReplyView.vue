@@ -9,14 +9,19 @@
           </div>
           <div>
             <span class="cont-review-header__lf-title">搜索范围：</span>
-            <el-select v-model="categoriesListSelect" clearable  size="medium" placeholder="选择主题分类">
+            <!-- <el-select v-model="categoriesListSelect" clearable  size="medium" placeholder="选择主题分类">
               <el-option
                 v-for="item in categoriesList"
                 :key="item.id"
                 :label="item.name"
                 :value="item.id">
               </el-option>
-            </el-select>
+            </el-select> -->
+            <el-cascader
+              v-model="categoriesListSelect"
+              :options="categoriesList"
+              :props="{ expandTrigger: 'hover', checkStrictly: true }">
+            </el-cascader>
           </div>
         </div>
 

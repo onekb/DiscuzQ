@@ -18,7 +18,7 @@ class InitVideoSize extends AbstractCommand
 
     protected $signature = 'upgrade:videoSize';
 
-    protected $description = '初始化主题视频的宽高';
+    protected $description = 'Initialize the video width, height and duration of successful transcoding';
 
     protected $threadVideos;
 
@@ -34,28 +34,27 @@ class InitVideoSize extends AbstractCommand
         $threadVideos = $this->threadVideos->query()
             ->where('type', 0)
             ->where('status', 1)
-            ->where('height', 0)
-            ->where('width', 0)
             ->get();
 
         $file_ids = $threadVideos->pluck('file_id');
         if ($file_ids->isEmpty()) {
             $this->info('nothing to do!');
-        } else {
-            $filters = ['metaData'];
-            $describeMediaInfos = $this->describeMediaInfos($file_ids, $filters);
-            /* @var ThreadVideo $threadVideo*/
-            foreach ($threadVideos as $threadVideo) {
-                foreach ($describeMediaInfos->MediaInfoSet as $describeMediaInfo) {
-                    if ($describeMediaInfo->FileId == $threadVideo->file_id && $describeMediaInfo->MetaData) {
-                        $threadVideo->height = $describeMediaInfo->MetaData->Height;
-                        $threadVideo->width  = $describeMediaInfo->MetaData->Width;
+            exit();
+        }
+        $filters = ['metaData'];
+        $describeMediaInfos = $this->describeMediaInfos($file_ids, $filters);
+        /* @var ThreadVideo $threadVideo*/
+        foreach ($threadVideos as $threadVideo) {
+            foreach ($describeMediaInfos->MediaInfoSet as $describeMediaInfo) {
+                if ($describeMediaInfo->FileId == $threadVideo->file_id && $describeMediaInfo->MetaData) {
+                    $threadVideo->height = $describeMediaInfo->MetaData->Height;
+                    $threadVideo->width  = $describeMediaInfo->MetaData->Width;
+                    $threadVideo->duration = $describeMediaInfo->MetaData->Duration;
 
-                        $threadVideo->save();
-                    }
+                    $threadVideo->save();
                 }
             }
-            $this->info('success');
         }
+        $this->info('success');
     }
 }

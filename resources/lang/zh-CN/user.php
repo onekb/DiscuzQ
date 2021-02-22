@@ -30,4 +30,6 @@ return [
 
     'register_decrypt_code_failed' => '解密邀请码失败',
     'invite_decrypt_code_failed' => '邀请码格式不正确', // The payload is invalid.
+
+    'do_frequent'   =>  '操作太频繁了，请稍后再试'
 ];

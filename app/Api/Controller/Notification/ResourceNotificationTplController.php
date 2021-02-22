@@ -20,16 +20,19 @@ namespace App\Api\Controller\Notification;
 
 use App\Api\Serializer\NotificationTplSerializer;
 use App\Models\NotificationTpl;
-use Discuz\Api\Controller\AbstractResourceController;
+use Discuz\Api\Controller\AbstractListController;
 use Discuz\Auth\AssertPermissionTrait;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
 
-class ResourceNotificationTplController extends AbstractResourceController
+class ResourceNotificationTplController extends AbstractListController
 {
     use AssertPermissionTrait;
 
+    /**
+     * {@inheritdoc}
+     */
     public $serializer = NotificationTplSerializer::class;
 
     /**
@@ -41,10 +44,12 @@ class ResourceNotificationTplController extends AbstractResourceController
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $actor = $request->getAttribute('actor');
-        $this->assertPermission($actor->isAdmin());
+        $this->assertAdmin($actor);
 
-        $id = Arr::get($request->getQueryParams(), 'id');
+        $type_name = Arr::get($request->getQueryParams(), 'type_name');
 
-        return NotificationTpl::find($id);
+        $query = NotificationTpl::query()->where('type_name', $type_name)->orderBy('type');
+
+        return $query->get();
     }
 }

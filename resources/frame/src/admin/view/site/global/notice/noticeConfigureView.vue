@@ -1,32 +1,88 @@
 <template>
   <div>
     <Card :header="query.typeName"></Card>
-
-    <Card header="通知标题：" v-if="query.type==='system'">
-      <CardRow description="系统发送的信息标题，不支持HTML，不超过75字节">
-        <el-input type="text" maxlength="75" v-model="noticeTitle" ></el-input>
+    <Card header="通知方式：" class="card-radio-con">
+      <CardRow description="若没勾选，则下面不显示对应的方式。若不能支持，则置灰不能勾选 。 ">
+      <el-checkbox-group v-model="noticeList" @change="noticeListChange">
+        <el-checkbox label=0>系统通知</el-checkbox>
+        <!-- <el-checkbox label="noticeType">小程序通知</el-checkbox> -->
+        <el-checkbox label=1>微信模板通知</el-checkbox>
+        <!-- <el-checkbox label="noticeType">短信通知</el-checkbox> -->
+      </el-checkbox-group>
+      </CardRow>
+    </Card>
+    <!-- 系统通知 -->
+    <div class="system-notice" v-show="showSystem">
+      <p class="system-title">系统通知</p>
+    <Card :header="query.typeName">
+      <CardRow :description="systemList.disabled ? '当前通知的内容和格式为系统内置，无法自定义配置' : '系统发送的欢迎信息的标题，不支持HTML，不超过75字节'">
+        <el-input type="text" maxlength="75" v-model="systemList.title" :disabled="systemList.disabled" ></el-input>
       </CardRow>
     </Card>
 
-    <Card header="通知内容：" v-if="query.type==='system'">
-      <CardRow row
-        description="系统发送的信息内容，标题内容均支持变量替换，可以使用如下变量:<br>
-                    {username}：用户名
-                    {groupname} ：所属用户组
-                    {time}：发送时间
-                    {sitename}：网站名称（显示在页面底部的联系方式名称）
-                    {content}：内容
-                    {reason}：原因"
-      >
-        <el-input type="textarea" :autosize="{ minRows: 5, maxRows: 5}" v-model="noticeContent" clearable></el-input>
+    <Card header="通知内容：">
+      <CardRow row :description="systemList.disabled ? '' : systemDes">
+        <el-input type="textarea" :autosize="{ minRows: 5, maxRows: 5}" v-model="systemList.content" :disabled="systemList.disabled" clearable></el-input>
+      </CardRow>
+    </Card>
+  </div>
+
+  <!-- 微信模板信息 -->
+    <div class="system-notice" v-show="showWx">
+      <p class="system-title">微信模板信息</p>
+    <Card header="模板ID：">
+      <CardRow description="请填写模板消息的ID">
+        <el-input type="text" maxlength="75" v-model="wxList.template_id" ></el-input>
       </CardRow>
     </Card>
 
-    <Card header="模板ID" v-if="query.type==='wx'">
-      <CardRow row :description="wxNoticeDescription[query.id]">
-        <el-input type="text" maxlength="75" v-model="wxNoticeCon" ></el-input>
+    <Card header="">
+    <div class="applets-box">
+      <div class="applets-box-content">
+      <CardRow row :description="wxDes">
+      <div class="applets">
+        <span class="applets-titles">first：</span>
+        <el-input type="input" v-model="wxList.first_data" class="applets-input"></el-input>
+      </div>
+      <div v-for="(item, index) in appletsList" :key="index" class="applets">
+        <span class="applets-title">keyword{{index + 1}}:</span>
+        <el-input type="input" v-model="appletsList[index]"  class="applets-input"></el-input>
+        <span class="iconfont iconicon_delect iconhuishouzhan" @click="delectClick(index)" v-show="index>1"></span>
+      </div>
+      <div class="applets">
+      <span class="applets-titles"></span>
+      <TableContAdd
+        @tableContAddClick="tableContAdd"
+        cont="添加关键字"
+      ></TableContAdd>
+      </div>
+      <div class="applets">
+        <span class="applets-titles">remark：</span>
+        <el-input type="input" v-model="wxList.remark_data" class="applets-input"></el-input>
+      </div>
+      <div class="applets">
+        <span class="applets-title">跳转类型：</span>
+        <div class="applets-radio">
+          <el-radio v-model="wxList.redirect_type" :label="0">无跳转</el-radio>
+          <el-radio v-model="wxList.redirect_type" :label="2">跳转至小程序</el-radio>
+          <el-radio v-model="wxList.redirect_type" :label="1">跳转至H5</el-radio>
+        </div>
+      </div>
       </CardRow>
+    <CardRow row :description="wxList.redirect_type === 2 ?'请填写正确的小程序路径，填写错误将导致用户无法接收到消息通知。' : ''">
+      <div class="applets" v-show="wxList.redirect_type === 1">
+        <span class="applets-titles">H5网址：</span>
+        <el-input type="input" v-model="wxList.redirect_url" class="applets-input"></el-input>
+      </div>
+      <div class="applets" v-show="wxList.redirect_type === 2">
+        <span class="applets-titles">小程序路径：</span>
+        <el-input type="input" v-model="wxList.page_path" class="applets-input"></el-input>
+      </div>
+      </CardRow>
+      </div>
+    </div>
     </Card>
+  </div>
 
     <Card class="footer-btn">
       <el-button type="primary" size="medium" @click="Submission">提交</el-button>

@@ -50,6 +50,8 @@ class BatchDeleteTopicController extends AbstractListController
         $this->assertAdmin($actor);
 
         $ids = explode(',', Arr::get($request->getQueryParams(), 'ids'));
+        $this->assertBatchData($ids);
+
         $idsCollect = collect($ids);
 
         $result = ['data' => [], 'meta' => []];

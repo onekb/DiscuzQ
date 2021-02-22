@@ -37,10 +37,13 @@
         <div class="index-main-con__side-list">
 
           <ul class="index-side-ul">
-            <li v-for="item in sideList"
-                class="index-side-li"
-                :class="sideSelect === item.name?'is-active':''"
-                @click="sideClick(item)">
+            <li
+              v-for="(item, index) in sideList"
+              :key="index"
+              class="index-side-li"
+              :class="sideSelect === item.name?'is-active':''"
+              @click="sideClick(item)"
+            >
               <span class="iconfont" :class="item.icon"></span>
               <span>{{item.title}}</span>
             </li>

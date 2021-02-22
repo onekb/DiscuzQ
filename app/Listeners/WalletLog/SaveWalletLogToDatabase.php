@@ -95,7 +95,10 @@ class SaveWalletLogToDatabase
             Arr::get($data, 'cash_id', null),           // 关联提现 id
             Arr::get($data, 'order_id', null),          // 关联订单 id
             Arr::get($data, 'source_user_id', 0),       // 关联分成来源用户 id
-            Arr::get($data, 'question_id', 0)           // 关联问答 id
+            Arr::get($data, 'question_id', 0),          // 关联问答 id
+            Arr::get($data, 'post_id', 0),              // 关联帖子post id
+            Arr::get($data, 'thread_id', 0)             // 关联主题thread id
+
         );
     }
 }

@@ -25,7 +25,6 @@ use App\Notifications\Messages\Database\PostMessage;
 use App\Notifications\Related;
 use App\Notifications\Replied;
 use App\Notifications\System;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use s9e\TextFormatter\Utils;
 
@@ -56,10 +55,10 @@ trait PostNoticesTrait
 
         switch ($type) {
             case 'isApproved':  // 内容审核通知
-                $this->postisapproved($post, ['refuse' => $message]);
+                $this->postisapproved($post, $actor, ['refuse' => $message]);
                 break;
             case 'isDeleted':   // 内容删除通知
-                $this->postIsDeleted($post, ['refuse' => $message]);
+                $this->postIsDeleted($post, $actor, ['refuse' => $message]);
                 break;
         }
     }
@@ -82,15 +81,8 @@ trait PostNoticesTrait
             //把作者拉黑的用户不发通知
             return ! in_array($post->user_id, array_column($user->deny->toArray(), 'id'));
         })->each(function (User $user) use ($post, $actor) {
-            $build = [
-                'message' => $post->getSummaryContent(Post::NOTICE_LENGTH, true)['content'],
-                'raw' => array_merge(Arr::only($post->toArray(), ['id', 'thread_id', 'reply_post_id']), [
-                    'actor_username' => $actor->username    // 发送人姓名
-                ]),
-            ];
-
             // Tag 发送通知
-            $user->notify(new Related($actor, $post, $build));
+            $user->notify(new Related($actor, $post));
         });
     }
 
@@ -98,42 +90,38 @@ trait PostNoticesTrait
      * 内容删除通知
      *
      * @param $post
+     * @param $actor
      * @param array $attach 原因
      */
-    private function postIsDeleted($post, array $attach)
+    private function postIsDeleted($post, $actor, array $attach)
     {
         $post->content = Str::of($post->content)->substr(0, Post::NOTICE_LENGTH);
         $post->formatContent();
 
         $data = [
             'message' => $post->formatContent(), // 解析表情
+            'post' => $post,
             'refuse' => $attach['refuse'],
-            'raw' => [
-                'thread_id' => $post->thread->id,
-            ],
             'notify_type' => PostMessage::NOTIFY_DELETE_TYPE,
         ];
 
         // Tag 发送通知
-        $post->user->notify(new System(PostMessage::class, $post->user, $data));
+        $post->user->notify(new System(PostMessage::class, $actor, $data));
     }
 
     /**
      * 内容审核通知
      *
      * @param $post
+     * @param $actor
      * @param array $attach 原因
      */
-    private function postIsApproved($post, array $attach)
+    private function postIsApproved($post, $actor, array $attach)
     {
         $data = [
             'message' => $this->getPostTitle($post),
+            'post' => $post,
             'refuse' => $attach['refuse'],
-            'raw' => [
-                'id' => $post->id,
-                'thread_id' => $post->thread->id,
-                'is_first' => $post->is_first,
-            ],
         ];
 
         if ($post->is_approved == 1) {
@@ -142,15 +130,8 @@ trait PostNoticesTrait
 
             // 发送回复人的主题通知 (回复自己主题不发送通知)
             if ($post->user_id != $post->thread->user_id) {
-                $build = [
-                    'message' => $post->getSummaryContent(Post::NOTICE_LENGTH, true)['content'],
-                    'subject' => $post->thread->getContentByType(Thread::CONTENT_LENGTH, true),
-                    'raw' => array_merge(Arr::only($post->toArray(), ['id', 'thread_id', 'reply_post_id']), [
-                        'actor_username' => $post->user->username    // 发送人姓名
-                    ]),
-                ];
                 // Tag 发送通知
-                $post->thread->user->notify(new Replied($post->user, $post, $build));
+                $post->thread->user->notify(new Replied($actor, $post, ['notify_type' => 'notify_approved']));
             }
         } elseif ($post->is_approved == 2) {
             // 忽略就发送不通过通知
@@ -158,7 +139,7 @@ trait PostNoticesTrait
         }
 
         // Tag 发送通知
-        $post->user->notify(new System(PostMessage::class, $post->user, $data));
+        $post->user->notify(new System(PostMessage::class, $actor, $data));
     }
 
     /**

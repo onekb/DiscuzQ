@@ -19,6 +19,8 @@
 namespace App\Api\Serializer;
 
 use App\Models\Post;
+use App\Models\Thread;
+use App\Models\UserWalletLog;
 use Tobscure\JsonApi\Relationship;
 
 class PostSerializer extends BasicPostSerializer
@@ -34,6 +36,8 @@ class PostSerializer extends BasicPostSerializer
 
         $attributes['isFirst'] = (bool) $model->is_first;
         $attributes['isComment'] = false;
+        $attributes['rewards'] = $model->rewards;
+        $attributes['redPacketAmount'] = $this->getPostRedPacketAmount($model->id, $model->thread_id);
         if (app()->has('isCalled')) {
             unset($attributes['contentHtml']);
             unset($attributes['content']);
@@ -57,5 +61,26 @@ class PostSerializer extends BasicPostSerializer
     protected function lastThreeComments($post)
     {
         return $this->hasMany($post, CommentPostSerializer::class);
+    }
+
+    public function getPostRedPacketAmount($post_id, $thread_id)
+    {
+        $thread = Thread::query()->where('id', $thread_id)->first();
+        if ($thread->type == Thread::TYPE_OF_TEXT) {
+            $redPacketAmount = UserWalletLog::query()
+                        ->where([   'thread_id'     => $thread_id,
+                                    'post_id'       => $post_id,
+                                    'change_type'   => UserWalletLog::TYPE_INCOME_TEXT
+                                ])
+                        ->sum('change_available_amount');
+        } elseif ($thread->type == Thread::TYPE_OF_LONG) {
+            $redPacketAmount = UserWalletLog::query()
+                        ->where([   'thread_id'     => $thread_id,
+                                    'post_id'       => $post_id,
+                                    'change_type'   => UserWalletLog::TYPE_INCOME_LONG
+                                ])
+                        ->sum('change_available_amount');
+        }
+        return empty($redPacketAmount) ? 0 : $redPacketAmount;
     }
 }

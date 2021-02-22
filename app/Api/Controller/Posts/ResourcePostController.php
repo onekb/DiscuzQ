@@ -101,6 +101,8 @@ class ResourcePostController extends AbstractResourceController
             $this->includePosts($post, $request, $postRelationships);
         }
 
+        $post->rewards = floatval(sprintf('%.2f', $post->getPostReward()));
+
         return $post;
     }
 

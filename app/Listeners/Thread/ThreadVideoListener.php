@@ -68,6 +68,9 @@ class ThreadVideoListener
 
         // 视频帖 或 语音帖
         if (! $thread->exists && in_array($thread->type, [Thread::TYPE_OF_VIDEO, Thread::TYPE_OF_AUDIO])) {
+            if ($thread->is_draft) {
+                return;
+            }
             $this->validator->make(
                 [
                     'switch' => (bool) $this->settings->get('qcloud_vod', 'qcloud'),

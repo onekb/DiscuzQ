@@ -9,6 +9,9 @@ return [
 
     'question_freeze_desc'   => '问答冻结',
     'question_return_thaw_desc'  => '问答返还解冻',
+    'income_thread_reward_return_desc'  => '悬赏帖过期-返还剩余悬赏金额',
+    'income_thread_reward_divide_desc'  => '悬赏帖过期-平分剩余悬赏金额',
+    'income_thread_reward_distribution_desc'  => '悬赏帖过期-按点赞数比例分配剩余悬赏金额',
 
     'cash_freeze_desc'       => '提现冻结',
     'cash_sum_limit'       => '超出每日提现金额限制',
@@ -35,6 +38,7 @@ return [
     'income_onlooker_reward'    => '问答围观收入',
     'income_attachment'         => '付费附件收入',
     'income_scale_attachment'   => '分成付费附件收入',
+    'income_thread_reward'      => '悬赏问答答题收入',
 
     'expend_renew'              => '站点续费支出',
     'expend_reward'             => '打赏主题支出',
@@ -44,6 +48,14 @@ return [
     'expend_question'           => '问答提问支出',
     'expend_onlooker'           => '问答围观支出',
     'expend_attachment'         => '付费附件支出',
+    'freeze_text'               => '文字帖红包冻结',
+    'expend_text'               => '文字帖红包支出',
+    'income_text'               => '文字帖红包收入',
+    'return_text'               => '文字帖红包冻结返还',
+    'freeze_long'               => '长文帖红包冻结',
+    'expend_long'               => '长文帖红包支出',
+    'income_long'               => '长字帖红包收入',
+    'return_long'               => '长文帖红包冻结返还',
 
     'cash_operate_desc'         => '提现',
 

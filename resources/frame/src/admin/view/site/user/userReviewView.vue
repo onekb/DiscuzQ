@@ -22,7 +22,7 @@
           <el-table-column
             prop="_data.username"
             label="用户名"
-            width="150">
+            width="200">
           </el-table-column>
 
           <!-- <el-table-column

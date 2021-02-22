@@ -2,13 +2,10 @@
 
 /**
  * Copyright (C) 2020 Tencent Cloud.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
  *   http://www.apache.org/licenses/LICENSE-2.0
- *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,11 +17,9 @@ namespace App\Listeners\Order;
 
 use App\Events\Order\Updated;
 use App\Models\Order;
-use App\Models\Thread;
 use App\Notifications\Messages\Wechat\RewardedScaleWechatMessage;
 use App\Notifications\Messages\Wechat\RewardedWechatMessage;
 use App\Notifications\Rewarded;
-use Illuminate\Support\Arr;
 
 class SendNotifyAfterPaySuccessful
 {
@@ -37,16 +32,7 @@ class SendNotifyAfterPaySuccessful
 
     protected $build;
 
-    /**
-     * 设置公用通知模板数据
-     */
-    public function setBuild()
-    {
-        $this->build = [
-            'message' => $this->order->thread->getContentByType(Thread::CONTENT_LENGTH, true),
-            'raw' => Arr::only($this->order->toArray(), ['id', 'thread_id', 'type']),
-        ];
-    }
+    protected $actor;
 
     public function handle(Updated $event)
     {
@@ -56,6 +42,8 @@ class SendNotifyAfterPaySuccessful
         if (
             $this->order->type == Order::ORDER_TYPE_QUESTION
             || $this->order->type == Order::ORDER_TYPE_GROUP
+            || $this->order->type == Order::ORDER_TYPE_TEXT
+            || $this->order->type == Order::ORDER_TYPE_LONG
         ) {
             return;
         }
@@ -65,63 +53,34 @@ class SendNotifyAfterPaySuccessful
             return;
         }
 
-        // 除了站点注册，其余获取主题信息
-        if ($this->order->type != Order::ORDER_TYPE_REGISTER) {
-            $this->setBuild();
-        }
-
         switch ($this->order->type) {
             case Order::ORDER_TYPE_REGISTER: // 付费加入站点
                 // 发送分成通知
-                $this->sendScaleNotice('user');
+                $this->sendScaleNotice('paid_site');
                 break;
             case Order::ORDER_TYPE_REWARD: // 打赏
-                $this->build['raw'] = array_merge($this->build['raw'], [
-                    'actor_username' => $this->order->user->username,               // 发送人姓名
-                    'actual_amount' => $this->order->calculateAuthorAmount(true),   // 获取实际金额
-                ]);
-
-                // 通知主题作者
-                $this->sendToPayee();
-
+                // Tag 发送通知 (通知主题作者)
+                $this->senPayeeUser();
                 // 发送分成通知
-                $this->sendScaleNotice('payee');
+                $this->sendScaleNotice('paid_reward');
                 break;
             case Order::ORDER_TYPE_THREAD: // 付费主题
-                $this->build['raw'] = array_merge($this->build['raw'], [
-                    'actor_username' => $this->order->user->username,               // 发送人姓名
-                    'actual_amount' => $this->order->calculateAuthorAmount(true),   // 获取实际金额
-                ]);
-
-                // 通知作者收款通知
-                $this->sendToPayee();
-
+                // Tag 发送通知 (通知作者收款通知)
+                $this->senPayeeUser();
                 // 发送分成通知
-                $this->sendScaleNotice('payee');
+                $this->sendScaleNotice('paid_thread');
                 break;
             case Order::ORDER_TYPE_ONLOOKER: // 围观
-                $this->build['raw'] = array_merge($this->build['raw'], [
-                    'actor_username' => $this->order->user->username,                   // 发送人姓名
-                    'actual_amount' => $this->order->calculateOnlookersAmount(false),   // 获取实际围观分红金额
-                ]);
-
-                // 发送给 问答人 收入分成通知 Tag 目前该用户上级不分成
-                $this->sendToPayee();
-
-                // 发送给 答题人（第三方用户） 收入分成通知 Tag 目前该用户上级不分成
-                $this->sendToThirdParty();
+                // Tag 发送通知 (发送给 问答人 收入分成通知 Tag 目前该用户上级不分成)
+                $this->senPayeeUser();
+                // Tag 发送通知 (发送给 答题人（第三方用户） 收入分成通知 Tag 目前该用户上级不分成)
+                $this->order->thirdParty->notify(new Rewarded(RewardedWechatMessage::class, $this->order->user, $this->order));
                 break;
             case Order::ORDER_TYPE_ATTACHMENT: // 附件付费
-                $this->build['raw'] = array_merge($this->build['raw'], [
-                    'actor_username' => $this->order->user->username,
-                    'actual_amount' => $this->order->calculateAuthorAmount(true),
-                ]);
-
-                // 通知作者收款通知
-                $this->sendToPayee();
-
+                // Tag 发送通知 (通知作者收款通知)
+                $this->senPayeeUser();
                 // 发送分成通知
-                $this->sendScaleNotice('payee');
+                $this->sendScaleNotice('paid_attachment');
                 break;
             default:
                 break;
@@ -129,21 +88,11 @@ class SendNotifyAfterPaySuccessful
     }
 
     /**
-     * 给收款人发送通知
+     * 通知收款人(payee)
      */
-    public function sendToPayee()
+    public function senPayeeUser()
     {
-        // Tag 发送通知
-        $this->order->payee->notify(new Rewarded(RewardedWechatMessage::class, $this->order->user, $this->order, $this->build));
-    }
-
-    /**
-     * 给第三方发送通知
-     */
-    public function sendToThirdParty()
-    {
-        // Tag 发送通知
-        $this->order->thirdParty->notify(new Rewarded(RewardedWechatMessage::class, $this->order->user, $this->order, $this->build));
+        $this->order->payee->notify(new Rewarded(RewardedWechatMessage::class, $this->order->user, $this->order));
     }
 
     /**
@@ -158,24 +107,24 @@ class SendNotifyAfterPaySuccessful
          */
         if ($this->order->isScale()) {
             // 判断是发给 收款人/付款人 的上级
-            if ($type == 'payee') {
-                $userDistribution = $this->order->payee->userDistribution;
-                $infoUser = $this->order->payee;
-            } else {
-                $userDistribution = $this->order->user->userDistribution;
-                $infoUser = $this->order->user;
+            switch ($type) {
+                default:
+                case 'paid_site':
+                    // 付费站点加入
+                    $userDistribution = $this->order->user->userDistribution;
+                    break;
+                case 'paid_reward': // 打赏
+                case 'paid_thread': // 付费主题
+                case 'paid_attachment': // 附件付费
+                    $userDistribution = $this->order->payee->userDistribution;
+                    break;
             }
-            if (! empty($userDistribution)) {
-                $data = [
-                    'message' => $type == 'payee' ? $this->order->thread->getContentByType(Thread::CONTENT_LENGTH, true) : '注册站点',
-                    'raw' => array_merge(Arr::only($this->order->toArray(), ['id', 'thread_id', 'type']), [
-                        'actor_username' => $infoUser->username,        // 发送人姓名
-                        'boss_amount' => $this->order->calculateAuthorAmount(),  // 获取实际金额
-                    ]),
-                ];
 
+            if (! empty($userDistribution)) {
+                // 付款人 = 当前登录人
+                $actor = $this->order->user;
                 // Tag 发送通知
-                $userDistribution->parentUser->notify(new Rewarded(RewardedScaleWechatMessage::class, $infoUser, $this->order, $data));
+                $userDistribution->parentUser->notify(new Rewarded(RewardedScaleWechatMessage::class, $actor, $this->order, ['notify_type' => $type]));
             }
         }
     }

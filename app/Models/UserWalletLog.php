@@ -35,6 +35,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $order_id
  * @property int $user_wallet_cash_id
  * @property int $question_id
+ * @property int $thread_id
+ * @property int $post_id
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property Order $order
@@ -103,6 +105,32 @@ class UserWalletLog extends Model
 
     const TYPE_EXPEND_ONLOOKER = 82; // 问答围观支出
 
+    // ----- 分割线(以下为红版新增枚举值100-129) -----
+
+    const TYPE_EXPEND_TEXT = 100; // 文字帖红包支出
+
+    const TYPE_TEXT_FREEZE = 101; // 文字帖红包冻结
+
+    const TYPE_INCOME_TEXT = 102; // 文字帖红包收入
+
+    const TYPE_TEXT_RETURN_THAW = 103; // 文字帖冻结返还
+
+    const TYPE_EXPEND_LONG = 110; // 长文帖红包支出
+
+    const TYPE_LONG_FREEZE = 111; // 长文帖红包冻结
+
+    const TYPE_INCOME_LONG = 112; // 长文帖红包收入
+
+    const TYPE_LONG_RETURN_THAW = 113; // 长文帖冻结返还
+
+    const TYPE_INCOME_THREAD_REWARD = 120; // 悬赏问答收入
+
+    const TYPE_INCOME_THREAD_REWARD_RETURN = 121; // 悬赏帖过期-悬赏帖剩余悬赏金额返回
+
+    const TYPE_INCOME_THREAD_REWARD_DIVIDE = 122; // 悬赏帖过期-悬赏帖剩余悬赏金额平分
+
+    const TYPE_INCOME_THREAD_REWARD_DISTRIBUTION = 123; // 悬赏帖过期-悬赏帖剩余悬赏金额按点赞数分配
+
     /**
      * 创建钱包动账记录
      *
@@ -115,6 +143,8 @@ class UserWalletLog extends Model
      * @param int|null $order_id
      * @param int $source_user_id
      * @param int $question_id
+     * @param int $thread_id
+     * @param int $post_id
      * @return UserWalletLog
      */
     public static function createWalletLog(
@@ -126,7 +156,9 @@ class UserWalletLog extends Model
         $user_wallet_cash_id = null,
         $order_id = null,
         $source_user_id = 0,
-        $question_id = 0
+        $question_id = 0,
+        $post_id = 0,
+        $thread_id = 0
     ) {
         $walletLog = new static;
         $walletLog->user_id = $user_id;
@@ -138,6 +170,8 @@ class UserWalletLog extends Model
         $walletLog->order_id = $order_id;
         $walletLog->source_user_id = $source_user_id;
         $walletLog->question_id = $question_id;
+        $walletLog->post_id = $post_id;
+        $walletLog->thread_id = $thread_id;
 
         $walletLog->save();
 

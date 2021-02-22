@@ -13,7 +13,11 @@ const webpackConfig = require("./webpack.admin.prd.conf");
 const spinner = ora("building for production...");
 spinner.start();
 
-rm(path.resolve(__dirname, "../../../public/static-admin"), err => {
+let ROOT_DIR_NAME = 'public';
+if ( process.env.SCENE && process.env.SCENE != 'default' ) {
+  ROOT_DIR_NAME = ROOT_DIR_NAME + `_${process.env.SCENE}`;
+}
+rm(path.resolve(__dirname, `../../../${ROOT_DIR_NAME}/static-admin`), err => {
   webpack(webpackConfig, (err, stats) => {
     spinner.stop();
     if (err) throw err;

@@ -21,6 +21,9 @@ namespace App\Commands\Report;
 use App\Events\Report\Saving;
 use App\Models\Report;
 use App\Models\User;
+use App\Models\Thread;
+use App\Models\Post;
+use App\Models\AdminActionLog;
 use Discuz\Foundation\EventsDispatchTrait;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Arr;
@@ -73,7 +76,27 @@ class BatchEditReport
             new Saving($report, $this->actor, $this->data)
         );
 
+        if($report->post_id !== 0){
+            $postDetail = Post::query()->where('id', $report->post_id)->first();
+            $action_desc = '标记举报评论/回复【'. $postDetail['content'] .'】为已处理';
+        }else{
+            $threadDetail = Thread::query()->where('id', $report->thread_id)->first();
+            if($threadDetail['title'] !== '' && !empty($threadDetail['title'])){
+                $action_desc = '标记举报用户主题帖【'. $threadDetail['title'] .'】为已处理';
+            }else{
+                $action_desc = '标记举报用户主题帖，ID为【'. $report->thread_id .'】为已处理';
+            }
+
+        }
+
         $report->save();
+
+        if($action_desc !== '' && !empty($action_desc)) {
+            AdminActionLog::createAdminActionLog(
+                $this->actor->id,
+                $action_desc
+            );
+        }
 
         $this->dispatchEventsFor($report, $this->actor);
 

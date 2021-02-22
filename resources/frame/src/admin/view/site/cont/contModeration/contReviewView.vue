@@ -40,14 +40,20 @@
               :value="item.value"
             ></el-option>
           </el-select>
-          <el-select v-model="categoriesListSelect" size="medium" clearable placeholder="选择搜索分类">
+          <!-- <el-select v-model="categoriesListSelect" size="medium" clearable placeholder="选择搜索分类">
             <el-option
               v-for="item in categoriesList"
               :key="item.id"
               :label="item.name"
               :value="item.id"
             ></el-option>
-          </el-select>
+          </el-select> -->
+          <el-cascader
+            v-model="categoriesListSelect"
+            :options="categoriesList"
+            :props="{ expandTrigger: 'hover', checkStrictly: true }"
+            @change="handleChange">
+          </el-cascader>
           <el-select
             v-model="searchTimeSelect"
             @change="searchTimeChange"

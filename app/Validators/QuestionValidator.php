@@ -38,8 +38,10 @@ class QuestionValidator extends AbstractValidator
         ];
 
         // 验证提问价格 & 订单信息
-        if ($this->data['price']) {
-            $rule += ['order_id' => new CheckOrder($actor, $this->data['price'])];
+        if (isset($this->data['price']) && $this->data['price'] != 0) {
+            $rule += [
+                'order_id' => [new CheckOrder($actor, $this->data['price'])]
+            ];
         }
 
         return $rule;

@@ -16,7 +16,13 @@ function resolvePublic(dir) {
   if (dir == undefined) {
     dir = "";
   }
-  return resolve("../../public/" + dir);
+
+  // 多场景控制
+  let ROOT_DIR_NAME = 'public';
+  if ( process.env.SCENE && process.env.SCENE != 'default' ) {
+    ROOT_DIR_NAME = ROOT_DIR_NAME + `_${process.env.SCENE}`;
+  }
+  return resolve(`../../${ROOT_DIR_NAME}/${dir}`);
 }
 
 const VERSION = new Date().getTime();

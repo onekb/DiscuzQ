@@ -80,7 +80,7 @@ class LikedMessage extends SimpleMessage
              */
             $content = $result['content'];
 
-            // 不是长文没有标题则使用首贴内容
+            // 不是长文没有标题则使用首帖内容
             $firstContent = $result['first_content'];
 
             $build['post_content'] = $content == $firstContent ? '' : $content;

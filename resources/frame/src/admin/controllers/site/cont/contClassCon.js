@@ -22,6 +22,46 @@ export default {
   },
 
   methods:{
+    // 新增。当前父类添加二级子类，携带父级id
+    childAdd(row){
+      row.children.push({
+        id: '',
+        name: '',
+        description: '',
+        sort: '',
+        parentid: row.id
+      });
+    },
+    
+    // 新增。删除带id子项，无id的等等提交刷新列表
+    deleteChildClick(row){
+      if(row.id){
+        this.batchDeleteCategories(row.id).then(()=>{
+          this.getCategories();
+        });
+      }else{
+        let p=this.categoriesList.find(item=>{
+            return item.id===row.parentid;
+        })
+        p.children.splice(p.children.indexOf(row),1);
+      }
+    },
+
+    // 新增。确认子类
+    submitChildClick(row){
+      if(!row.name){
+        this.$message.warning('名称不能为空！')
+        return
+      }
+      if(row.id){
+        this.$message.warning('修改子类，请点击页面底部的提交按钮')
+        return
+      }
+      this.createCategories([row]).then(()=>{
+        this.getCategories();
+      })
+    },
+
     addClick() {
       console.log('12344');
     },
@@ -43,7 +83,11 @@ export default {
         name:"",
         id:"",
         description:"",
-        sort:""
+        sort:"",
+        parentid:0,
+        children: [],
+        isShow: true, 
+        idx: this.categoriesList.length+1
       })
     },
 
@@ -73,9 +117,25 @@ export default {
             "attributes": {
               "name": item.name,
               "description": item.description,
-              "sort": item.sort,
+              "parentid":item.parentid,
+              "sort": item.sort
             }
-          })
+          });
+          item.children && item.children.forEach(item_child=>{
+            if (!item_child.id){
+              return
+            }
+            data.push({
+              'type':"categories",
+              'id':item_child.id,
+              "attributes": {
+                "name": item_child.name,
+                "description": item_child.description,
+                "sort": item_child.sort,
+                "parentid": item_child.parentid
+              }
+            })
+          });
         });
         this.batchUpdateCategories(data).then(()=>{
           this.getCategories();
@@ -83,14 +143,39 @@ export default {
       }
     },
 
-    deleteClick(id,index){
+    // deleteClick(id,index){
 
-      if (this.createCategoriesStatus && index > this.categoriesListLength -1){
-        this.categoriesList.splice(index,1);
-      } else {
-        this.deleteCategories(id).then(()=>{
-          this.getCategories();
-        });
+    //   if (this.createCategoriesStatus && index > this.categoriesListLength -1){
+    //     this.categoriesList.splice(index,1);
+    //   } else {
+    //     this.deleteCategories(id).then(()=>{
+    //       this.getCategories();
+    //     });
+    //   }
+    // },
+    deleteClick(row){
+      if(row.id){
+        // 删除父类(包含子类批量删除，不包含单独删除)
+        if(row.children){
+          let id=[];
+          id.push(row.id)
+          row.children.forEach(item=>{
+            if(item.id){
+              id.push(item.id)
+            }
+          })
+
+          this.batchDeleteCategories(id.join(',')).then(()=>{
+            this.getCategories();
+          });
+        }else{
+          this.deleteCategories(row.id).then(()=>{
+            this.getCategories();
+          });
+        }
+      }else{
+        // console.log(this.categoriesList.indexOf(row));
+        this.categoriesList.splice(this.categoriesList.indexOf(row),1);
       }
     },
 
@@ -98,11 +183,17 @@ export default {
       this.delLoading = true;
       let id = [];
       this.multipleSelection.forEach((item,index)=>{
-        if (index < this.multipleSelection.length){
-          id.push(item.id)
-        }
+        // if (index < this.multipleSelection.length){
+        //   id.push(item.id)
+        // }
+        item.id && id.push(item.id)
+        item.children && item.children.forEach(item_child=>{
+          if(item_child.id){
+            id.push(item_child.id)
+          }
+        })
       });
-
+      id = [...new Set(id)]
       this.batchDeleteCategories(id.join(',')).then(()=>{
         this.getCategories();
       });
@@ -128,7 +219,11 @@ export default {
               name: item.attributes.name,
               id: item.id,
               description: item.attributes.description,
-              sort: item.attributes.sort
+              sort: item.attributes.sort,
+              parentid: item.attributes.parentid,
+              children:item.attributes.children || [],
+              isShow:true, // 本地显示需要，显示父类操作
+              idx:index, // 本地删除需要，记录父类下标
             })
           })
         }
@@ -188,7 +283,8 @@ export default {
           "attributes": {
             "name": item.name,
             "description": item.description,
-            "sort": item.sort
+            "sort": item.sort,
+            "parentid":item.parentid
           }
         },)
       });

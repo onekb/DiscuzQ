@@ -50,6 +50,7 @@ class CreateCategoryController extends AbstractCreateController
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
+        $this->assertAdmin($request->getAttribute('actor'));
         $actor = $request->getAttribute('actor');
         $data = $request->getParsedBody()->get('data', []);
         $ip = ip($request->getServerParams());

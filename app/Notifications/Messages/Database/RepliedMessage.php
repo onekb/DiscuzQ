@@ -76,7 +76,7 @@ class RepliedMessage extends SimpleMessage
             $build['reply_post_created_at'] = $this->post->replyPost->formatDate('created_at');
         } else {
 
-            // 不是长文没有标题则使用首贴内容
+            // 不是长文没有标题则使用首帖内容
             $firstContent = $result['first_content'];
 
             $build['post_content'] = $this->post->formatContent();  // 回复的内容

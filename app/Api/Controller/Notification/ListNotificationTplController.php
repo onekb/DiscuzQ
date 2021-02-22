@@ -18,32 +18,40 @@
 
 namespace App\Api\Controller\Notification;
 
-use App\Api\Serializer\NotificationTplSerializer;
+use App\Api\Serializer\ArraySerializer;
 use App\Models\NotificationTpl;
 use Discuz\Api\Controller\AbstractListController;
 use Discuz\Auth\AssertPermissionTrait;
-use Discuz\Auth\Exception\PermissionDeniedException;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Arr;
+use Discuz\Http\UrlGenerator;
+use Illuminate\Support\Collection;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
-use Tobscure\JsonApi\Exception\InvalidParameterException;
 
 class ListNotificationTplController extends AbstractListController
 {
     use AssertPermissionTrait;
 
     /**
-     * {@inheritdoc}
+     * @var string
      */
-    public $serializer = NotificationTplSerializer::class;
+    public $serializer = ArraySerializer::class;
+
+    /**
+     * @var UrlGenerator
+     */
+    protected $url;
+
+    public function __construct(UrlGenerator $url)
+    {
+        $this->url = $url;
+    }
 
     /**
      * @param ServerRequestInterface $request
      * @param Document $document
-     * @return Collection
-     * @throws PermissionDeniedException
-     * @throws InvalidParameterException
+     * @return NotificationTpl[]|\Illuminate\Database\Eloquent\Collection|mixed
+     * @throws \Discuz\Auth\Exception\PermissionDeniedException
+     * @throws \Tobscure\JsonApi\Exception\InvalidParameterException
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
@@ -52,17 +60,45 @@ class ListNotificationTplController extends AbstractListController
         $limit = $this->extractLimit($request);
         $offset = $this->extractOffset($request);
 
-        $type = Arr::get($request->getQueryParams(), 'type', 0);
+        $tpl = NotificationTpl::all(['id', 'status', 'type', 'type_name'])->groupBy('type_name');
 
-        $query = NotificationTpl::query()->where('type', $type);
+        $total = $tpl->count();
 
-        $total = $query->count();
+        $data = $tpl->skip($offset)->take($limit);
+
+        $document->addPaginationLinks(
+            $this->url->route('notification.tpl.list'),
+            $request->getQueryParams(),
+            $offset,
+            $limit,
+            $total
+        );
 
         $document->setMeta([
             'total' => $total,
             'pageCount' => ceil($total / $limit),
         ]);
 
-        return $query->skip($offset)->take($limit)->get();
+        return $this->build($data);
+    }
+
+    /**
+     * @param Collection $data
+     * @return Collection
+     */
+    private function build(Collection $data)
+    {
+        return $data->map(function (Collection $item, $index) {
+            // Splicing typeName
+            $typeName = '';
+            $item->each(function ($value) use (&$typeName) {
+                if ($value->status) {
+                    $typeName = $typeName . (string) NotificationTpl::enumTypeName($value->type, '、');
+                }
+            });
+
+            return ['name' => $index, 'type_status' => trim($typeName, '、')];
+        })->values();
     }
 }
+

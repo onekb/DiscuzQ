@@ -8,14 +8,19 @@
           </div>
           <div>
             <span class="cont-review-header__lf-title">搜索范围：</span>
-            <el-select v-model="categoriesListSelect" clearable  size="medium" placeholder="选择主题分类">
+            <!-- <el-select v-model="categoriesListSelect" clearable  size="medium" placeholder="选择主题分类">
               <el-option
                 v-for="item in categoriesList"
                 :key="item.id"
                 :label="item.name"
                 :value="item.id">
               </el-option>
-            </el-select>
+            </el-select> -->
+            <el-cascader
+              v-model="categoriesListSelect"
+              :options="categoriesList"
+              :props="{ expandTrigger: 'hover', checkStrictly: true }">
+            </el-cascader>
           </div>
         </div>
 
@@ -143,31 +148,31 @@
       <div class="recycle-bin-footer footer-btn">
         <el-button size="small" :loading="subLoading" type="primary" @click="submitClick">提交</el-button>
         <el-button type="text" :loading="btnLoading === 1" @click="allOperationsSubmit(1)">全部还原</el-button>
-            <el-popover
-              width="100"
-              placement="top"
-              v-model="visible"
+        <el-popover
+          width="100"
+          placement="top"
+          v-model="visible"
+        >
+          <p>确定删除该项吗？</p>
+          <div style="text-align: right; margin: 10PX 0 0 0 ">
+            <el-button
+              type="danger"
+              size="mini"
+              @click="visible = false"
             >
-              <p>确定删除该项吗？</p>
-              <div style="text-align: right; margin: 10PX 0 0 0 ">
-                <el-button
-                  type="danger"
-                  size="mini"
-                  @click="visible = false"
-                >
-                  取消
-                </el-button>
-                <el-button
-                  type="primary"
-                  size="mini"
-                  @click="
-                    allOperationsSubmit(2)
-                    visible = false"
-                  >确定</el-button
-                >
-              </div>
-        <el-button slot="reference" type="text" :loading="btnLoading === 2">全部删除</el-button>
-            </el-popover>
+              取消
+            </el-button>
+            <el-button
+              type="primary"
+              size="mini"
+              @click="
+                allOperationsSubmit(2)
+                visible = false"
+              >确定</el-button
+            >
+          </div>
+          <el-button slot="reference" type="text" :loading="btnLoading === 2">全部删除</el-button>
+        </el-popover>
         <!-- <el-checkbox v-model="appleAll">将操作应用到其他所有页面</el-checkbox> -->
       </div>
 

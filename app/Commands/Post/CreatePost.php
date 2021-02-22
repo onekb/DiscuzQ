@@ -24,9 +24,11 @@ use App\Events\Post\Saved;
 use App\Events\Post\Saving;
 use App\Models\Post;
 use App\Models\PostMod;
+use App\Models\Thread;
 use App\Models\User;
 use App\Repositories\ThreadRepository;
 use App\Validators\PostValidator;
+use Carbon\Carbon;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Foundation\EventsDispatchTrait;
@@ -42,6 +44,7 @@ class CreatePost
     use AssertPermissionTrait;
     use EventsDispatchTrait;
 
+    const LIMIT_RED_PACKET_TIME = 30;
     /**
      * The id of the thread.
      *
@@ -111,13 +114,19 @@ class CreatePost
     protected $validator;
 
     /**
+     * @var null
+     */
+    protected $isFirst;
+
+    /**
      * @param int $threadId
      * @param User $actor
      * @param array $data
      * @param string $ip
      * @param int $port
+     * @param null $isFirst
      */
-    public function __construct($threadId, User $actor, array $data, $ip, $port)
+    public function __construct($threadId, User $actor, array $data, $ip, $port, $isFirst = null)
     {
         $this->threadId = $threadId;
         $this->replyPostId = Arr::get($data, 'attributes.replyId', null);
@@ -126,6 +135,7 @@ class CreatePost
         $this->data = $data;
         $this->ip = $ip;
         $this->port = $port;
+        $this->isFirst = $isFirst;
     }
 
     /**
@@ -142,13 +152,27 @@ class CreatePost
      */
     public function handle(Dispatcher $events, ThreadRepository $threads, PostValidator $validator, Censor $censor, Post $post)
     {
+        $cache = app('cache');
         $this->events = $events;
 
         $thread = $threads->findOrFail($this->threadId);
 
-        $isFirst = empty($thread->post_count);
+        if($thread->is_red_packet != Thread::NOT_HAVE_RED_PACKET && (Carbon::now()->timestamp - $thread->created_at->timestamp > 30)){
+            $cacheKey = 'thread_red_packet_'.md5($this->actor->id);
+            $red_cache = $cache->get($cacheKey);
+            if($red_cache){
+                $cache->put($cacheKey, true, self::LIMIT_RED_PACKET_TIME);
+                throw new Exception(trans('user.do_frequent'));
+            }
+        }
 
-        if (! $isFirst) {
+        $isFirst = is_null($this->isFirst) ? empty($thread->post_count):$this->isFirst;
+
+        if ($isFirst && ($firstPost = $thread->firstPost)) {
+            $post = $firstPost;
+        }
+
+        if (!$isFirst) {
             // 非首帖，检查是否有权回复
             $this->assertCan($this->actor, 'reply', $thread);
 
@@ -193,7 +217,8 @@ class CreatePost
             $this->commentPostId,
             $this->commentUserId,
             $isFirst,
-            (bool) Arr::get($this->data, 'attributes.isComment')
+            (bool) Arr::get($this->data, 'attributes.isComment'),
+            $post
         );
 
         $post->content = $censor->checkText($post->content);
@@ -211,9 +236,17 @@ class CreatePost
             new Saving($post, $this->actor, $this->data)
         );
 
-        $validator->valid($post->getAttributes());
+        if (!$isDraft = Arr::get($this->data, 'attributes.is_draft')) {
+            $validator->valid($post->getAttributes());
+        }
 
         $post->save();
+
+        //这里判断是否为红包贴，如果是红包贴则限制用户回帖时间
+        if($thread->is_red_packet != Thread::NOT_HAVE_RED_PACKET && (Carbon::now()->timestamp - $thread->created_at->timestamp > 30)){
+            $cacheKey = 'thread_red_packet_'.md5($this->actor->id);
+            $cache->put($cacheKey, true, self::LIMIT_RED_PACKET_TIME);
+        }
 
         // 记录触发的审核词
         if ($post->is_approved === Post::UNAPPROVED && $censor->wordMod) {
@@ -229,6 +262,8 @@ class CreatePost
         // $this->notifications->onePerUser(function () use ($post, $actor) {
         $this->dispatchEventsFor($post, $this->actor);
         // });
+
+        $post->rewards = floatval(sprintf('%.2f', $post->getPostReward()));
 
         return $post;
     }

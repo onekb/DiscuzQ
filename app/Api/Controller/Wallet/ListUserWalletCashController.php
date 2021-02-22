@@ -20,6 +20,7 @@ namespace App\Api\Controller\Wallet;
 
 use App\Api\Serializer\UserWalletCashSerializer;
 use Discuz\Api\Controller\AbstractListController;
+use Discuz\Auth\Exception\PermissionDeniedException;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Psr\Http\Message\ServerRequestInterface;
@@ -104,7 +105,12 @@ class ListUserWalletCashController extends AbstractListController
         $sort   = $this->extractSort($request);
         $limit  = $this->extractLimit($request);
         $offset = $this->extractOffset($request);
-
+        //如果用户不是管理员，那么就只能看自己的提现记录
+        if(!$actor->isAdmin() && !empty($filter['user'])){
+            if($filter['user'] != $actor->id){
+                throw new PermissionDeniedException;
+            }
+        }
         $cash_records = $this->getCashRecords($actor, $filter, $limit, $offset, $sort);
 
         $document->addPaginationLinks(

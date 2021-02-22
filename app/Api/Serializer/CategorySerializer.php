@@ -19,6 +19,7 @@
 namespace App\Api\Serializer;
 
 use App\Models\Category;
+use App\Models\Sequence;
 use Discuz\Api\Serializer\AbstractSerializer;
 use Tobscure\JsonApi\Relationship;
 
@@ -40,12 +41,16 @@ class CategorySerializer extends AbstractSerializer
             'description'       => $model->description,
             'icon'              => $model->icon,
             'sort'              => (int) $model->sort,
+            'parentid'          => (int) $model->parentid,
             'property'          => (int) $model->property,
             'thread_count'      => (int) $model->thread_count,
             'ip'                => $model->ip,
             'created_at'        => $this->formatDate($model->created_at),
             'updated_at'        => $this->formatDate($model->updated_at),
             'canCreateThread'   => $this->actor->can('createThread', $model),
+            'checked'           => in_array($model->id, $this->getCheckList()) ? 1 : 0,
+            'search_ids'        => $this->getSearchIds($model->id),
+            'children'          => $this->getChildrenList($model->id)
         ];
     }
 
@@ -56,5 +61,46 @@ class CategorySerializer extends AbstractSerializer
     protected function moderators($category)
     {
         return $this->hasMany($category, UserSerializer::class, 'moderatorUsers');
+    }
+
+    /**
+     * @param  $list
+     * @return array
+     */
+    protected function getChildrenList($parentid)
+    {
+        $list = Category::query()->where('parentid',$parentid)->orderBy('sort')->get();
+        foreach ($list as $key => $value) {
+            $list[$key]['created_at'] = $this->formatDate($value['created_at']);
+            $list[$key]['canCreateThread'] = $this->actor->can('createThread', $value);
+            $list[$key]['search_ids'] = $value['id'];
+            $list[$key]['checked'] = in_array($value['id'], $this->getCheckList()) ? 1 : 0;
+        }
+        return $list;
+    }
+
+    /**
+     * @param  $searchIds
+     * @return array
+     */
+    protected function getSearchIds($id)
+    {
+        $searchIds = Category::query()->where('id', $id)->orWhere('parentid', $id)->orderBy('id')->pluck('id');
+        $searchIds = json_decode($searchIds, true);
+        $searchIds = implode(",",$searchIds);
+        return $searchIds;
+    }
+
+    /**
+     * $ids
+     *
+     * @param $ids
+     * @return string
+     */
+    public function getCheckList(){
+        $sequenceList = Sequence::query()->first();
+        if (empty($sequenceList)) return [];
+        $ids = explode(',',$sequenceList['category_ids']);
+        return $ids;
     }
 }

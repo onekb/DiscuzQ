@@ -22,6 +22,7 @@ use App\Events\Group\Created;
 use App\Events\Group\Saving;
 use App\Models\Group;
 use App\Models\User;
+use App\Models\AdminActionLog;
 use App\Validators\GroupValidator;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
@@ -105,6 +106,11 @@ class CreateGroup
         $this->validator->valid($group->getAttributes());
 
         $group->save();
+
+        AdminActionLog::createAdminActionLog(
+            $this->actor->id,
+            '新增用户角色【'. $group->name .'】'
+        );
 
         $this->dispatchEventsFor($group, $this->actor);
         return $group;

@@ -3,10 +3,10 @@
 namespace App\Notifications\Messages\Wechat;
 
 use App\Models\Order;
-use Carbon\Carbon;
+use App\Models\Thread;
+use App\Models\User;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Contracts\Routing\UrlGenerator;
-use Illuminate\Support\Arr;
 
 /**
  * 内容支付分成通知 - 微信
@@ -17,9 +17,15 @@ class RewardedScaleWechatMessage extends SimpleMessage
 {
     public $tplId = 38;
 
-    protected $model;
+    /**
+     * @var Order $order
+     */
+    protected $order;
 
-    protected $actor;
+    /**
+     * @var User $user
+     */
+    protected $user;
 
     protected $data;
 
@@ -35,12 +41,12 @@ class RewardedScaleWechatMessage extends SimpleMessage
 
     public function setData(...$parameters)
     {
-        [$firstData, $actor, $model, $data] = $parameters;
+        [$firstData, $user, $order, $data] = $parameters;
         // set parent tpl data
         $this->firstData = $firstData;
 
-        $this->actor = $actor;
-        $this->model = $model;
+        $this->user = $user;
+        $this->order = $order;
         $this->data = $data;
 
         $this->template();
@@ -48,15 +54,7 @@ class RewardedScaleWechatMessage extends SimpleMessage
 
     public function template()
     {
-        $build =  [
-            'title' => $this->getTitle(),
-            'content' => $this->getContent($this->data),
-            'raw' => Arr::get($this->data, 'raw'),
-        ];
-
-        Arr::set($build, 'raw.tpl_id', $this->firstData->id);
-
-        return $build;
+        return ['content' => $this->getWechatContent()];
     }
 
     protected function titleReplaceVars()
@@ -66,32 +64,50 @@ class RewardedScaleWechatMessage extends SimpleMessage
 
     public function contentReplaceVars($data)
     {
-        $message = Arr::get($data, 'message', '');
-        $threadId = Arr::get($data, 'raw.thread_id', 0);
-        $bossAmount = Arr::get($data, 'raw.boss_amount', 0); // 上级分成金额
+        switch ($this->data['notify_type']) {
+            default:
+            case 'paid_site':
+                // 付费站点加入
+                $user = $this->order->user;
+                $title = '注册站点';
+                break;
+            case 'paid_reward': // 打赏
+            case 'paid_thread': // 付费主题
+            case 'paid_attachment': // 附件付费
+                $user = $this->order->payee;
+                $title = $this->order->thread->getContentByType(Thread::CONTENT_LENGTH, true); // thread_title
+                break;
+        }
 
         // 获取支付类型
-        $orderName = Order::enumType(Arr::get($data, 'raw.type', 0), function ($args) {
+        $orderTypeName = Order::enumType($this->order->type, function ($args) {
             return $args['value'];
         });
 
-        $actorName = Arr::get($data, 'raw.actor_username', '');  // 发送人姓名
+        /**
+         * 设置父类 模板数据
+         * @parem $user_name 支付人
+         * @parem $order_sn 订单编号
+         * @parem $payment_sn 支付编号
+         * @parem $order_type_name 订单支付类型 (注册/打赏/付费主题/付费附件)
+         * @parem $boss_amount 上级实际分成金额
+         * @parem $title 主题标题/注册站点 (如果是注册站点，该字段是"注册站点")
+         */
+        $this->setTemplateData([
+            '{$user_name}'       => $user->username,
+            '{$order_sn}'        => $this->order->order_sn,
+            '{$payment_sn}'      => $this->order->payment_sn,
+            '{$order_type_name}' => $orderTypeName,
+            '{$boss_amount}'     => $this->order->calculateAuthorAmount(),
+            '{$title}'           => $this->strWords($title),
+        ]);
 
-        // 主题ID为空时跳转到首页
-        if (empty($threadId)) {
-            $threadUrl = $this->url->to('');
-        } else {
-            $threadUrl = $this->url->to('/topic/index?id=' . $threadId);
-        }
-
-        return [
-            $actorName,
-            $bossAmount,
-            $this->strWords($message),
-            $orderName, // 1：注册，2：打赏，3：付费主题，4：付费用户组
-            Carbon::now()->toDateTimeString(),
-            $threadUrl,
+        // build data
+        $expand = [
+            'redirect_url' => $this->url->to('/topic/index?id=' . $this->order->thread_id),
         ];
+
+        return $this->compiledArray($expand);
     }
 
 }

@@ -178,7 +178,7 @@ class ListNotificationController extends AbstractListController
                                     } elseif (Str::contains($type, ['related'])) {
                                         /**
                                          * 判断如果是 @通知 ，当匿名贴@指定人时，指定人看到的通知应该是匿名人@他
-                                         * (只用是否是首贴区分@的来自类型)
+                                         * (只用是否是首帖区分@的来自类型)
                                          */
                                         $postId = Arr::get($item->data, 'post_id');
                                         if ($postId == $thread->firstPost->id) {

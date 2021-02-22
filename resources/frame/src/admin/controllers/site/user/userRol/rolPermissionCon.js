@@ -21,18 +21,27 @@ export default {
       canBeOnlooker: false, // 是否可以设置围观
       categoriesList: [], // 分类列表
       selectList: {
-        'viewThreads': [],
-        'createThread':[],
-        'thread.reply':[],
-        'thread.edit':[],
-        'thread.hide':[],
-        'thread.essence':[],
-        'thread.viewPosts':[],
-        'thread.editPosts':[],
-        'thread.hidePosts':[],
-        'thread.canBeReward': [],
-        'thread.editOwnThreadOrPost': [],
-        'thread.hideOwnThreadOrPost': [],
+        /*IFTRUE_pay*/
+        "createThread.0":[], //发布文字帖扩展项
+        "createThread.1":[], //发布帖子扩展项
+        "createThread.2":[], //发布视频帖扩展项
+        "createThread.3":[], //发布图片帖扩展项
+        "createThread.4":[], //发布语音帖扩展项
+        "createThread.5":[], //发布问答扩展项
+        "createThread.6":[], //发布商品帖扩展项
+        /*FITRUE_pay*/
+        'viewThreads': [], // 查看主题列表扩展
+        'createThread':[], // 发布主题扩展项
+        'thread.reply':[], // 回复主题扩展项
+        'thread.edit':[], // 编辑主题扩展
+        'thread.hide':[], // 删除主题扩展
+        'thread.essence':[], // 加精扩展
+        'thread.viewPosts':[], // 查看主题详情扩展
+        'thread.editPosts':[], // 编辑回复扩展
+        'thread.hidePosts':[], // 删除回复扩展
+        'thread.canBeReward': [], //打赏扩展
+        'thread.editOwnThreadOrPost': [], // 编辑自己的主题、回复
+        'thread.hideOwnThreadOrPost': [], // 删除自己的主题、回复
         'thread.freeViewPosts.1':[],
         'thread.freeViewPosts.2':[],
         'thread.freeViewPosts.3':[],
@@ -78,6 +87,38 @@ export default {
       selectText: '全选', //全选文字
       checkAllPermission: [], //所有操作权限
       temporaryChecked: [], //接口返回权限
+      /*IFTRUE_pay*/
+      // 7项发布功能权限的状态
+      pubFunc:{
+        "createThread.0.disabled":false,
+        "createThread.1.disabled":false,
+        "createThread.2.disabled":false,
+        "createThread.3.disabled":false,
+        "createThread.4.disabled":false,
+        "createThread.5.disabled":false,
+        "createThread.6.disabled":false,
+      },
+      // 扩展全选
+      expandItem: [
+        'viewThreads',
+        'createThread',
+        'thread.reply',
+        'thread.edit',
+        'thread.hide',
+        'thread.essence',
+        'thread.viewPosts',
+        'thread.editPosts',
+        'thread.hidePosts',
+        'thread.canBeReward',
+        'thread.editOwnThreadOrPost',
+        'thread.hideOwnThreadOrPost',
+        'thread.freeViewPosts.1',
+        'thread.freeViewPosts.2',
+        'thread.freeViewPosts.3',
+        'thread.freeViewPosts.4',
+        'thread.freeViewPosts.5'
+      ]
+      /*FITRUE_pay*/
     };
   },
   watch: {
@@ -144,6 +185,16 @@ export default {
           if (!this.allowtobuy) {
             this.value = false;
           }
+          /*IFTRUE_pay*/
+          // 根据全局设置，判断发布权限前7项是否可选
+          this.pubFunc['createThread.0.disabled']=res.readdata._data.set_site.site_create_thread0===0;
+          this.pubFunc['createThread.1.disabled']=res.readdata._data.set_site.site_create_thread1===0;
+          this.pubFunc['createThread.2.disabled']=res.readdata._data.set_site.site_create_thread2===0;
+          this.pubFunc['createThread.3.disabled']=res.readdata._data.set_site.site_create_thread3===0;
+          this.pubFunc['createThread.4.disabled']=res.readdata._data.set_site.site_create_thread4===0;
+          this.pubFunc['createThread.5.disabled']=res.readdata._data.set_site.site_create_thread5===0;
+          this.pubFunc['createThread.6.disabled']=res.readdata._data.set_site.site_create_thread6===0;
+          /*FITRUE_pay*/
         }
       });
     },
@@ -357,6 +408,8 @@ export default {
       }
       this.checked = checked;
     },
+    // 扩展项回显
+    /*IFTRUE_default*/
     setSelectValue(data) {
       const checkedData = data;
       const selectList = this.selectList;
@@ -400,6 +453,7 @@ export default {
       this.selectList = selectList;
       this.checked = checkedData;
     },
+    /*FITRUE_default*/
     // 清除某项下拉
     clearItem(value, obj) {
       let item = "";
@@ -420,6 +474,7 @@ export default {
       }
     },
     //全选/取消全选
+    /*IFTRUE_default*/
     handleCheckAllChange(val) {
       if (val) {
         this.checkAllPermission.forEach(item => {
@@ -456,7 +511,9 @@ export default {
         this.checkAll = false;
       }
     },
+    /*FITRUE_default*/
     checkSelect() {
+
       if (this.checked.indexOf('switch.createThread') !== -1) {
         if(this.selectList.createThread.length === 0){
           this.$message.error("请选择发布主题权限");
@@ -560,7 +617,138 @@ export default {
         }
       }
       return true;
-    }
+    },
+
+
+    /*IFTRUE_pay*/
+    // 发帖权限7项的扩展项切换状态时，有就加入权限组，否则清除
+    changeExpandItem(val) {
+      if (this.selectList[val.slice(0, 14)].includes(val)) {
+
+        if (val.includes('position')) {
+          // 位置权限直接添加
+          this.checked.push(val);
+        } else if (!this.checked.includes(val)) {
+          // 红包权限选择性添加
+          const str = `
+            <p style="text-indent:2em;">开启红包功能，存在被多个马甲刷回复领取红包的风险</p>
+            <p style="text-indent:2em;margin-top:10px;">
+              建议在
+              <span style="color:red;">用户 - 用户角色 - 设置 - 安全设置</span>
+              中开启以下权限：
+            </p>
+            <p style="padding-left:32PX;font-weight:bold;">
+              · 发布内容需先实名认证。<br>
+              · 发布内容需先绑定手机。
+            </p>
+          `;
+          this.$confirm(str, '提示', {
+            dangerouslyUseHTMLString: true,
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            this.checked.push(val);
+          }).catch(() => {
+            this.selectList[val.slice(0, 14)] = 
+              this.selectList[val.slice(0, 14)].filter(item => item !== val);
+          });
+        } 
+      } else {
+        this.checked = this.checked.filter(item => item !== val);
+      }
+    },
+
+    // 回显扩展设置
+    setSelectValue(data) {
+      const checkedData = data;
+      const selectList = this.selectList;
+
+      checkedData.forEach((value, index) => {
+
+        // 1 红包、位置回显
+        if(value.includes("redPacket") || value.includes("position")){
+          const str=value.substr(0,14)
+          !selectList[str].includes(value) && selectList[str].push(value)
+        }
+
+        // 2 分类-非全局状态回显
+        if (value.includes("category")) {
+          const splitIndex = value.indexOf(".");
+          const obj = value.substring(splitIndex + 1);
+          const id = value.substring(8, splitIndex);
+          if (selectList[obj] && checkedData.indexOf(obj) === -1) {
+            selectList[obj].push(id);
+          }
+          if (checkedData.indexOf(obj) !== -1) {
+            checkedData.splice(index, 1);
+          }
+        }
+
+        // 3 分类-全局状态回显
+        this.expandItem.includes(value) && selectList[value].push("");
+
+      });
+      // 4 全选状态-其它扩展回显
+      this.checkAll && Object.keys(selectList).forEach(item => {
+        selectList[item].length === 0 && selectList[item].push('')
+      })
+      this.selectList = selectList;
+      this.checked = checkedData;
+    },
+ 
+    // 全选切换
+    handleCheckAllChange(val) {
+      this.checked = [];
+      this.selectList = {
+        "createThread.0":[], //发布文字帖扩展项
+        "createThread.1":[], //发布帖子扩展项
+        "createThread.2":[], //发布视频帖扩展项
+        "createThread.3":[], //发布图片帖扩展项
+        "createThread.4":[], //发布语音帖扩展项
+        "createThread.5":[], //发布问答扩展项
+        "createThread.6":[], //发布商品帖扩展项
+        'viewThreads': [],
+        'createThread':[], // 发布主题扩展项
+        'thread.reply':[], // 回复主题扩展项
+        'thread.canBeReward': [], //打赏扩展
+        'thread.edit':[],
+        'thread.hide':[],
+        'thread.essence':[],
+        'thread.viewPosts':[],
+        'thread.editPosts':[],
+        'thread.hidePosts':[],
+        'thread.editOwnThreadOrPost': [],
+        'thread.hideOwnThreadOrPost': [],
+        'thread.freeViewPosts.1':[],
+        'thread.freeViewPosts.2':[],
+        'thread.freeViewPosts.3':[],
+        'thread.freeViewPosts.4':[],
+        'thread.freeViewPosts.5':[]
+      };
+      if (val) {
+        // 1 主权限全选
+        this.checkAllPermission.forEach(item => {
+          this.checked.push(item);
+        })
+        // 2 红包权限全选
+        for(let i=0;i<2;i++){
+          this.checked.push(`createThread.${i}.redPacket`)
+        }
+        // 3 位置权限全选
+        for(let i=0;i<7;i++){
+          this.checked.push(`createThread.${i}.position`)
+        }
+        // 4 分类扩展全选
+        this.checked.push(...this.expandItem)
+       
+        this.checkAll = true;
+        this.setSelectValue(this.checked);
+      } else {
+        this.checkAll = false;
+      }
+    },
+    /*FITRUE_pay*/ 
   },
   created() {
     this.groupId = this.$route.query.id;
@@ -570,6 +758,7 @@ export default {
     this.signUpSet();
     this.getCategories();
     if (this.groupId === '7') {
+      // 游客权限
       this.checkAllPermission = [
         "switch.viewThreads", //查看主题列表
         "switch.thread.viewPosts", //查看主题详情

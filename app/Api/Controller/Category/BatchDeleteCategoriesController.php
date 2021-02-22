@@ -21,6 +21,8 @@ namespace App\Api\Controller\Category;
 use App\Api\Serializer\CategorySerializer;
 use App\Commands\Category\DeleteCategory;
 use Discuz\Api\Controller\AbstractListController;
+use Discuz\Auth\AssertPermissionTrait;
+use Discuz\Auth\Exception\PermissionDeniedException;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,6 +30,8 @@ use Tobscure\JsonApi\Document;
 
 class BatchDeleteCategoriesController extends AbstractListController
 {
+    use AssertPermissionTrait;
+
     /**
      * {@inheritdoc}
      */
@@ -51,10 +55,15 @@ class BatchDeleteCategoriesController extends AbstractListController
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
+        $this->assertAdmin($request->getAttribute('actor'));
         $ids = explode(',', Arr::get($request->getQueryParams(), 'ids'));
         $actor = $request->getAttribute('actor');
 
         $result = ['data' => [], 'meta' => []];
+
+        $ids = array_flip($ids);
+        $ids = array_keys($ids);
+        $ids = array_reverse($ids);
 
         foreach ($ids as $id) {
             try {

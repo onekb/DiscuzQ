@@ -25,7 +25,6 @@ use App\Notifications\Messages\Database\PostMessage;
 use App\Notifications\Messages\Wechat\QuestionedWechatMessage;
 use App\Notifications\Questioned;
 use App\Notifications\System;
-use Illuminate\Support\Arr;
 
 /**
  * Thread 发送通知
@@ -46,13 +45,18 @@ trait ThreadNoticesTrait
     public function threadNotices(Thread $thread, User $actor, $type, $message = '')
     {
         // 审核通过时发送 @ 通知
-        if ($type === 'isApproved' && $thread->is_approved === Thread::APPROVED) {
-            $this->sendRelated($thread->firstPost, $thread->user);
-
-            // 问答帖审核通过时，通知被提问者
-            if ($thread->type === Thread::TYPE_OF_QUESTION && $thread->question) {
-                $this->sendQuestioned($thread->question, $thread->user);
-            }
+        if (
+            $type === 'isApproved'
+            && $thread->is_approved === Thread::APPROVED
+            && $thread->type == Thread::TYPE_OF_QUESTION
+        ) {
+            $this->sendRelated($thread->firstPost, $actor);
+            /**
+             * 如果是问答审核，发送回答者通知
+             * (帖子合法才允许发送，向回答人发送问答通知)
+             */
+            // Tag 发送通知
+            $thread->question->beUser->notify(new Questioned(QuestionedWechatMessage::class, $actor, $thread->question));
         }
 
         // 无需给自己发送通知
@@ -64,103 +68,99 @@ trait ThreadNoticesTrait
 
         switch ($type) {
             case 'isEssence':   // 内容加精通知
-                $this->sendIsEssence($thread);
+                $this->sendIsEssence($thread, $actor);
                 break;
             case 'isSticky':    // 内容置顶通知
-                $this->sendIsSticky($thread);
+                $this->sendIsSticky($thread, $actor);
                 break;
             case 'isApproved':  // 内容审核通知
-                $this->sendIsApproved($thread, ['refuse' => $message]);
+                $this->sendIsApproved($thread, $actor, ['refuse' => $message]);
                 break;
             case 'isDeleted':   // 内容删除通知
-                $this->sendIsDeleted($thread, ['refuse' => $message]);
+                $this->sendIsDeleted($thread, $actor, ['refuse' => $message]);
                 break;
         }
     }
 
     /**
      * @param Question $question
-     * @param User $user 主题创建人
+     * @param User $actor 主题创建人
      */
-    public function sendQuestioned(Question $question, User $user)
+    public function sendQuestioned(Question $question, User $actor)
     {
-        // 帖子合法才允许发送
-        $build = [
-            'message' => $question->thread->getContentByType(Thread::CONTENT_LENGTH, true),
-            'raw' => array_merge(Arr::only($question->toArray(), ['thread_id', 'price']), [
-                'actor_username' => $question->thread->isAnonymousName(),   // 提问人姓名/匿名
-            ]),
-        ];
-
-        // Tag 发送通知 (向回答人发送问答通知)
-        $question->beUser->notify(new Questioned(QuestionedWechatMessage::class, $user, $question, $build));
+        // Tag 发送通知 (帖子合法才允许发送，向回答人发送问答通知)
+        $question->beUser->notify(new Questioned(QuestionedWechatMessage::class, $actor, $question));
     }
 
     /**
      * 内容置顶通知
      *
-     * @param $thread
+     * @param Thread $thread
+     * @param User $actor
      */
-    private function sendIsSticky($thread)
+    private function sendIsSticky($thread, $actor)
     {
         $build = [
             'message' => $this->getThreadTitle($thread),
-            'raw' => ['thread_id' => $thread->id],
+            'post' => $thread->firstPost,
             'notify_type' => PostMessage::NOTIFY_STICKY_TYPE,
         ];
 
         // Tag 发送通知
-        $thread->user->notify(new System(PostMessage::class, $thread->user, $build));
+        $thread->user->notify(new System(PostMessage::class, $actor, $build));
     }
 
     /**
      * 内容精华通知
      *
-     * @param $thread
+     * @param Thread $thread
+     * @param User $actor
      */
-    private function sendIsEssence($thread)
+    private function sendIsEssence($thread, $actor)
     {
         $build = [
             'message' => $this->getThreadTitle($thread),
-            'raw' => ['thread_id' => $thread->id],
+            'post' => $thread->firstPost,
             'notify_type' => PostMessage::NOTIFY_ESSENCE_TYPE,
         ];
 
         // Tag 发送通知
-        $thread->user->notify(new System(PostMessage::class, $thread->user, $build));
+        $thread->user->notify(new System(PostMessage::class, $actor, $build));
     }
 
     /**
      * 内容删除通知
      *
-     * @param $thread
+     * @param Thread $thread
+     * @param User $actor
      * @param array $attach 原因
      */
-    private function sendIsDeleted($thread, array $attach)
+    private function sendIsDeleted($thread, $actor, array $attach)
     {
         $data = [
             'message' => $this->getThreadTitle($thread),
+            'post' => $thread->firstPost,
             'refuse' => $attach['refuse'],
-            'raw' => ['thread_id' => $thread->id],
             'notify_type' => PostMessage::NOTIFY_DELETE_TYPE,
         ];
 
         // Tag 发送通知
-        $thread->user->notify(new System(PostMessage::class, $thread->user, $data));
+        $thread->user->notify(new System(PostMessage::class, $actor, $data));
     }
 
     /**
      * 内容审核通知
      *
-     * @param $thread
+     * @param Thread $thread
+     * @param User $actor
      * @param array $attach 原因
      */
-    private function sendIsApproved($thread, array $attach)
+    private function sendIsApproved($thread, $actor, array $attach)
     {
         $data = [
             'message' => $this->getThreadTitle($thread),
+            'post' => $thread->firstPost,
             'refuse' => $attach['refuse'],
-            'raw' => ['thread_id' => $thread->id],
         ];
 
         if ($thread->is_approved == 1) {
@@ -172,13 +172,13 @@ trait ThreadNoticesTrait
         }
 
         // Tag 发送通知
-        $thread->user->notify(new System(PostMessage::class, $thread->user, $data));
+        $thread->user->notify(new System(PostMessage::class, $actor, $data));
     }
 
     /**
-     * 首贴内容代替
+     * 首帖内容代替
      *
-     * @param $thread
+     * @param Thread $thread
      * @return mixed
      */
     public function getThreadTitle($thread)

@@ -18,6 +18,7 @@
 
 namespace App\Models;
 
+use App\Models\Thread;
 use App\Events\Category\Created;
 use Carbon\Carbon;
 use Discuz\Database\ScopeVisibilityTrait;
@@ -37,6 +38,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $ip
  * @property Carbon $created_at
  * @property Carbon $updated_at
+ * @property int $parentid
  */
 class Category extends Model
 {
@@ -83,13 +85,14 @@ class Category extends Model
      * @param string $ip
      * @return static
      */
-    public static function build(string $name, string $description, int $sort, string $icon = '', string $ip = '')
+    public static function build(string $name, string $description, int $sort, int $parentid,string $icon = '', string $ip = '')
     {
         $category = new static;
 
         $category->name = $name;
         $category->description = $description;
         $category->sort = $sort;
+        $category->parentid = $parentid;
         $category->icon = $icon;
         $category->ip = $ip;
 
@@ -122,11 +125,21 @@ class Category extends Model
      */
     public function refreshThreadCount()
     {
-        $this->thread_count = $this->threads()
+        $category_ids = Category::query()->where('id', $this->id)->orWhere('parentid', $this->id)->pluck('id')->toArray();
+        $this->thread_count = Thread::query()
             ->where('is_approved', Thread::APPROVED)
+            ->where('is_draft', 0)
+            ->wherein('category_id', $category_ids)
             ->whereNull('deleted_at')
             ->whereNotNull('user_id')
             ->count();
+
+        $categoryDetail =  Category::query()->where('id' ,$this->id)->first();
+        if($categoryDetail->parentid !== 0){
+            $categoryFatherDetail =  Category::query()->where('id' ,$categoryDetail->parentid)->first();
+            $categoryFatherDetail->thread_count = $categoryFatherDetail->thread_count + 1;
+            $categoryFatherDetail->save();
+        }
 
         return $this;
     }

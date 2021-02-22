@@ -51,6 +51,7 @@ class UpdateCategoryController extends AbstractResourceController
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
+        $this->assertAdmin($request->getAttribute('actor'));
         $actor = $request->getAttribute('actor');
         $categoryId = Arr::get($request->getQueryParams(), 'id');
         $data = $request->getParsedBody()->get('data', []);

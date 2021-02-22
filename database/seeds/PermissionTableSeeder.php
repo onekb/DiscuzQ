@@ -64,6 +64,13 @@ class PermissionTableSeeder extends Seeder
         'createThread.' . Thread::TYPE_OF_AUDIO => [],              // 发布语音
         'createThread.' . Thread::TYPE_OF_QUESTION => [10],         // 发布问答
         'createThread.' . Thread::TYPE_OF_GOODS => [10],            // 发布商品
+        'createThread.' . Thread::TYPE_OF_TEXT . '.position' => [10],       // 发布文字位置
+        'createThread.' . Thread::TYPE_OF_LONG . '.position' => [10],       // 发布长文位置
+        'createThread.' . Thread::TYPE_OF_VIDEO . '.position' => [10],      // 发布视频位置
+        'createThread.' . Thread::TYPE_OF_IMAGE . '.position' => [10],      // 发布图片位置
+        'createThread.' . Thread::TYPE_OF_AUDIO . '.position' => [10],      // 发布语音位置
+        'createThread.' . Thread::TYPE_OF_QUESTION . '.position' => [10],   // 发布问答位置
+        'createThread.' . Thread::TYPE_OF_GOODS . '.position' => [10],      // 发布商品位置
         'thread.rename' => [],                  // 修改主题标题
         'thread.favorite' => [10],              // 收藏主题
         'createThreadWithCaptcha' => [],        // 发布主题验证验证码

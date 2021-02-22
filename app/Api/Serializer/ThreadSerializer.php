@@ -18,7 +18,10 @@
 
 namespace App\Api\Serializer;
 
+use App\Models\RedPacket;
 use App\Models\Thread;
+use App\Models\Post;
+use App\Models\ThreadReward;
 use App\Traits\HasPaidContent;
 use Discuz\Api\Serializer\AbstractSerializer;
 use Discuz\Auth\Anonymous;
@@ -79,6 +82,7 @@ class ThreadSerializer extends AbstractSerializer
             'isEssence'         => (bool) $model->is_essence,
             'isSite'            => (bool) $model->is_site,
             'isAnonymous'       => (bool) $model->is_anonymous,
+            'isDraft'           => (bool) $model->is_draft,
             'canBeReward'       => $model->price == 0 && $this->gate->forUser($model->user)->allows('canBeReward', $model),
             'canViewPosts'      => $gate->allows('viewPosts', $model),
             'canReply'          => $gate->allows('reply', $model),
@@ -88,6 +92,10 @@ class ThreadSerializer extends AbstractSerializer
             'canDelete'         => $gate->allows('delete', $model),
             'canHide'           => $gate->allows('hide', $model),
             'canEdit'           => $gate->allows('edit', $model),
+            'isRedPacket'       => $model->is_red_packet,
+            'redPacket'         => $model->redPacket,
+            'postContent'           => $this->getThreadContent($model->id),
+            'questionTypeAndMoney'  => $this->getQuestionMoney($model->id)
         ];
 
         if ($model->deleted_at) {
@@ -193,7 +201,11 @@ class ThreadSerializer extends AbstractSerializer
      */
     public function posts($thread)
     {
-        return $this->hasMany($thread, PostSerializer::class);
+        if (app()->has('resourceThread')) {
+            return null;
+        } else {
+            return $this->hasMany($thread, PostSerializer::class);
+        }
     }
 
     /**
@@ -274,7 +286,13 @@ class ThreadSerializer extends AbstractSerializer
      */
     public function question($thread)
     {
-        return $this->hasOne($thread, QuestionAnswerSerializer::class);
+        $questionType = ThreadReward::query()->where('thread_id', $thread->id)->first();
+        if(isset($questionType['type']) && $questionType['type'] == 0) {
+            return $this->hasOne($thread, ThreadRewardSerializer::class);
+        }else {
+            return $this->hasOne($thread, QuestionAnswerSerializer::class);
+        }
+
     }
 
     /**
@@ -285,4 +303,26 @@ class ThreadSerializer extends AbstractSerializer
     {
         return $this->hasMany($thread, UserSerializer::class);
     }
+
+    public function getThreadContent($thread_id)
+    {
+        $thread_content = Post::query()->where('thread_id', $thread_id)->first();
+        return $thread_content['content'];
+    }
+
+    public function getQuestionMoney($thread_id)
+    {
+        $thread_question_money = ThreadReward::query()->where('thread_id', $thread_id)->first();
+        return $thread_question_money;
+    }
+
+    /**
+     * @param $thread
+     * @return Relationship
+     */
+    public function attachment($thread)
+    {
+        return $this->hasMany($thread, AttachmentSerializer::class);
+    }
+
 }

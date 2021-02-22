@@ -20,6 +20,9 @@ namespace App\Api\Controller\Settings;
 
 use App\Events\Setting\Saved;
 use App\Events\Setting\Saving;
+use App\Models\User;
+use App\Models\Permission;
+use App\Models\AdminActionLog;
 use App\Validators\SetSettingValidator;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
@@ -38,6 +41,13 @@ class SetSettingsController implements RequestHandlerInterface
 {
     use AssertPermissionTrait;
     use QcloudTrait;
+
+    /**
+     * The user performing the action.
+     *
+     * @var User
+     */
+    public $actor;
 
     /**
      * @var Events
@@ -59,11 +69,12 @@ class SetSettingsController implements RequestHandlerInterface
      * @param SettingsRepository $settings
      * @param SetSettingValidator $validator
      */
-    public function __construct(Events $events, SettingsRepository $settings, SetSettingValidator $validator)
+    public function __construct(Events $events, SettingsRepository $settings, SetSettingValidator $validator, User $actor)
     {
         $this->events = $events;
         $this->settings = $settings;
         $this->validator = $validator;
+        $this->actor = $actor;
     }
 
     /**
@@ -75,6 +86,8 @@ class SetSettingsController implements RequestHandlerInterface
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $this->assertAdmin($request->getAttribute('actor'));
+        $actor = $request->getAttribute('actor');
+        $user_id = $actor->id;
 
         // 转换为以 tag + key 为键的集合，即可去重又方便取用
         $settings = collect($request->getParsedBody()->get('data', []))
@@ -135,8 +148,61 @@ class SetSettingsController implements RequestHandlerInterface
                     $value = json_encode($value, 256);
                 }
             }
+
+            if ($key == 'site_create_thread0' && $value == 0) {
+                $permission = 'createThread.0';
+                Permission::query()->where('permission', 'like', "$permission%")->delete();
+            }
+            if ($key == 'site_create_thread1' && $value == 0) {
+                $permission = 'createThread.1';
+                Permission::query()->where('permission', 'like', "$permission%")->delete();
+            }
+            if ($key == 'site_create_thread2' && $value == 0) {
+                $permission = 'createThread.2';
+                Permission::query()->where('permission', 'like', "$permission%")->delete();
+            }
+            if ($key == 'site_create_thread3' && $value == 0) {
+                $permission = 'createThread.3';
+                Permission::query()->where('permission', 'like', "$permission%")->delete();
+            }
+            if ($key == 'site_create_thread4' && $value == 0) {
+                $permission = 'createThread.4';
+                Permission::query()->where('permission', 'like', "$permission%")->delete();
+            }
+            if ($key == 'site_create_thread5' && $value == 0) {
+                $permission = 'createThread.5';
+                Permission::query()->where('permission', 'like', "$permission%")->delete();
+            }
+            if ($key == 'site_create_thread6' && $value == 0) {
+                $permission = 'createThread.6';
+                Permission::query()->where('permission', 'like', "$permission%")->delete();
+            } 
+            
             $this->settings->set($key, $value, $tag);
         });
+            
+        if($settings['cash_cash_interval_time']['key'] == 'cash_interval_time'){
+            $action_desc = '更改提现设置';
+        }
+
+        if($settings['wxpay_app_id']['key'] == 'app_id'){
+            $action_desc = '配置了微信支付';
+        }
+
+        if($settings['wxpay_wxpay_close']['key'] == 'wxpay_close'){
+            if($settings['wxpay_wxpay_close']['value'] == 0){
+                $action_desc = '关闭了微信支付';
+            }else{
+                $action_desc = '开启了微信支付';
+            }
+        }
+
+        if($action_desc !== '' && !empty($action_desc)) {
+            AdminActionLog::createAdminActionLog(
+                $user_id,
+                $action_desc
+            );
+        }
 
         $this->events->dispatch(new Saved($settings));
         return DiscuzResponseFactory::EmptyResponse(204);

@@ -61,7 +61,7 @@ class UpdateTopicController extends AbstractResourceController
         $data = $request->getParsedBody()->get('data', []);
 
         return $this->bus->dispatch(
-            new EditTopic($topicId, $data)
+            new EditTopic($topicId, $actor, $data)
         );
     }
 }

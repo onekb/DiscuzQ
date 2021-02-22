@@ -21,6 +21,8 @@ namespace App\Api\Controller\Category;
 use App\Api\Serializer\CategorySerializer;
 use App\Commands\Category\EditCategory;
 use Discuz\Api\Controller\AbstractListController;
+use Discuz\Auth\AssertPermissionTrait;
+use Discuz\Auth\Exception\PermissionDeniedException;
 use Exception;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Str;
@@ -30,6 +32,8 @@ use Tobscure\JsonApi\Document;
 
 class BatchUpdateCategoriesController extends AbstractListController
 {
+    use AssertPermissionTrait;
+
     /**
      * {@inheritdoc}
      */
@@ -53,6 +57,7 @@ class BatchUpdateCategoriesController extends AbstractListController
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
+        $this->assertAdmin($request->getAttribute('actor'));
         $actor = $request->getAttribute('actor');
         $data = $request->getParsedBody()->get('data', []);
         $ip = ip($request->getServerParams());

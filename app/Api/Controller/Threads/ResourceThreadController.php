@@ -24,8 +24,10 @@ use App\Models\Order;
 use App\Models\Post;
 use App\Models\Thread;
 use App\Models\User;
+use App\Models\RedPacket;
 use App\Repositories\PostRepository;
 use App\Repositories\ThreadRepository;
+use Carbon\Carbon;
 use Discuz\Api\Controller\AbstractResourceController;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
@@ -109,6 +111,7 @@ class ResourceThreadController extends AbstractResourceController
     {
         $this->threads = $threads;
         $this->posts = $posts;
+        app()->instance('resourceThread',true);
     }
 
     /**
@@ -136,6 +139,9 @@ class ResourceThreadController extends AbstractResourceController
             $cacheThread->view_count = $thread->view_count;
             $cacheThread->timestamps = false;
             $cacheThread->increment('view_count');
+            if (($postRelationships = $this->getPostRelationships($include)) || in_array('posts', $include)) {
+                $this->includePosts($cacheThread, $request, $postRelationships);
+            }
             return $cacheThread;
         }
 
@@ -167,6 +173,12 @@ class ResourceThreadController extends AbstractResourceController
 
         // 主题关联模型
         $thread->loadMissing($include);
+
+        $redPacket = RedPacket::query()->where('thread_id',$threadId)->first();
+        if (!empty($redPacket)) {
+            $redPacket = $redPacket->toArray();
+            $thread->redPacket = $redPacket;
+        }
 
         // 更新浏览量
         $thread->timestamps = false;
@@ -210,7 +222,15 @@ class ResourceThreadController extends AbstractResourceController
                 $post->thread = $thread;
             });
 
-        $thread->setRelation('posts', $posts);
+        $posts->map(function ($post) {
+            $post->rewards = floatval(sprintf('%.2f', $post->getPostReward()));
+        });
+
+        $sorted = $posts->sortByDesc('rewards');
+
+        $newPosts = $sorted->values();
+
+        $thread->setRelation('posts', $newPosts);
     }
 
     /**

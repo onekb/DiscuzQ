@@ -20,18 +20,23 @@ namespace App\Api\Controller\Notification;
 
 use App\Api\Serializer\NotificationTplSerializer;
 use App\Models\NotificationTpl;
-use Discuz\Api\Controller\AbstractResourceController;
+use Discuz\Api\Controller\AbstractListController;
 use Discuz\Auth\AssertPermissionTrait;
+use Discuz\Auth\Exception\PermissionDeniedException;
 use Illuminate\Contracts\Validation\Factory;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
 use Tobscure\JsonApi\Document;
 
-class UpdateNotificationTplController extends AbstractResourceController
+class UpdateNotificationTplController extends AbstractListController
 {
     use AssertPermissionTrait;
 
+    /**
+     * {@inheritdoc}
+     */
     public $serializer = NotificationTplSerializer::class;
 
     /**
@@ -42,7 +47,7 @@ class UpdateNotificationTplController extends AbstractResourceController
     /**
      * @param Factory $validation
      */
-    public function __construct(Factory  $validation)
+    public function __construct(Factory $validation)
     {
         $this->validation = $validation;
     }
@@ -51,37 +56,51 @@ class UpdateNotificationTplController extends AbstractResourceController
      * @param ServerRequestInterface $request
      * @param Document $document
      * @return mixed
-     * @throws \Discuz\Auth\Exception\PermissionDeniedException
+     * @throws PermissionDeniedException
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $actor = $request->getAttribute('actor');
-        $this->assertPermission($actor->isAdmin());
+        $this->assertAdmin($actor);
 
-        $id = Arr::get($request->getQueryParams(), 'id');
-        $attributes = Arr::get($request->getParsedBody(), 'data.attributes');
+        $data = Arr::pluck($request->getParsedBody()->get('data', []), 'attributes');
 
-        /** @var NotificationTpl $notificationTpl */
-        $notificationTpl = NotificationTpl::find($id);
+        $tpl = NotificationTpl::query()->whereIn('id', Arr::pluck($data, 'id'))->get()->keyBy('id');
 
+        collect($data)->map(function ($attributes) use ($tpl) {
+            if ($notificationTpl = $tpl->get(Arr::get($attributes, 'id'))) {
+                $this->updateTpl($notificationTpl, $attributes);
+            }
+        });
+
+        return $tpl;
+    }
+
+    /**
+     * @param NotificationTpl $notificationTpl
+     * @param array $attributes
+     * @return NotificationTpl
+     * @throws ValidationException
+     */
+    protected function updateTpl(NotificationTpl $notificationTpl, array $attributes)
+    {
         switch ($notificationTpl->type) {
             case 0:
                 $this->validation->make($attributes, [
-                    'title'     => 'filled',
-                    'content'     => 'filled',
+                    'title' => 'filled',
                 ])->validate();
 
-                if ($title = Arr::get($attributes, 'title')) {
-                    $notificationTpl->title = $title;
+                if (Arr::has($attributes, 'title')) {
+                    $notificationTpl->title = Arr::get($attributes, 'title');
                 }
-                if ($content = Arr::get($attributes, 'content')) {
-                    $notificationTpl->content = $content;
+                if (Arr::has($attributes, 'content')) {
+                    $notificationTpl->content = Arr::get($attributes, 'content');
                 }
                 break;
             case 1:
                 if ($notificationTpl->status == 1) {
                     $this->validation->make($attributes, [
-                        'template_id'     => 'filled',
+                        'template_id' => 'filled',
                     ])->validate();
                 }
 
@@ -99,6 +118,38 @@ class UpdateNotificationTplController extends AbstractResourceController
             }
 
             $notificationTpl->status = $status;
+        }
+
+        if (isset($attributes['first_data'])) {
+            $notificationTpl->first_data = Arr::get($attributes, 'first_data');
+        }
+
+        if (isset($attributes['keywords_data'])) {
+            $keywords = array_map(function ($keyword) {
+                return str_replace(',', '，', $keyword);
+            }, (array) Arr::get($attributes, 'keywords_data', []));
+
+            $notificationTpl->keywords_data = implode(',', $keywords);
+        }
+
+        if (isset($attributes['remark_data'])) {
+            $notificationTpl->remark_data = Arr::get($attributes, 'remark_data');
+        }
+
+        if (isset($attributes['color'])) {
+            $notificationTpl->color = Arr::get($attributes, 'color');
+        }
+
+        if (isset($attributes['redirect_type'])) {
+            $notificationTpl->redirect_type = (int) Arr::get($attributes, 'redirect_type');
+        }
+
+        if (isset($attributes['redirect_url'])) {
+            $notificationTpl->redirect_url = Arr::get($attributes, 'redirect_url');
+        }
+
+        if (isset($attributes['page_path'])) {
+            $notificationTpl->page_path = Arr::get($attributes, 'page_path');
         }
 
         $notificationTpl->save();

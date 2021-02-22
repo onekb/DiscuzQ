@@ -32,8 +32,9 @@ class DialogMessageSerializer extends AbstractSerializer
             'dialog_id' => $model->dialog_id,
             'attachment_id' => $model->attachment_id,
             'summary' => $model->summary,
-            'message_text' => $model->message_text,
+            'message_text' => $model->getMessageText(),
             'message_text_html'  => $model->formatMessageText(),
+            'image_url'  => $model->getImageUrlMessageText(),
             'updated_at' => $this->formatDate($model->updated_at),
             'created_at' => $this->formatDate($model->created_at)
         ];

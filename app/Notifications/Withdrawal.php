@@ -2,13 +2,10 @@
 
 /**
  * Copyright (C) 2020 Tencent Cloud.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
  *   http://www.apache.org/licenses/LICENSE-2.0
- *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +20,6 @@ use App\Models\UserWalletCash;
 use App\Notifications\Messages\Database\WithdrawalMessage;
 use App\Notifications\Messages\Wechat\WithdrawalWechatMessage;
 use Discuz\Notifications\NotificationManager;
-use Illuminate\Support\Arr;
 
 /**
  * 提现通知
@@ -102,7 +98,7 @@ class Withdrawal extends AbstractNotification
     protected function initNoticeMessage()
     {
         // set tpl id 获取提现状态
-        $this->cashTpl(Arr::get($this->data, 'cash_status', null));
+        $this->cashTpl($this->cash->cash_status);
     }
 
     /**
@@ -115,13 +111,13 @@ class Withdrawal extends AbstractNotification
             // 提现通知
             $this->tplId = [
                 'database' => 33,
-                'wechat' => 35,
+                'wechat'   => 35,
             ];
         } else {
             // 提现失败通知
             $this->tplId = [
                 'database' => 34,
-                'wechat' => 36,
+                'wechat'   => 36,
             ];
         }
     }

@@ -61,7 +61,7 @@ class ListCategoriesController extends AbstractListController
             $query->whereNotIn('id', Category::getIdsWhereCannot($actor, 'viewThreads'));
         }
 
-        $categories = $query->orderBy('sort')->get();
+        $categories = $query->where('parentid',0)->orderBy('sort')->get();
 
         // 分类版主
         if (in_array('moderators', $include)) {

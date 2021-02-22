@@ -19,11 +19,14 @@
 namespace App\Commands\Thread;
 
 use App\Censor\Censor;
+use App\Repositories\SequenceRepository;
 use App\Events\Thread\Saving;
 use App\Events\Thread\ThreadWasApproved;
+use App\Events\Thread\Updated;
 use App\Models\Thread;
 use App\Models\ThreadVideo;
 use App\Models\User;
+use App\Models\AdminActionLog;
 use App\Repositories\ThreadRepository;
 use App\Repositories\ThreadVideoRepository;
 use App\Traits\ThreadNoticesTrait;
@@ -111,6 +114,12 @@ class EditThread
             $thread->timestamps = false;
         }
 
+        if($thread->title == '' || empty($thread->title)) {
+            $threadTitle = '，其ID为'. $thread->id;
+        }else{
+            $threadTitle = '【'. $thread->title .'】';
+        }
+
         // 长文可以设置、编辑 附件价格
         if (isset($attributes['attachment_price']) && $thread->type == Thread::TYPE_OF_LONG) {
             $this->assertCan($this->actor, 'edit', $thread);
@@ -154,6 +163,16 @@ class EditThread
             if ($thread->is_approved != $attributes['isApproved']) {
                 $thread->is_approved = $attributes['isApproved'];
 
+                if($attributes['isApproved'] == Thread::APPROVED){
+                    $action_desc = '用户主题帖'. $threadTitle .'，通过审核';
+                }
+                if($attributes['isApproved'] == Thread::UNAPPROVED){
+                    $action_desc = '用户主题帖'. $threadTitle .'，暂被设为非法';
+                }
+                if($attributes['isApproved'] == Thread::IGNORED){
+                    $action_desc = '用户主题帖'. $threadTitle .'，被忽略';
+                }
+
                 $thread->raise(
                     new ThreadWasApproved($thread, $this->actor, ['message' => $attributes['message'] ?? ''])
                 );
@@ -161,13 +180,15 @@ class EditThread
         }
 
         if (isset($attributes['isSticky'])) {
-            $this->assertCan($this->actor, 'sticky', $thread);
+            // $this->assertCan($this->actor, 'isSticky', $thread);
 
-            if ($thread->is_sticky != $attributes['isSticky']) {
-                $thread->is_sticky = $attributes['isSticky'];
+            if($this->actor->can('sticky', $thread)){
+                if ($thread->is_sticky != $attributes['isSticky']) {
+                    $thread->is_sticky = $attributes['isSticky'];
 
-                if ($thread->is_sticky) {
-                    $this->threadNotices($thread, $this->actor, 'isSticky', $attributes['message'] ?? '');
+                    if ($thread->is_sticky) {
+                        $this->threadNotices($thread, $this->actor, 'isSticky', $attributes['message'] ?? '');
+                    }
                 }
             }
         }
@@ -197,8 +218,10 @@ class EditThread
 
             if ($attributes['isDeleted']) {
                 $thread->hide($this->actor, ['message' => $attributes['message'] ?? '']);
+                $action_desc = '删除用户主题帖'. $threadTitle;
             } else {
                 $thread->restore($this->actor, ['message' => $attributes['message'] ?? '']);
+                $action_desc = '还原用户主题帖'. $threadTitle;
             }
         }
 
@@ -231,7 +254,20 @@ class EditThread
             }
         }
 
+        $thread->raise(new Updated($thread, $this->actor, $this->data));
+
         $thread->save();
+
+        if(!isset($attributes['isFavorite']) && !isset($attributes['isSticky']) && !isset($attributes['isEssence'])){
+            app(SequenceRepository::class)->updateSequenceCache($this->threadId);
+        }
+
+        if($action_desc !== '' && !empty($action_desc)){
+            AdminActionLog::createAdminActionLog(
+                $this->actor->id,
+                $action_desc
+            );
+        }
 
         $this->dispatchEventsFor($thread, $this->actor);
 

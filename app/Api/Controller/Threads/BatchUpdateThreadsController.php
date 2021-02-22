@@ -66,6 +66,7 @@ class BatchUpdateThreadsController extends AbstractListController
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
+        $this->assertAdmin($request->getAttribute('actor'));
         $actor = $request->getAttribute('actor');
         $data = $request->getParsedBody()->get('data', []);
         $meta = $request->getParsedBody()->get('meta', []);

@@ -2,8 +2,9 @@
 
 namespace App\Notifications\Messages\Wechat;
 
+use App\Models\Post;
+use App\Models\Thread;
 use App\Notifications\Messages\Database\PostMessage;
-use Carbon\Carbon;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Support\Arr;
@@ -16,6 +17,11 @@ class PostWechatMessage extends SimpleMessage
     protected $actor;
 
     protected $data;
+
+    /**
+     * @var Post $post
+     */
+    protected $post;
 
     /**
      * @var UrlGenerator
@@ -35,20 +41,16 @@ class PostWechatMessage extends SimpleMessage
         $this->actor = $actor;
         $this->data = $data;
 
-        $this->template();
+        // set post model
+        if (isset($this->data['post'])) {
+            $this->post = $data['post'];
+            $this->template();
+        }
     }
 
     public function template()
     {
-        $build = [
-            'title' => $this->getTitle(),
-            'content' => $this->getContent($this->data),
-            'raw' => Arr::get($this->data, 'raw'),
-        ];
-
-        Arr::set($build, 'raw.tpl_id', $this->firstData->id);
-
-        return $build;
+        return ['content' => $this->getWechatContent($this->data)];
     }
 
     protected function titleReplaceVars()
@@ -58,27 +60,40 @@ class PostWechatMessage extends SimpleMessage
 
     public function contentReplaceVars($data)
     {
-        $message = Arr::get($data, 'message', '');
-        $threadId = Arr::get($data, 'raw.thread_id', 0);
+        $threadPostContent = $this->post->getSummaryContent(Post::NOTICE_LENGTH, true)['first_content'];
+        $threadTitle = $this->post->thread->getContentByType(Thread::CONTENT_LENGTH, true);
 
+        /**
+         * 设置父类 模板数据
+         * @parem $user_name 帖子创建人ID
+         * @parem $user_name 帖子创建人
+         * @parem $actor_name 当前操作人(一般为管理员)
+         * @parem $message_change 修改帖子的内容
+         * @parem $thread_id 主题ID （可用于跳转参数）
+         * @parem $thread_title 主题标题/首帖内容 (如果有title是title，没有则是首帖内容)
+         * @parem $reason 原因
+         */
+        $this->setTemplateData([
+            '{$user_id}'             => $this->post->user->id,
+            '{$user_name}'           => $this->post->user->username,
+            '{$actor_name}'          => $this->actor->username,
+            '{$message_change}'      => $this->strWords(Arr::get($data, 'message', '')),
+            '{$thread_id}'           => $this->post->thread->id,
+            '{$thread_title}'        => $this->strWords($threadTitle),
+            '{$reason}'              => Arr::get($data, 'refuse', '无'),
+        ]);
+
+        // redirect_url
         // 判断如果是删除通知，帖子被删除后无法跳转到详情页，threadId 清空跳主页
         if ($data['notify_type'] == PostMessage::NOTIFY_DELETE_TYPE) {
-            $threadId = 0;
-        }
-
-        // 主题ID为空时跳转到首页
-        if (empty($threadId)) {
-            $threadUrl = $this->url->to('');
+            $redirectUrl = '';
         } else {
-            $threadUrl = $this->url->to('/topic/index?id=' . $threadId);
+            $redirectUrl = '/topic/index?id=' . $this->post->thread_id;
         }
+        $expand['redirect_url'] = $this->url->to($redirectUrl);
 
-        return [
-            $this->strWords($message),
-            Carbon::now()->toDateTimeString(),
-            $threadUrl,
-            Arr::get($data, 'refuse', '无'),
-        ];
+        // build data
+        return $this->compiledArray($expand);
     }
 
 }

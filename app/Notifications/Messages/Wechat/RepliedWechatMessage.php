@@ -2,16 +2,30 @@
 
 namespace App\Notifications\Messages\Wechat;
 
-use Carbon\Carbon;
+use App\Models\Post;
+use App\Models\Thread;
+use App\Models\User;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Contracts\Routing\UrlGenerator;
-use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
+/**
+ * 回复通知 - 微信
+ * Class RepliedWechatMessage
+ *
+ * @package App\Notifications\Messages\Wechat
+ */
 class RepliedWechatMessage extends SimpleMessage
 {
+    /**
+     * @var Post $post
+     */
     protected $post;
 
-    protected $actor;
+    /**
+     * @var User $user
+     */
+    protected $user;
 
     protected $data;
 
@@ -27,11 +41,11 @@ class RepliedWechatMessage extends SimpleMessage
 
     public function setData(...$parameters)
     {
-        [$firstData, $actor, $post, $data] = $parameters;
+        [$firstData, $user, $post, $data] = $parameters;
         // set parent tpl data
         $this->firstData = $firstData;
 
-        $this->actor = $actor;
+        $this->user = $user;
         $this->post = $post;
         $this->data = $data;
 
@@ -40,15 +54,7 @@ class RepliedWechatMessage extends SimpleMessage
 
     public function template()
     {
-        $build =  [
-            'title' => $this->getTitle(),
-            'content' => $this->getContent($this->data),
-            'raw' => Arr::get($this->data, 'raw'),
-        ];
-
-        Arr::set($build, 'raw.tpl_id', $this->firstData->id);
-
-        return $build;
+        return ['content' => $this->getWechatContent($this->data)];
     }
 
     protected function titleReplaceVars()
@@ -58,29 +64,56 @@ class RepliedWechatMessage extends SimpleMessage
 
     public function contentReplaceVars($data)
     {
-        $message = Arr::get($data, 'message', '');
-        $subject = Arr::get($data, 'subject', '');
-        $threadId = Arr::get($data, 'raw.thread_id', 0);
-        $replyPostId = Arr::get($data, 'raw.reply_post_id', 0);  // 楼中楼时不为0
-        $actorName = Arr::get($data, 'raw.actor_username', '');  // 发送人姓名
+        $content = $this->post->getSummaryContent(Post::NOTICE_LENGTH, true);
+        $postContent = $content['content'];                                                 // 回复内容
+        $threadTitle = $this->post->thread->getContentByType(Thread::CONTENT_LENGTH, true); // 主题标题/首帖内容
 
-        /**
-         * TODO 判断是否是楼中楼
-         * 主题ID为空时跳转到首页
-         */
-        if (empty($threadId)) {
-            $threadUrl = $this->url->to('');
-        } else {
-            $threadUrl = $this->url->to('/topic/index?id=' . $threadId);
+        // 根据触发通知类型，变量的获取形式不同
+        switch ($this->data['notify_type']) {
+            case 'notify_thread':
+                // 通知主题作者
+                $subject = $threadTitle;
+                break;
+            case 'notify_reply_post':
+                // 通知被回复的人
+                $subject = Str::of($this->post->replyPost->content)->substr(0, Post::NOTICE_LENGTH)->__toString();
+                break;
+            case 'notify_comment_post':
+                // 通知 回复帖子的人（楼中楼）
+                $subject = Str::of($this->post->commentPost->content)->substr(0, Post::NOTICE_LENGTH)->__toString();
+                break;
+            case 'notify_approved':
+                // 审核通过后 发送回复人的主题通知
+                $subject = $threadTitle;
+                $userName = $this->post->user->username;
+                break;
         }
 
-        return [
-            $actorName,                         // 回复人的用户名
-            $this->strWords($message),          // 回复内容
-            $this->strWords($subject),          // 原内容
-            Carbon::now()->toDateTimeString(),  // 通知时间
-            $threadUrl,                         // 跳转地址
+        /**
+         * 设置父类 模板数据
+         * @parem $user_name 回复人的用户名
+         * @parem $post_content 回复内容
+         * @parem $reply_post 被回复内容
+         * @parem $thread_id 主题ID
+         * @parem $thread_title 主题标题/首帖内容 (如果有title是title，没有则是首帖内容)
+         */
+        $this->setTemplateData([
+            '{$user_name}'           => $userName ?? $this->user->username,
+            '{$post_content}'        => $this->strWords($postContent),
+            '{$reply_post}'          => $this->strWords($subject ?? ''),
+            '{$thread_id}'           => $this->post->thread_id,
+            '{$thread_title}'        => $this->strWords($threadTitle),
+        ]);
+
+        // redirect_url TODO 判断 $replyPostId 是否是楼中楼 可跳转楼中楼详情页
+        $replyPostId = $this->post->reply_post_id;                                          // 楼中楼时不为 0
+
+        // build data
+        $expand = [
+            'redirect_url' => $this->url->to('/topic/index?id=' . $this->post->thread_id),
         ];
+
+        return $this->compiledArray($expand);
     }
 
 }

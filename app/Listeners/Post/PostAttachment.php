@@ -65,6 +65,11 @@ class PostAttachment
      */
     public function whenPostIsSaving(Saving $event)
     {
+        // 草稿不做验证
+        $isDraft = (int) Arr::get($event->data, 'attributes.is_draft');
+        if ($isDraft) {
+            return;
+        }
 
         if ($event->post->is_first) {
             if ($event->post->exists) {

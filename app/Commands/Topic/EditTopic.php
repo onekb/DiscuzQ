@@ -19,6 +19,7 @@
 namespace App\Commands\Topic;
 
 use App\Models\User;
+use App\Models\AdminActionLog;
 use App\Repositories\TopicRepository;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Foundation\EventsDispatchTrait;
@@ -35,6 +36,14 @@ class EditTopic
      * @var int
      */
     public $topicId;
+
+    /**
+     * 执行操作的用户.
+     *
+     * @var User
+     */
+    public $actor;
+
     /**
      * The attributes to update on the thread.
      *
@@ -48,9 +57,10 @@ class EditTopic
      * @param array $data The attributes to update on the thread.
      */
 
-    public function __construct($topicId, array $data)
+    public function __construct($topicId, User $actor, array $data)
     {
         $this->topicId = $topicId;
+        $this->actor = $actor;
         $this->data = $data;
     }
 
@@ -64,7 +74,20 @@ class EditTopic
             $topic->recommended_at = date('Y-m-d H:m:s', time());
         }
 
+        if($topic->recommended == 1){
+            $action_desc = '推荐话题【'. $topic->content .'】';
+        }else{
+            $action_desc = '取消推荐话题【'. $topic->content .'】';
+        }
+
         $topic->save();
+
+        if($action_desc !== '' && !empty($action_desc)) {
+            AdminActionLog::createAdminActionLog(
+                $this->actor->id,
+                $action_desc
+            );
+        }
 
         return $topic;
     }

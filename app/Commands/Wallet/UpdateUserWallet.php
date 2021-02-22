@@ -19,8 +19,10 @@
 namespace App\Commands\Wallet;
 
 use App\Exceptions\WalletException;
+use App\Models\User;
 use App\Models\UserWallet;
 use App\Models\UserWalletLog;
+use App\Models\AdminActionLog;
 use Exception;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Arr;
@@ -102,6 +104,8 @@ class UpdateUserWallet
         //开始事务
         $db->beginTransaction();
         $change_type = '';
+        $old_wallet_status = UserWallet::query()->where('user_id', $this->user_id)->first();
+
         try {
             $user_wallet = UserWallet::lockForUpdate()->findOrFail($this->user_id);
             switch ($operate_type) {
@@ -142,6 +146,37 @@ class UpdateUserWallet
                 );
             }
             $user_wallet->save();
+
+            $userDetail = User::query()->where('id', $this->user_id)->first();
+            
+            if($operate_amount !== '' && $operate_amount > 0){
+                if($change_type == 32){
+                    $desc = '增加';
+                }else{
+                    $desc = '减少';
+                }
+
+                AdminActionLog::createAdminActionLog(
+                    $this->actor->id,
+                    $desc . '了用户【'. $userDetail['username'] .'】的余额'. $operate_amount .'元'
+                );
+            }
+            
+
+            if($old_wallet_status['wallet_status'] !== $user_wallet->wallet_status){
+                if($user_wallet->wallet_status === 1){
+                    $status_desc = '冻结';
+                }else{
+                    $status_desc = '恢复';
+                }
+
+                AdminActionLog::createAdminActionLog(
+                    $this->actor->id,
+                    $status_desc . '了用户【'. $userDetail['username'] .'】提现'
+                );
+                
+            }
+
             //提交事务
             $db->commit();
             return $user_wallet;

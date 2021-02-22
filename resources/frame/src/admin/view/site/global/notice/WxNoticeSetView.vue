@@ -66,9 +66,9 @@
 
 <script>
 import '../../../../scss/site/module/globalStyle.scss';
-import WxNoticeSetCon from '../../../../controllers/site/global/notice/WxNoticeSetCon';
+// import WxNoticeSetCon from '../../../../controllers/site/global/notice/WxNoticeSetCon';
 export default {
-    name: "withdrawal-application-view",
-  ...WxNoticeSetCon
+    // name: "withdrawal-application-view",
+  // ...WxNoticeSetCon
 }
 </script>

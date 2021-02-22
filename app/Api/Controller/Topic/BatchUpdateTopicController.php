@@ -60,13 +60,15 @@ class BatchUpdateTopicController extends AbstractListController
 
         $data = $request->getParsedBody()->get('data', []);
         $ids = explode(',', Arr::get($request->getQueryParams(), 'ids'));
+        $this->assertBatchData($ids);
+
         $idsCollect = collect($ids);
 
         $result = ['data' => [], 'meta' => []];
-        $idsCollect->each(function ($id) use ($data, &$result) {
+        $idsCollect->each(function ($id) use ($data, $actor, &$result) {
             try {
                 $result['data'][] = $this->bus->dispatch(
-                    new EditTopic($id, $data)
+                    new EditTopic($id, $actor, $data)
                 );
             } catch (\Exception $e) {
                 $result['meta'][] = ['id' => $id, 'message' => $e->getMessage()];

@@ -2,13 +2,10 @@
 
 /**
  * Copyright (C) 2020 Tencent Cloud.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
  *   http://www.apache.org/licenses/LICENSE-2.0
- *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +20,7 @@ use App\Models\Order;
 use App\Models\Question;
 use App\Models\Thread;
 use App\Models\UserWalletLog;
+use App\Models\ThreadReward;
 use App\Validators\QuestionValidator;
 use Carbon\Carbon;
 use Discuz\Contracts\Setting\SettingsRepository;
@@ -64,7 +62,8 @@ class SaveQuestionToDatabase
         ConnectionInterface $connection,
         SettingsRepository $settings,
         BusDispatcher $bus
-    ) {
+    )
+    {
         $this->events = $eventDispatcher;
         $this->questionValidator = $questionValidator;
         $this->connection = $connection;
@@ -84,11 +83,52 @@ class SaveQuestionToDatabase
         $data = $event->data;
 
         if ($post->thread->type == Thread::TYPE_OF_QUESTION) {
+
+            $isDraft = Arr::get($data, 'attributes.is_draft');
+            $isLikeData = Arr::get($data, 'attributes');
+
             // 判断是否是创建
-            if ($post->is_first && $post->wasRecentlyCreated) {
+            if ($post->is_first && !isset($isLikeData['isLiked'])) {
                 $questionData = Arr::get($data, 'relationships.question.data');
-                if (empty($questionData)) {
-                    throw new Exception(trans('post.post_question_missing_parameter')); // 问答缺失参数
+                if (!$isDraft) {
+                    if (empty($questionData)) {
+                        throw new Exception(trans('post.post_question_missing_parameter')); // 问答缺失参数
+                    }
+
+                    if(!isset($questionData['type'])){
+                        $questionData['type'] = 1;
+                        // throw new Exception(trans('post.post_reward_does_not_have_type'));
+                    }
+
+                    if($questionData['type'] == 1){
+                        if(!isset($questionData['be_user_id']) || empty($questionData['be_user_id'])){
+                            throw new Exception(trans('post.thread_reward_answer_id_is_null'));
+                        }
+                    }
+
+                    if(isset($questionData['type']) && $questionData['type'] == 0){
+                        // reward thread
+                        if(!is_numeric($questionData['price'])){
+                            throw new Exception(trans('post.thread_reward_money_type_fail'));
+                        }
+
+                        if($questionData['price'] < 0.1){
+                            throw new Exception(trans('post.thread_reward_money_min_limit_fail'));
+                        }
+
+                        if($questionData['price'] > 10000){
+                            throw new Exception(trans('post.thread_reward_money_max_limit_fail'));
+                        }
+
+                        if(!isset($questionData['expired_at']) || empty($questionData['expired_at'])){
+                            throw new Exception(trans('post.thread_reward_expired_time_is_null'));
+                        }
+
+                        $min_time = date("Y-m-d H:i:s", strtotime("+1 days",time()));
+                        if($questionData['expired_at'] < $min_time){
+                            throw new Exception(trans('post.thread_reward_expired_time_limit_fail'));
+                        }
+                    }
                 }
 
                 /**
@@ -97,7 +137,14 @@ class SaveQuestionToDatabase
                  * @see QuestionValidator
                  */
                 $questionData['actor'] = $actor;
-                $this->questionValidator->valid($questionData);
+                if (! isset($questionData['order_id']) || empty($questionData['order_id'])) {
+                    $price = 0;
+                } else {
+                    $price = Arr::get($questionData, 'price', 0);
+                }
+                if($questionData['type'] == 1 && !$isDraft) {
+                    $this->questionValidator->valid($questionData);
+                }
                 $price = Arr::get($questionData, 'price', 0);
                 $isOnlooker = Arr::get($questionData, 'is_onlooker', true); // 获取帖子是否允许围观
 
@@ -110,22 +157,46 @@ class SaveQuestionToDatabase
                 // Start Transaction
                 $this->connection->beginTransaction();
                 try {
-                    /**
-                     * Create Question
-                     *
-                     * @var Question $question
-                     */
-                    $build = [
+
+                    if($questionData['type'] == 1){
+                        /**
+                         * Create Question
+                         *
+                         * @var Question $question
+                         */
+                        $build = [
+                            'thread_id' => $post->thread_id,
+                            'user_id' => $actor->id,
+                            'be_user_id' => Arr::get($questionData, 'be_user_id'),
+                            'price' => $price,
+                            'onlooker_unit_price' => $onlookerUnitPrice ?? 0,
+                            'is_onlooker' => $actor->can('canBeOnlooker') ? $isOnlooker : false,
+                            'expired_at' => Carbon::today()->addDays(Question::EXPIRED_DAY),
+                        ];
+                        $question = Question::query()->updateOrCreate(['thread_id'=> $post->thread_id], $build);
+                        $questionId = $question->id;
+                        if ($isDraft == 0) {
+                            $question = Question::build($build);
+                        }
+                    }
+
+                    $threadRewardData = [
                         'thread_id' => $post->thread_id,
+                        'post_id' => $post->id,
+                        'type' => $questionData['type'],
                         'user_id' => $actor->id,
-                        'be_user_id' => Arr::get($questionData, 'be_user_id'),
-                        'price' => $price,
-                        'onlooker_unit_price' => $onlookerUnitPrice ?? 0,
-                        'is_onlooker' => $actor->can('canBeOnlooker') ? $isOnlooker : false,
-                        'expired_at' => Carbon::today()->addDays(Question::EXPIRED_DAY),
+                        'answer_id' => $question->be_user_id ? $question->be_user_id : 0,
+                        'money' => $price,
+                        'remain_money' => $price,
+                        'created_time' => date('Y-m-d H:i:s', time()),
+                        'updated_at' => date('Y-m-d H:i:s', time()),
+                        'expired_at' => isset($questionData['expired_at']) && !empty($questionData['expired_at']) ? $questionData['expired_at'] : Carbon::today()->addDays(Question::EXPIRED_DAY)
                     ];
-                    $question = Question::build($build);
-                    $question->save();
+
+                    $threadReward = ThreadReward::query()->updateOrCreate(['thread_id' => $post->thread_id, 'post_id' => $post->id], $threadRewardData);
+                    if ($isDraft == 0) {
+                        $threadReward = ThreadReward::build($threadRewardData);
+                    }
 
                     // 判断如果没有传 order_id 说明是0元提问，就不需要冻结钱包
                     if (! empty($orderSn = Arr::get($questionData, 'order_id', null))) {
@@ -146,25 +217,32 @@ class SaveQuestionToDatabase
                          */
                         if ($order->payment_type == Order::PAYMENT_TYPE_WALLET) {
                             $walletLog = UserWalletLog::query()->where([
-                                'user_id' => $actor->id,
-                                'order_id' => $order->id,
+                                'user_id'     => $actor->id,
+                                'order_id'    => $order->id,
                                 'change_type' => UserWalletLog::TYPE_QUESTION_FREEZE,
                             ])->first();
 
-                            $walletLog->question_id = $question->id;
-                            $walletLog->save();
+                                // question thread type = 1 for a specific people
+                                if($questionData['type'] == 1){
+                                    $walletLog->question_id = $questionId;
+                                }
+
+                                $walletLog->save();
+                            }
                         }
-                    }
 
                     $this->connection->commit();
                 } catch (Exception $e) {
                     $this->connection->rollback();
-
+                    app('log')->info('用户'.$actor->username.'创建问答帖失败，数据回滚！异常订单ID为：' . $order->id . ';异常错误记录：' . $e->getMessage());
                     throw $e;
                 }
 
                 // 延迟执行事件
-                $this->dispatchEventsFor($question, $actor);
+                if($question){
+                    $this->dispatchEventsFor($question, $actor);
+                }
+                $this->events->dispatch($threadReward);
             }
         }
     }

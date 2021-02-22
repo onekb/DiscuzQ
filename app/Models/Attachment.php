@@ -220,4 +220,14 @@ class Attachment extends Model
         return $this->belongsTo(Post::class, 'type_id');
     }
 
+    /**
+     * Define the relationship with the attachment's thread.
+     *
+     * @return BelongsTo
+     */
+    public function thread()
+    {
+        return $this->belongsTo(Thread::class, 'type_id');
+    }
+
 }

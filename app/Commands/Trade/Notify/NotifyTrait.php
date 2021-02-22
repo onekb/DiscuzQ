@@ -84,15 +84,15 @@ trait NotifyTrait
 
                     $this->orderInfo->save();
 
+                    // 是否创建上级金额分成
+                    $this->isCreateBossAmount($bossAmount);
+
                     if ($this->orderInfo->author_amount > 0) {
                         // 收款人钱包可用金额增加
                         $payee_id = $this->orderInfo->payee_id; // 收款人
                         $user_wallet = UserWallet::query()->lockForUpdate()->find($payee_id);
                         $user_wallet->available_amount = $user_wallet->available_amount + $this->orderInfo->author_amount;
                         $user_wallet->save();
-
-                        // 是否创建上级金额分成
-                        $this->isCreateBossAmount($bossAmount);
 
                         // 收款人钱包明细记录
                         $payeeOrderDetail = $this->orderByDetailType();
@@ -175,6 +175,16 @@ trait NotifyTrait
                     $question->onlooker_number = $question->onlooker_number + 1;
                     $question->save();
 
+                    return $this->orderInfo;
+
+                case Order::ORDER_TYPE_TEXT:
+                    // 添加文字帖红包
+                    $this->orderInfo->save();
+                    return $this->orderInfo;
+
+                case Order::ORDER_TYPE_LONG:
+                    // 添加长文帖红包
+                    $this->orderInfo->save();
                     return $this->orderInfo;
 
                 default:

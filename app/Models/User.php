@@ -69,6 +69,7 @@ use Illuminate\Support\Str;
  * @property Carbon $updated_at
  * @property string $identity
  * @property string $realname
+ * @property int $bind_type
  * @property bool $denyStatus
  * @property Collection $groups
  * @property userFollow $follow
@@ -115,7 +116,8 @@ class User extends Model
         'id',
         'username',
         'password',
-        'mobile'
+        'mobile',
+        'bind_type'
     ];
 
     const STATUS_NORMAL = 0;//正常
@@ -146,6 +148,14 @@ class User extends Model
         'mod' => 2,
         'refuse' => 3,
         'ignore' => 4,
+    ];
+
+    protected static $statusMeaning = [
+        0 => '正常',
+        1 => '禁用',
+        2 => '审核中',
+        3 => '审核拒绝',
+        4 => '审核忽略',
     ];
 
     /**
@@ -185,7 +195,8 @@ class User extends Model
 
         // 将名字中的空白字符替换为空
         $user->username = preg_replace('/\s/ui', '', $user->username);
-
+        //第三方登录绑定类型
+        $user->bind_type = isset($data['bind_type']) ? $data['bind_type'] : 0;
         return $user;
     }
 
@@ -193,13 +204,18 @@ class User extends Model
      * 根据 值/类型 获取对应值
      *
      * @param mixed $mixed
+     * @param bool $meaning 枚举含义
      * @return mixed
      */
-    public static function enumStatus($mixed)
+    public static function enumStatus($mixed, $meaning = false)
     {
         $arr = static::$status;
+        $arrMeaning = static::$statusMeaning;
 
         if (is_numeric($mixed)) {
+            if ($meaning) {
+                return $arrMeaning[$mixed];
+            }
             return array_search($mixed, $arr);
         }
 
@@ -442,13 +458,13 @@ class User extends Model
     public function refreshQuestionCount()
     {
         $this->question_count = Thread::query()
-            ->join('questions', 'threads.id', '=', 'questions.thread_id')
+            ->join('thread_rewards', 'threads.id', '=', 'thread_rewards.thread_id')
             ->where('threads.type', Thread::TYPE_OF_QUESTION)
             ->where('threads.is_approved', Thread::APPROVED)
-            ->where('threads.is_anonymous', false)
+//            ->where('threads.is_anonymous', false)
             ->whereNull('threads.deleted_at')
             ->where(function (Builder $query) {
-                $query->where('threads.user_id', $this->id)->orWhere('questions.be_user_id', $this->id);
+                $query->where('threads.user_id', $this->id)->orWhere('thread_rewards.answer_id', $this->id);
             })
             ->count();
 
@@ -489,6 +505,7 @@ class User extends Model
 
         return $this->groups->contains(Group::ADMINISTRATOR_ID);
     }
+
 
     /**
      * Check whether or not the user is a guest.

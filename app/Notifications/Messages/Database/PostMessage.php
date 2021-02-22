@@ -2,6 +2,7 @@
 
 namespace App\Notifications\Messages\Database;
 
+use App\Models\Post;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Support\Arr;
 
@@ -11,15 +12,20 @@ use Illuminate\Support\Arr;
 class PostMessage extends SimpleMessage
 {
     const NOTIFY_EDIT_CONTENT_TYPE = 'edit_content';    // 修改内容
-    const NOTIFY_UNAPPROVED_TYPE = 'unapproved';        // 内容不合法/内容忽略
-    const NOTIFY_APPROVED_TYPE = 'approved';            // 内容合法
-    const NOTIFY_ESSENCE_TYPE = 'essence';              // 内容加精
-    const NOTIFY_STICKY_TYPE = 'sticky';                // 内容置顶
-    const NOTIFY_DELETE_TYPE = 'delete';                // 内容删除
+    const NOTIFY_UNAPPROVED_TYPE   = 'unapproved';      // 内容不合法/内容忽略
+    const NOTIFY_APPROVED_TYPE     = 'approved';        // 内容合法
+    const NOTIFY_ESSENCE_TYPE      = 'essence';         // 内容加精
+    const NOTIFY_STICKY_TYPE       = 'sticky';          // 内容置顶
+    const NOTIFY_DELETE_TYPE       = 'delete';          // 内容删除
 
     protected $actor;
 
     protected $data;
+
+    /**
+     * @var Post
+     */
+    protected $post;
 
     public function __construct()
     {
@@ -36,7 +42,11 @@ class PostMessage extends SimpleMessage
         $this->actor = $actor;
         $this->data = $data;
 
-        $this->render();
+        // set post model
+        if (isset($this->data['post'])) {
+            $this->post = $data['post'];
+            $this->render();
+        }
     }
 
     protected function titleReplaceVars()
@@ -49,7 +59,7 @@ class PostMessage extends SimpleMessage
         $message = Arr::get($data, 'message', '');
 
         return [
-            $this->actor->username,
+            $this->post->user->username,
             $this->filterSpecialChar ? $this->strWords($message) : $message,
             Arr::get($data, 'refuse', '无'),
         ];
@@ -58,9 +68,9 @@ class PostMessage extends SimpleMessage
     public function render()
     {
         $build = [
-            'title' => $this->getTitle(),
+            'title'   => $this->getTitle(),
             'content' => $this->getContent($this->data),
-            'raw' => Arr::get($this->data, 'raw'),
+            'raw'     => Arr::get($this->data, 'raw'),
         ];
 
         Arr::set($build, 'raw.tpl_id', $this->firstData->id);

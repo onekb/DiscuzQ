@@ -84,6 +84,7 @@ class CreateCategory
             Arr::get($this->data, 'attributes.name'),
             Arr::get($this->data, 'attributes.description'),
             (int) Arr::get($this->data, 'attributes.sort', 0),
+            (int) Arr::get($this->data, 'attributes.parentid', 0),
             Arr::get($this->data, 'attributes.icon', ''),
             $this->ip
         );

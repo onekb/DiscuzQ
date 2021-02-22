@@ -3,10 +3,9 @@
 namespace App\Notifications\Messages\Wechat;
 
 use App\Models\Order;
-use Carbon\Carbon;
+use App\Models\Thread;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Contracts\Routing\UrlGenerator;
-use Illuminate\Support\Arr;
 
 /**
  * 内容支付通知 - 微信
@@ -17,7 +16,10 @@ class RewardedWechatMessage extends SimpleMessage
 {
     public $tplId = 31;
 
-    protected $model;
+    /**
+     * @var Order $order
+     */
+    protected $order;
 
     protected $actor;
 
@@ -35,12 +37,12 @@ class RewardedWechatMessage extends SimpleMessage
 
     public function setData(...$parameters)
     {
-        [$firstData, $actor, $model, $data] = $parameters;
+        [$firstData, $actor, $order, $data] = $parameters;
         // set parent tpl data
         $this->firstData = $firstData;
 
         $this->actor = $actor;
-        $this->model = $model;
+        $this->order = $order;
         $this->data = $data;
 
         $this->template();
@@ -48,15 +50,7 @@ class RewardedWechatMessage extends SimpleMessage
 
     public function template()
     {
-        $build =  [
-            'title' => $this->getTitle(),
-            'content' => $this->getContent($this->data),
-            'raw' => Arr::get($this->data, 'raw'),
-        ];
-
-        Arr::set($build, 'raw.tpl_id', $this->firstData->id);
-
-        return $build;
+        return ['content' => $this->getWechatContent()];
     }
 
     protected function titleReplaceVars()
@@ -66,32 +60,66 @@ class RewardedWechatMessage extends SimpleMessage
 
     public function contentReplaceVars($data)
     {
-        $message = Arr::get($data, 'message', '');
-        $threadId = Arr::get($data, 'raw.thread_id', 0);
-        $actualAmount = Arr::get($data, 'raw.actual_amount', 0); // 实际金额
-
         // 获取支付类型
-        $orderName = Order::enumType(Arr::get($data, 'raw.type', 0), function ($args) {
+        $orderTypeName = Order::enumType($this->order->type, function ($args) {
             return $args['value'];
         });
 
-        $actorName = Arr::get($data, 'raw.actor_username', '');  // 发送人姓名
-
-        // 主题ID为空时跳转到首页
-        if (empty($threadId)) {
-            $threadUrl = $this->url->to('');
-        } else {
-            $threadUrl = $this->url->to('/topic/index?id=' . $threadId);
+        // 获取作者实际金额
+        $actualAmount = 0;
+        switch ($this->order->type) {
+            case Order::ORDER_TYPE_REWARD: // 2
+                // 打赏
+                $actualAmount = $this->order->calculateAuthorAmount(true);
+                break;
+            case Order::ORDER_TYPE_THREAD: // 3
+                // 付费主题
+                $actualAmount = $this->order->calculateAuthorAmount(true);
+                break;
+            case Order::ORDER_TYPE_QUESTION: // 5
+                // 问答提问支付
+                $actualAmount = $this->order->author_amount;
+                break;
+            case Order::ORDER_TYPE_ONLOOKER: // 6
+                // 围观
+                $actualAmount = $this->order->calculateOnlookersAmount(false);
+                break;
+            case Order::ORDER_TYPE_ATTACHMENT: // 7
+                // 附件付费
+                $actualAmount = $this->order->calculateAuthorAmount(true);
+                break;
         }
 
-        return [
-            $actorName,
-            $actualAmount,
-            $this->strWords($message),
-            $orderName, // 1：注册，2：打赏，3：付费主题，4：付费用户组
-            Carbon::now()->toDateTimeString(),
-            $threadUrl,
+        $threadTitle = $this->order->thread->getContentByType(Thread::CONTENT_LENGTH, true);
+
+        /**
+         * 设置父类 模板数据
+         * @parem $user_id 支付人用户ID
+         * @parem $user_name 支付人
+         * @parem $order_sn 订单编号
+         * @parem $payment_sn 支付编号
+         * @parem $order_type_name 订单支付类型 (打赏/付费主题/付费用户组/问答回答收入/问答围观收入/付费附件)
+         * @parem $actual_amount 实际获得金额
+         * @parem $thread_id 主题ID
+         * @parem $thread_title 主题标题/首帖内容 (如果有title是title，没有则是首帖内容)
+         */
+        $this->setTemplateData([
+            '{$user_id}'         => $this->order->user->id,
+            '{$user_name}'       => $this->order->user->username,
+            '{$order_sn}'        => $this->order->order_sn,
+            '{$payment_sn}'      => $this->order->payment_sn,
+            '{$order_type_name}' => $orderTypeName,
+            '{$actual_amount}'   => $actualAmount,
+            '{$thread_id}'       => $this->order->thread->id,
+            '{$thread_title}'    => $this->strWords($threadTitle),
+        ]);
+
+        // build data
+        $expand = [
+            'redirect_url' => $this->url->to('/topic/index?id=' . $this->order->thread_id),
         ];
+
+        return $this->compiledArray($expand);
     }
 
 }

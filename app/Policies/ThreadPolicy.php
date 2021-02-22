@@ -134,8 +134,16 @@ class ThreadPolicy extends AbstractPolicy
     public function edit(User $actor, Thread $thread)
     {
         // 是作者本人且拥有编辑自己主题或回复的权限
-        if ($thread->user_id == $actor->id && $actor->can('editOwnThreadOrPost', $thread)) {
+        if ($thread->user_id == $actor->id && ($actor->can('editOwnThreadOrPost', $thread) || $thread->is_draft)) {
             return true;
+        }else{
+            $request = app('request');
+            if(Arr::get($request->getQueryParams(), 'data')){
+                $is_old_draft = Arr::get($request->getQueryParams(), 'data.attributes', 'is_old_draft');
+                if($is_old_draft == 1){
+                    return true;
+                }
+            }
         }
     }
 

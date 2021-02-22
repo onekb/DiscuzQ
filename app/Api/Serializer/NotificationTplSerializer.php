@@ -18,24 +18,57 @@
 
 namespace App\Api\Serializer;
 
+use App\Models\NotificationTpl;
+use App\Notifications\Messages\TemplateVariables;
 use Discuz\Api\Serializer\AbstractSerializer;
 
 class NotificationTplSerializer extends AbstractSerializer
 {
+    use TemplateVariables;
+
+    /**
+     * {@inheritdoc}
+     */
     protected $type = 'notification_tpls';
 
     /**
-     * @inheritDoc
+     * @var string[] 禁止修改的系统通知，只能设置开启关闭
+     */
+    protected $disabledId = [25, 26, 27, 28, 33, 34, 37, 39, 41, 43, 45, 47, 49];
+
+    /**
+     * @param NotificationTpl $model
+     * @return array
      */
     protected function getDefaultAttributes($model)
     {
+        $trans = 'template_variables.' . ($this->templateVariables[$model->id] ?? '');
+
         return [
-            'status' => $model->status,
-            'type_name' => $model->type_name,
-            'title' => $model->title,
-            'content' => $model->content,
-            'vars' => unserialize($model->vars),
-            'template_id' => $model->template_id,
+            'tpl_id'             => $model->id,
+            'status'             => $model->status,
+            'type'               => $model->type,
+            'type_name'          => $model->type_name,
+            'title'              => $model->title,
+            'content'            => $model->content,
+            'template_id'        => $model->template_id,
+            'template_variables' => $trans === 'template_variables.' ? [] : trans($trans),
+            'first_data'         => $model->first_data,
+            'keywords_data'      => $model->keywords_data ? explode(',', $model->keywords_data) : [],
+            'remark_data'        => $model->remark_data,
+            'color'              => $model->color ?: [],
+            'redirect_type'      => (int) $model->redirect_type,
+            'redirect_url'       => (string) $model->redirect_url,
+            'page_path'          => (string) $model->page_path,
+            'disabled'           => $model->type === NotificationTpl::SYSTEM_NOTICE && in_array($model->id, $this->disabledId),
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getId($model)
+    {
+        return $model->type;
     }
 }

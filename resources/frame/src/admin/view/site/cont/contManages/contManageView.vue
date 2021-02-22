@@ -1,5 +1,6 @@
 <template>
   <div class="cont-manage-box">
+    <!-- 内容管理头部 -->
     <div class="cont-manage-header">
       <div class="cont-manage-header_top condition-box">
         <div class="cont-manage-header_condition cont-manage-header_condition-lf">
@@ -15,14 +16,19 @@
       <div class="cont-manage-header_middle condition-box">
         <div class="cont-manage-header_condition cont-manage-header_condition-lf">
           <span class="cont-manage-header_condition-title">搜索范围：</span>
-          <el-select v-model="searchData.categoryId" placeholder="选择搜索范围">
+          <!-- <el-select v-model="searchData.categoryId" placeholder="选择搜索范围">
             <el-option
               v-for="item in categoriesList"
               :key="item.id"
               :label="item.name"
               :value="item.id"
             ></el-option>
-          </el-select>
+          </el-select> -->
+          <el-cascader
+            v-model="searchData.categoryId"
+            :options="categoriesList"
+            :props="{ expandTrigger: 'hover', checkStrictly: true }">
+          </el-cascader>
         </div>
         <div class="cont-manage-header_condition">
           <span class="cont-manage-header_condition-title">主题类型：</span>
@@ -89,6 +95,7 @@
       </div>
     </div>
 
+    <!-- 主题展示 -->
     <div class="cont-manage-theme">
       <div class="cont-manage-theme__table">
         <div class="cont-manage-theme__table-header">
@@ -182,6 +189,7 @@
       </div>
     </div>
 
+    <!-- 内容管理操作 -->
     <div class="cont-manage-operating">
       <p>操作</p>
       <el-table :data="operatingList" tooltip-effect="dark" style="width: 100%">
@@ -198,14 +206,20 @@
 
         <el-table-column label="选项" min-width="250">
           <template slot-scope="scope">
-            <el-select v-if="scope.row.name === '批量移动到分类'" v-model="categoryId" placeholder="选择分类">
+            <!-- <el-select v-if="scope.row.name === '批量移动到分类'" v-model="categoryId" placeholder="选择分类">
               <el-option
                 v-for="item in categoriesList"
                 :key="item.id"
                 :label="item.name"
                 :value="item.id"
               ></el-option>
-            </el-select>
+            </el-select> -->
+            <el-cascader
+              v-if="scope.row.name === '批量移动到分类'"
+              v-model="categoryId"
+              :options="moveCateList"
+              :props="{ expandTrigger: 'hover', checkStrictly: true }">
+            </el-cascader>
 
             <el-radio-group
               class="cont-manage__option-select"

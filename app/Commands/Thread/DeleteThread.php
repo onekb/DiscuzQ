@@ -22,12 +22,14 @@ use App\Events\Thread\Deleted;
 use App\Events\Thread\Deleting;
 use App\Models\Thread;
 use App\Models\User;
+use App\Repositories\SequenceRepository;
 use App\Repositories\ThreadRepository;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Foundation\EventsDispatchTrait;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Arr;
 
 class DeleteThread
 {
@@ -79,8 +81,12 @@ class DeleteThread
         $this->events = $events;
 
         $thread = $threads->findOrFail($this->threadId, $this->actor);
+        //如果是草稿，则不做处理
+        $isDraft = Arr::get($events->data, 'attributes.is_draft', 0);
 
-        $this->assertCan($this->actor, 'delete', $thread);
+       if ($isDraft) {
+            $this->assertCan($this->actor, 'delete', $thread);
+        }
 
         $this->events->dispatch(
             new Deleting($thread, $this->actor, $this->data)
@@ -88,6 +94,7 @@ class DeleteThread
 
         $thread->raise(new Deleted($thread));
         $thread->delete();
+        app(SequenceRepository::class)->updateSequenceCache($this->threadId);
 
         //删除视频、视频文件
         $bus->dispatch(

@@ -20,12 +20,17 @@ namespace App\Commands\Thread;
 
 use App\Censor\Censor;
 use App\Commands\Post\CreatePost;
+use App\Common\SettingCache;
+use App\Repositories\SequenceRepository;
 use App\Events\Thread\Created;
 use App\Events\Thread\Saving;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Thread;
 use App\Models\User;
+use App\Models\RedPacket;
+use App\Models\Setting;
+use App\Repositories\ThreadRepository;
 use App\Validators\ThreadValidator;
 use Carbon\Carbon;
 use Discuz\Auth\AssertPermissionTrait;
@@ -90,14 +95,16 @@ class CreateThread
      * @param BusDispatcher $bus
      * @param Censor $censor
      * @param Thread $thread
+     * @param ThreadRepository $threads
      * @param ThreadValidator $validator
      * @return Thread
+     * @throws GuzzleException
      * @throws PermissionDeniedException
      * @throws ValidationException
      * @throws Exception
      * @throws GuzzleException
      */
-    public function handle(EventDispatcher $events, BusDispatcher $bus, Censor $censor, Thread $thread, ThreadValidator $validator)
+    public function handle(EventDispatcher $events, BusDispatcher $bus, Censor $censor, Thread $thread, ThreadRepository $threads, ThreadValidator $validator, SettingCache $settingcache)
     {
         $this->events = $events;
 
@@ -107,13 +114,44 @@ class CreateThread
         }
 
         $attributes = Arr::get($this->data, 'attributes', []);
+        $content = Arr::get($attributes, 'content', '');
+        if(mb_strlen($content) > 49998)  throw new PermissionDeniedException;
+
+        $thread_id = Arr::get($attributes, 'id');
+        if ($thread_id) {
+            $thread = $threads->findOrFail($thread_id, $this->actor);
+        }
+
+        //是否为草稿
+        $is_draft = Arr::get($attributes, 'is_draft', '0');
+
+        $thread->is_draft = $is_draft;
 
         $thread->type = (int) Arr::get($attributes, 'type', Thread::TYPE_OF_TEXT);
 
         // 是否有权发布某类型帖子
         $this->assertCan($this->actor, 'createThread.' . $thread->type);
 
-        // 标题，长文帖需要设置
+        //文字帖
+        $red_money = Arr::get($this->data, 'attributes.redPacket.money', null);
+        $thread->is_red_packet = Thread::NOT_HAVE_RED_PACKET;
+        if ($thread->type === Thread::TYPE_OF_TEXT || $thread->type === Thread::TYPE_OF_LONG) {
+
+            if (!empty($red_money)) {
+                $this->assertCan($this->actor, 'createThread.' . $thread->type . '.redPacket');
+
+                if ($thread->type === Thread::TYPE_OF_TEXT) {
+                    $thread->is_red_packet = Thread::HAVE_RED_PACKET;//0:未添加红包，1:有添加红包
+                } else {
+                    //长文帖价格参数和附件参数必须为0才允许添加红包
+                    if(empty((float) Arr::get($attributes, 'price')) && empty((float) Arr::get($attributes, 'attachment_price'))) {
+                        $thread->is_red_packet = Thread::HAVE_RED_PACKET;
+                    }
+                }
+            }
+        }
+
+        // 标题，长文帖和专辑帖需要设置
         if ($thread->type === Thread::TYPE_OF_LONG) {
             $thread->title = trim($censor->checkText(Arr::get($attributes, 'title')));
 
@@ -158,6 +196,14 @@ class CreateThread
         $thread->address = Arr::get($attributes, 'address', '');
         $thread->location = Arr::get($attributes, 'location', '');
 
+        // 红蓝版本对于位置权限的兼容性判断 红蓝，蓝1，红2，默认为1
+        $site_skin = $settingcache->getSiteSkin();
+        if ($site_skin == SettingCache::RED_SKIN_CODE) {
+            if (!empty($thread->longitude) || !empty($thread->latitude) || !empty($thread->address) || !empty($thread->location)) {
+                $this->assertCan($this->actor, 'createThread.' . $thread->type . '.position');
+            }
+        }
+
         $thread->setRelation('user', $this->actor);
 
         $thread->raise(new Created($thread));
@@ -177,16 +223,22 @@ class CreateThread
             $captcha = ''; // 默认为空将不走验证
         }
 
-        $validator->valid($thread->getAttributes() + compact('captcha'));
+        // 草稿主题不进行验证
+        if (!$is_draft) {
+            $validator->valid($thread->getAttributes() + compact('captcha'));
+        }
 
         $thread->save();
 
+        app(SequenceRepository::class)->updateSequenceCache($thread->id);
+
         try {
             $post = $bus->dispatch(
-                new CreatePost($thread->id, $this->actor, $this->data, $this->ip, $this->port)
+                new CreatePost($thread->id, $this->actor, $this->data, $this->ip, $this->port, true)
             );
         } catch (Exception $e) {
             Post::query()->where('thread_id', $thread->id)->delete();
+            RedPacket::query()->where('thread_id', $thread->id)->delete();
             $thread->delete();
             throw $e;
         }

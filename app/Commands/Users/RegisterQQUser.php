@@ -87,9 +87,9 @@ class RegisterQQUser
             $this->data['username'] = $this->getNewUsername();
         }
 
+        $this->data['register_reason'] = 'QQ登录注册';
         // 审核模式，设置注册为审核状态
         if ($settings->get('register_validate')) {
-            $this->data['register_reason'] = 'QQ登录注册';
             $this->data['status'] = 2;
         }
 
@@ -97,8 +97,10 @@ class RegisterQQUser
         if ($settings->get('site_mode') == 'pay') {
             $this->data['expired_at'] = Carbon::now();
         }
+        //qq登录类型
+        $this->data['bind_type'] = 2;
 
-        $user = User::register(Arr::only($this->data, ['username', 'password', 'register_ip', 'register_reason', 'status']));
+        $user = User::register(Arr::only($this->data, ['username', 'password', 'register_ip', 'register_reason', 'status', 'bind_type']));
 
         $this->events->dispatch(
             new Saving($user, $this->actor, $this->data)

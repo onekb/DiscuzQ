@@ -19,6 +19,7 @@
 namespace App\Commands\Topic;
 
 use App\Models\User;
+use App\Models\AdminActionLog;
 use App\Repositories\TopicRepository;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Foundation\EventsDispatchTrait;
@@ -51,8 +52,14 @@ class DeleteTopic
         $this->assertAdmin($this->actor);
 
         $topic = $topics->findOrFail($this->id);
+        $topicContent = $topic->content;
 
         $topic->delete();
+
+        AdminActionLog::createAdminActionLog(
+            $this->actor->id,
+            '删除话题【'. $topicContent .'】'
+        );
 
         return $topic;
     }

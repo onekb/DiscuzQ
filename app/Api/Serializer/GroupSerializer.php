@@ -19,6 +19,7 @@
 namespace App\Api\Serializer;
 
 use App\Models\Group;
+use App\Models\Sequence;
 use Discuz\Api\Serializer\AbstractSerializer;
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Tobscure\JsonApi\Relationship;
@@ -64,6 +65,7 @@ class GroupSerializer extends AbstractSerializer
             'scale'             => $model->scale,
             'is_subordinate'    => (bool) $model->is_subordinate,
             'is_commission'     => (bool) $model->is_commission,
+            'checked'           => in_array($model->id, $this->getCheckList()) ? 1 : 0
         ];
     }
 
@@ -98,5 +100,18 @@ class GroupSerializer extends AbstractSerializer
         } else {
             return $this->url->to('/images/groups/group-10.svg');
         }
+    }
+
+    /**
+     * $groupsList
+     *
+     * @param $sequenceList
+     * @return string
+     */
+    public function getCheckList(){
+        $groupsList = Sequence::query()->first();
+        if (empty($groupsList)) return [];
+        $groupsList = explode(',',$groupsList['group_ids']);
+        return $groupsList;
     }
 }

@@ -27,7 +27,6 @@ export default {
         url: "noticeList",
         method: "get",
         data: {
-          type: 0,
           "page[number]": this.pageNum,
           "page[size]": this.pageLimit
         }
@@ -36,6 +35,7 @@ export default {
           if (res.errors) {
             this.$message.error(res.errors[0].code);
           } else {
+            console.log(res, 'res');
             this.tableData = res.readdata;
             this.total = res.meta.total;
             // this.pageCount = res.meta.pageCount;
@@ -85,11 +85,11 @@ export default {
       this.pageNum = val;
       this.getNoticeList();
     },
-    configClick(id, typeName) {
+    configClick(id,typeName) {
       //点击配置跳到对应的配置页面
       this.$router.push({
         path: "/admin/notice-configure",
-        query: { id: id, type: "system", typeName: typeName }
+        query: { id: id,typeName: typeName }
       });
     }
   },

@@ -37,7 +37,7 @@ class Updated
      * Updated constructor.
      *
      * @param Order $order
-     * @param User $actor
+     * @param User|null $actor
      */
     public function __construct(Order $order, User $actor = null)
     {

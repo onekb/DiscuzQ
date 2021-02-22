@@ -19,6 +19,7 @@
 namespace App\Api\Serializer;
 
 use App\Models\User;
+use App\Models\UserQq;
 use App\Models\UserSignInFields;
 use App\Repositories\UserFollowRepository;
 use Discuz\Api\Serializer\AbstractSerializer;
@@ -141,6 +142,9 @@ class UserSerializer extends AbstractSerializer
                 'canEditUsername' => $model->username_bout < $settings->get('username_bout', 'default', 1),
             ];
         }
+        if($model->bind_type == 2) {
+            $attributes['avatarUrl'] = ! empty($attributes['avatarUrl']) ? $attributes['avatarUrl'] : $this->qqAvatar($model);
+        }
 
         return $attributes;
     }
@@ -168,6 +172,7 @@ class UserSerializer extends AbstractSerializer
     {
         return $this->hasOne($user, UserWechatSerializer::class);
     }
+
 
     /**
      * @param $user
@@ -198,5 +203,19 @@ class UserSerializer extends AbstractSerializer
     public function dialog($user)
     {
         return $this->hasOne($user, DialogSerializer::class);
+    }
+
+    /**
+     * qq头像
+     * @param User $user
+     * @return string
+     */
+    public function qqAvatar(User $user)
+    {
+        $qqUser = UserQq::where('user_id', $user->id)->first();
+        if(! $qqUser) {
+            return '';
+        }
+        return $qqUser->headimgurl;
     }
 }

@@ -22,6 +22,7 @@ use App\Api\Controller\Posts\UpdatePostController;
 use App\Api\Controller\Threads\CreateThreadController;
 use App\Api\Controller\Threads\ResourceThreadController;
 use App\Api\Controller\Threads\UpdateThreadController;
+use App\Api\Controller\Threads\UpdateDraftController;
 use App\Api\Serializer\AttachmentSerializer;
 use App\Models\Attachment;
 use App\Models\Post;
@@ -37,6 +38,7 @@ class ReplaceContentAttachUrl
             $event->isController(ResourceThreadController::class)
             || $event->isController(CreateThreadController::class)
             || $event->isController(UpdateThreadController::class)
+            || $event->isController(UpdateDraftController::class)
             || $event->isController(UpdatePostController::class)
         ) {
             // 图文混排需要替换插入文中的图片及附件地址
@@ -49,6 +51,10 @@ class ReplaceContentAttachUrl
             ) {
                 $post = $event->data;
             } else {
+                return;
+            }
+
+            if (!$post) {
                 return;
             }
 

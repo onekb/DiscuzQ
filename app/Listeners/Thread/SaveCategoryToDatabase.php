@@ -40,7 +40,12 @@ class SaveCategoryToDatabase
         $thread = $event->thread;
         $actor = $event->actor;
 
+        $isDraft = Arr::get($event->data, 'attributes.is_draft', 0);
         $categoryId = Arr::get($event->data, 'relationships.category.data.id');
+
+        //如果是草稿且分类为空，则不做处理
+        if ($isDraft && empty($categoryId))
+            return null;
 
         // 如果主题尚未分类 或 接收到的分类与当前分类不一致，就修改分类
         if (! $thread->category_id || $categoryId && $thread->category_id != $categoryId) {

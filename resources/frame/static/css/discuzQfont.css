@@ -239,3 +239,6 @@
 .icon-home:before {
   content: "\e692";
 }
+.icon-huishouzhan:before {
+  content: "\e602"
+}

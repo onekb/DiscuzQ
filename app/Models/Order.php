@@ -77,6 +77,10 @@ class Order extends Model
 
     const ORDER_TYPE_ATTACHMENT = 7; //付费附件
 
+    const ORDER_TYPE_TEXT = 20; //文字帖红包
+
+    const ORDER_TYPE_LONG = 21; //长文帖红包
+
     /**
      * 订单状态
      */
@@ -138,6 +142,8 @@ class Order extends Model
         5 => '问答回答收入',
         6 => '问答围观收入',
         7 => '付费附件',
+        20 => '文字帖红包',
+        21 => '长文帖红包',
     ];
 
     /**

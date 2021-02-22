@@ -103,6 +103,7 @@ class UserWalletCashReview
             throw new ValidationException($validator_info);
         }
         $ids         = (array) Arr::get($this->data, 'ids');
+        $this->assertBatchData($ids);
         $cash_status = (int) Arr::get($this->data, 'cash_status');
 
         //只允许修改为审核通过或审核不通过

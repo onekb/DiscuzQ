@@ -27,6 +27,7 @@ import RConfig from "./admin/viewConfig/tpl"; //获取路由对象
 import "axiosHelper"; //ajax 请求封装
 /* end 设置引入的模板路径 end */
 import axios from 'axios';
+import Router from 'vue-router'
 
 Vue.use(VueI18n);
 
@@ -60,6 +61,11 @@ Vue.use(VueLazyload, {
 Vue.prototype.$utils = utils; //注册全局方法
 Vue.prototype.$echarts = Echarts; //后台财务统计echarts图标
 let app = {};
+
+const originalPush = Router.prototype.push
+Router.prototype.push = function push(location) {
+  return originalPush.call(this, location).catch(err => err)
+}
 
 app.bus = new Vue(); //后台财务统计echarts图标
 

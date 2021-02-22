@@ -24,6 +24,7 @@ use App\Common\CacheKey;
 use App\Common\PostCache;
 use App\Models\Post;
 use App\Models\User;
+use App\Models\ThreadReward;
 use App\Repositories\PostRepository;
 use Discuz\Api\Controller\AbstractListController;
 use Discuz\Auth\AssertPermissionTrait;
@@ -137,10 +138,15 @@ class ListPostsController extends AbstractListController
         $params = $request->getQueryParams();
         $filter = $this->extractFilter($request);
         $sort = $this->extractSort($request);
-        //设置评论列表第一页缓存
-        list($cacheKey, $posts) = $this->getCache($params, $filter, $document);
-        if ($posts) {
-            return $posts;
+
+        $threadId = Arr::get($filter, 'thread');
+        $threadQuestionType = ThreadReward::query()->where('thread_id', $threadId)->first();
+        if($threadQuestionType->type !== 0){
+            //设置评论列表第一页缓存
+            list($cacheKey, $posts) = $this->getCache($params,$filter, $document);
+            if ($posts) {
+                return $posts;
+            }
         }
         $limit = $this->extractLimit($request);
         $offset = $this->extractOffset($request);
@@ -183,7 +189,17 @@ class ListPostsController extends AbstractListController
             });
         }
         $posts->loadMissing($include);
-        if ($this->canCache($params)) {
+
+        $posts->map(function ($post) {
+            $post->rewards = floatval(sprintf('%.2f', $post->getPostReward()));
+        });
+
+        if($params['sort'] == 'createdAt'){
+            $sorted = $posts->sortByDesc('rewards');
+            $posts = $sorted->values();
+        }
+
+        if($this->canCache($params)){
             $this->postCache->setPosts($posts);
             $this->cache->put($cacheKey, serialize($this->postCache), 5 * 60);
         }
