@@ -29,9 +29,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
+use App\Models\Category;
+use Discuz\Auth\AssertPermissionTrait;
 
 class CreateThreadVideoController extends AbstractCreateController
 {
+    use AssertPermissionTrait;
     /**
      * {@inheritdoc}
      */
@@ -63,9 +66,13 @@ class CreateThreadVideoController extends AbstractCreateController
     {
         $actor = $request->getAttribute('actor');
 
+        $this->assertCan($actor, 'createThread');
+
         $attributes = Arr::get($request->getParsedBody(), 'data.attributes', []);
 
         $type = (int) Arr::get($attributes, 'type', ThreadVideo::TYPE_OF_VIDEO);
+
+        $this->assertCan($actor, 'createThread.' . $type);
 
         $this->validation->make($attributes, [
             'file_id' => 'required',

@@ -21,6 +21,7 @@ namespace App\Api\Controller\Posts;
 use App\Api\Serializer\PostSerializer;
 use App\Commands\Post\BatchDeletePosts;
 use Discuz\Api\Controller\AbstractListController;
+use Discuz\Auth\AssertPermissionTrait;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,6 +29,7 @@ use Tobscure\JsonApi\Document;
 
 class BatchDeletePostsController extends AbstractListController
 {
+    use AssertPermissionTrait;
     /**
      * {@inheritdoc}
      */
@@ -53,7 +55,8 @@ class BatchDeletePostsController extends AbstractListController
     {
         $ids = explode(',', Arr::get($request->getQueryParams(), 'ids'));
         $actor = $request->getAttribute('actor');
-
+        $this->assertAdmin($actor);
+        $this->assertBatchData($ids);
         $result = $this->bus->dispatch(
             new BatchDeletePosts($ids, $actor)
         );

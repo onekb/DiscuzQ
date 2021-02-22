@@ -45,7 +45,12 @@ export default {
           imgWidht: 0,
           imgHeight: 0,
           text: "站点LOGO",
-          textrule: "尺寸：438px*88px"
+          /*IFTRUE_default*/
+          textrule: "尺寸：438px*88px",
+          /*FITRUE_default*/
+          /*IFTRUE_pay*/
+          textrule: "尺寸：300px*100px",
+          /*FITRUE_pay*/
         },
         {
           imageUrl: "",

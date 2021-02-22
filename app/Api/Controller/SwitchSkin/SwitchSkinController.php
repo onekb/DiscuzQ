@@ -80,7 +80,27 @@ class SwitchSkinController implements RequestHandlerInterface
         $link_skin_public = $last_path . DIRECTORY_SEPARATOR .'public_'. $attributes['skin'];
 
         $oldSkinPath = $public_path . DIRECTORY_SEPARATOR . 'skin.conf';
-        $oldSiteSkin = file_get_contents($oldSkinPath);
+        if(file_exists($oldSkinPath)){
+            $oldSiteSkin = file_get_contents($oldSkinPath);
+        }else{
+            $oldSiteSkin = 1;
+        }
+
+        // 检查public_1和public_2下有无主题标识文件，如无，创建文件并写入标识
+        $public_blue_skin = $last_path . DIRECTORY_SEPARATOR .'public_1'. DIRECTORY_SEPARATOR . 'skin.conf';
+        if(!file_exists($public_blue_skin)){
+            touch($public_blue_skin);
+            $readBlueSkin = fopen($public_blue_skin, 'w');
+            fwrite($readBlueSkin, 1);
+        }
+
+        $public_red_skin = $last_path . DIRECTORY_SEPARATOR .'public_2'. DIRECTORY_SEPARATOR . 'skin.conf';
+        if(!file_exists($public_red_skin)){
+            touch($public_red_skin);
+            $readRedSkin = fopen($public_red_skin, 'w');
+            fwrite($readRedSkin, 2);
+        }
+
         if($oldSiteSkin == $attributes['skin']){
             throw new Exception("您已是当前栏目，无需切换！");
         }
@@ -231,10 +251,13 @@ class SwitchSkinController implements RequestHandlerInterface
                     $this->check_dir($from_dir .'/'. $file, $to_dir .'/'. $file);
                 }else{
                     //直接copy到目标文件夹
-                    $fileWritable = is_writable($to_dir .'/'. $file);
+                    $filePath = $to_dir .'/'. $file;
+                    if(!file_exists($filePath)){
+                        touch($filePath);
+                    }
+                    $fileWritable = is_writable($filePath);
                     if(!$fileWritable){
-                        $filePath = $to_dir .'/'. $file;
-                        throw new Exception("$filePath文件没有读写权限，无法进行栏目切换！");
+                        throw new Exception("{$filePath}文件没有读写权限，无法进行栏目切换！");
                     }
                 }
             }

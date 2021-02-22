@@ -216,6 +216,7 @@ class ForumSettingField
             'qcloud_vod_size' => $this->settings->get('qcloud_vod_size', 'qcloud'),
             'qcloud_vod_sub_app_id' => $this->settings->get('qcloud_vod_sub_app_id', 'qcloud'),
             'qcloud_vod_watermark' => $this->settings->get('qcloud_vod_watermark', 'qcloud'),
+            'qcloud_vod_token' => $this->settings->get('qcloud_vod_token', 'qcloud'),
         ];
     }
 

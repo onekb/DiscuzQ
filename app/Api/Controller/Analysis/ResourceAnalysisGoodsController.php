@@ -26,6 +26,8 @@ use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
+use Illuminate\Contracts\Validation\Factory;
+use App\Models\Thread;
 
 class ResourceAnalysisGoodsController extends AbstractResourceController
 {
@@ -33,6 +35,8 @@ class ResourceAnalysisGoodsController extends AbstractResourceController
     use AssertPermissionTrait;
 
     protected $httpClient;
+
+    protected $validation;
 
     /**
      * {@inheritdoc}
@@ -66,13 +70,15 @@ class ResourceAnalysisGoodsController extends AbstractResourceController
      *
      * @param UrlGenerator $url
      */
-    public function __construct(UrlGenerator $url)
+    public function __construct(UrlGenerator $url,Factory  $validation)
     {
         $this->url = $url;
 
         $config = [
             'timeout' => 30,
         ];
+
+        $this->validation = $validation;
 
         $this->httpClient = new Client($config);
     }
@@ -91,6 +97,12 @@ class ResourceAnalysisGoodsController extends AbstractResourceController
         $this->assertRegistered($actor);
 
         $readyContent = Arr::get($request->getParsedBody(), 'data.attributes.address');
+
+        $this->validation->make(Arr::get($request->getParsedBody(), 'data.attributes'), [
+            'address'  => 'required_without:address|max:1500',
+        ])->validate();
+
+        $this->assertCan($actor, 'createThread.' . Thread::TYPE_OF_GOODS);
 
         /**
          * 查询数据库中是否存在

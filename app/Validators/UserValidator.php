@@ -130,9 +130,10 @@ class UserValidator extends AbstractValidator
             'pay_password_token' => 'sometimes|required|session_token:reset_pay_password',
             'register_reason' => 'filled|max:50',
             'groupId' => 'required',
-            'realname' => 'required',
+            'realname' => 'required|max:20',
             'identity' => ['required', 'regex:/(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/', 'unique:users'],
             'captcha' => ['sometimes', new Captcha],
+            'mobile' => 'max:20',
         ];
 
         if ($this->user) {

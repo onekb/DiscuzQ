@@ -12,7 +12,7 @@
 
     <Card header="转码模板：">
       <CardRow
-        description="腾讯云账户 - 云点播 - 视频转码模板中的模板ID。还需在回调设置中配置下回调URL，回调URL为：http(s)://当前域名/api/threads/notify/video，回调事件请选择”视频上传完成回调“和”视频转码完成回调“。"
+        description="腾讯云账户 - 云点播 - 视频转码模板中的模板ID。还需在回调设置中配置下回调URL，回调URL为：hhttp(s)://当前域名/api/threads/notify/video?qvodtoken=云点播回调校验码，回调事件请选择”视频上传完成回调“和”视频转码完成回调“。"
       >
         <el-input v-model="vodTranscode" clearable></el-input>
       </CardRow>
@@ -62,6 +62,14 @@
     <Card header="支持的最大尺寸:">
       <CardRow description="单位：MB">
         <el-input v-model="vodSize" clearable></el-input>
+      </CardRow>
+    </Card>
+
+    <Card header="云点播回调校验码:">
+      <CardRow
+        description="根据云点播校验码，可以生成回调url，将回调url http(s)://当前域名/api/threads/notify/video?qvodtoken=云点播回调校验码 配置到云点播回调设置中，可以确保论坛的安全性"
+      >
+        <el-input v-model="vodToken" clearable></el-input>
       </CardRow>
     </Card>
 

@@ -22,6 +22,7 @@ use App\Api\Serializer\InfoSerializer;
 use App\Commands\Users\UpdateUser;
 use App\Models\User;
 use Discuz\Api\Controller\AbstractListController;
+use Discuz\Auth\AssertPermissionTrait;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
@@ -29,6 +30,8 @@ use Tobscure\JsonApi\Document;
 
 class UpdateUsersController extends AbstractListController
 {
+    use AssertPermissionTrait;
+
     public $serializer = InfoSerializer::class;
 
     protected $bus;
@@ -42,6 +45,7 @@ class UpdateUsersController extends AbstractListController
     {
         $actor = $request->getAttribute('actor');
         $multipleData = Arr::get($request->getParsedBody(), 'data', []);
+        $this->assertBatchData($multipleData, false);
 
         $list = collect();
         foreach ($multipleData as $data) {

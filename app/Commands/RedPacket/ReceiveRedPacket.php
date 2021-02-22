@@ -111,11 +111,15 @@ class ReceiveRedPacket
             $redPacketData = RedPacket::query()->lockForUpdate()->find($this->redPacket['id']);
             $redPacketData->remain_money = $this->redPacket['remain_money'] - $prepareChangeAmount;
             $redPacketData->remain_number = $this->redPacket['remain_number'] - 1;
+            if ($redPacketData->remain_money == 0 && $redPacketData->remain_number == 0) {
+                $redPacketData->status = RedPacket::RED_PACKET_STATUS_BROUGHT_OUT; // 2:红包已领完
+            }
             $redPacketData->save();
 
             if($order->payment_type == Order::PAYMENT_TYPE_WALLET){
                 //减少发帖人冻结金额
                 $data = [
+                    'order_id' => $order->id,
                     'thread_id' => $this->thread['id'],
                     'post_id' => $this->post['id'],
                     'change_type' => $expend_change_type,
@@ -126,6 +130,7 @@ class ReceiveRedPacket
 
             //增加领取人可用金额
             $data = [
+                'order_id' => $order->id,
                 'thread_id' => $this->thread['id'],
                 'post_id' => $this->post['id'],
                 'change_type' => $income_change_type,
@@ -136,7 +141,7 @@ class ReceiveRedPacket
             $this->connection->commit();
         } catch (Exception $e) {
             $this->connection->rollback();
-            app('log')->info('领取红包异常:' . $e->getMessage());
+            app('log')->info('红包ID:'.$this->redPacket['id'].'领取异常:' . $e->getMessage());
 
             throw $e;
         }

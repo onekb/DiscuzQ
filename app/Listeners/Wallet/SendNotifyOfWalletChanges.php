@@ -20,7 +20,6 @@ namespace App\Listeners\Wallet;
 
 use App\Events\Wallet\Saved;
 use App\Models\Order;
-use App\Models\Post;
 use App\Models\Question;
 use App\Models\Thread;
 use App\Models\UserWalletLog;
@@ -87,15 +86,15 @@ class SendNotifyOfWalletChanges
                     /**
                      * 查询红包支付订单信息
                      *
-                     * @var Question $question
+                     * @var Thread $thread
                      */
                     $thread = Thread::query()->where('id', $data['thread_id'])->first();
                     $order = $thread->ordersByType(Order::ORDER_TYPE_TEXT, false);
 
                     /**
-                     * 被点赞人收入通知
+                     * 文字帖红包收入通知
                      *
-                     * @see SendNotifyOfAnswer 集赞数够了之后发送回执通知
+                     * @see SendNotifyOfAnswer 收到文字帖红包发送回执通知
                      */
                     $build = [
                         'message' => $order->thread->getContentByType(Thread::CONTENT_LENGTH, true),
@@ -111,15 +110,15 @@ class SendNotifyOfWalletChanges
                     /**
                      * 查询红包支付订单信息
                      *
-                     * @var Question $question
+                     * @var Thread $thread
                      */
                     $thread = Thread::query()->where('id', $data['thread_id'])->first();
                     $order = $thread->ordersByType(Order::ORDER_TYPE_LONG, false);
 
                     /**
-                     * 被点赞人收入通知
+                     * 长文帖红包收入通知
                      *
-                     * @see SendNotifyOfAnswer 回答后发送回执通知
+                     * @see SendNotifyOfAnswer 收到长文帖红包发送回执通知
                      */
                     $build = [
                         'message' => $order->thread->getContentByType(Thread::CONTENT_LENGTH, true),

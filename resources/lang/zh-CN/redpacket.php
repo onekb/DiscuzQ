@@ -32,5 +32,8 @@ return [
     'thread_order_illegal'              => '该帖存在异常，请联系管理员处理',
 
     'redpacket_money_illegal'           =>  '单个红包金额不能小于0.01',
-    'redpacket_average_money_illegal'   =>  '红包平均金额不能小于0.01'
+    'redpacket_average_money_illegal'   =>  '红包平均金额不能小于0.01',
+
+    'money_lg_limit'                    =>  '红包金额不能超过200',
+    'likenum_lg_limit'                  =>  '集赞数不能超过250',
 ];

@@ -125,6 +125,7 @@ class ResourceThreadController extends AbstractResourceController
         $actor = $request->getAttribute('actor');
         $threadId = Arr::get($request->getQueryParams(), 'id');
         $include = $this->extractInclude($request);
+        $stopViewCount = Arr::get($request->getQueryParams(), 'stopViewCount');
 
         $thread = $this->threads->findOrFail($threadId, $actor);
 
@@ -138,7 +139,9 @@ class ResourceThreadController extends AbstractResourceController
             $cacheThread = unserialize($cacheData);
             $cacheThread->view_count = $thread->view_count;
             $cacheThread->timestamps = false;
-            $cacheThread->increment('view_count');
+            if(!$stopViewCount){
+                $cacheThread->increment('view_count');
+            }
             if (($postRelationships = $this->getPostRelationships($include)) || in_array('posts', $include)) {
                 $this->includePosts($cacheThread, $request, $postRelationships);
             }
@@ -182,7 +185,9 @@ class ResourceThreadController extends AbstractResourceController
 
         // 更新浏览量
         $thread->timestamps = false;
-        $thread->increment('view_count');
+        if(!$stopViewCount){
+            $thread->increment('view_count');
+        }
         $cache->put($cacheKey,serialize($thread),5*60);
         return $thread;
     }

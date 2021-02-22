@@ -25,9 +25,12 @@ use Illuminate\Contracts\Bus\Dispatcher;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
 use Illuminate\Support\Arr;
+use Discuz\Auth\AssertPermissionTrait;
 
 class DeleteGroupsController extends AbstractListController
 {
+    use AssertPermissionTrait;
+
     public $serializer = InfoSerializer::class;
 
     protected $bus;
@@ -40,6 +43,8 @@ class DeleteGroupsController extends AbstractListController
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $multipleData = Arr::get($request->getParsedBody(), 'data.id', []);
+
+        $this->assertBatchData($multipleData);
 
         $list = collect();
         foreach ($multipleData as $id) {

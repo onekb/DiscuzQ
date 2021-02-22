@@ -94,6 +94,10 @@ class Order extends Model
 
     const ORDER_STATUS_EXPIRED = 4; //订单已过期
 
+    const ORDER_STATUS_RETURN = 10; //已退款订单
+
+    const ORDER_STATUS_UNTREATED = 11; //在异常订单处理中不进行处理的订单
+
     /**
      * 注册收款人ID
      */

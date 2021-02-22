@@ -43,6 +43,10 @@ class ReplyPostMakeRedPacket
      */
     protected $connection;
 
+    public $baseInfo = '';
+
+    public $debugInfo = false; // false:默认不输出调试信息到日志上
+
     public function __construct(Dispatcher $bus, ConnectionInterface $connection)
     {
         $this->bus = $bus;
@@ -60,30 +64,30 @@ class ReplyPostMakeRedPacket
         $actor = $event->actor;
         $data = $event->data;
         $type = $event->post->getRelations()['thread']['type'];
-        $info = '访问用户id： ' . $actor->id.
-                ',访问帖子id：' . $post->thread->id.
-                ',post_id：'   . $post->id.
-                ',msg：';
+        $this->baseInfo =   '访问用户id:'  . $actor->id.
+                            ',访问帖子id:' . $post->thread->id.
+                            ',post_id:'   . $post->id.
+                            ',msg:';
 
         if (!($type == Thread::TYPE_OF_TEXT || $type == Thread::TYPE_OF_LONG)) {
-            app('log')->info($info . '回复领红包：该帖不为文字帖和长文贴');
+            $this->outDebugInfo('回复领红包：该帖不为文字帖和长文贴');
             return;
         }
 
         if ($post->is_approved == Post::UNAPPROVED) {
-            app('log')->info($info . '回复领红包：该帖未审核');
+            $this->outDebugInfo('回复领红包：该帖未审核');
             return;
         }
 
         if ($post->is_first == 1 || $post->is_comment == 1 || $post->wasRecentlyCreated == false) {
-            app('log')->info($info . '回复领红包：该帖不为首帖、第一条评论');
+            $this->outDebugInfo('回复领红包：该帖不为首帖、第一条评论');
             return;
         }
 
-        $redPacket = RedPacket::query() ->where(['thread_id' => $post->thread_id, 'status' => 1, 'condition' => 0])
+        $redPacket = RedPacket::query() ->where(['thread_id' => $post->thread_id, 'status' => RedPacket::RED_PACKET_STATUS_VALID, 'condition' => 0])
                                         ->first();
         if (empty($redPacket) || empty($redPacket['remain_money']) || empty($redPacket['remain_number'])) {
-            app('log')->info($info . '回复领红包：该红包帖无剩余金额和个数');
+            $this->outDebugInfo('回复领红包：该红包帖无剩余金额和个数');
             return;
         }
 
@@ -101,11 +105,16 @@ class ReplyPostMakeRedPacket
             'thread_id' => $thread['id']
         ])->first();
         if (!empty($isReceive)) {
-            app('log')->info($info . '回复领红包：该用户已经领取过红包了');
+            $this->outDebugInfo('回复领红包：该用户已经领取过红包了');
             return;
         }
 
         $this->bus->dispatch(new ReceiveRedPacket($thread,$post,$redPacket,$event->post->thread->user,$actor));
 
+    }
+
+    public function outDebugInfo($info)
+    {
+        app('log')->info($this->baseInfo . $info);
     }
 }

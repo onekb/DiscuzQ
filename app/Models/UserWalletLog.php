@@ -105,7 +105,7 @@ class UserWalletLog extends Model
 
     const TYPE_EXPEND_ONLOOKER = 82; // 问答围观支出
 
-    // ----- 分割线(以下为红版新增枚举值100-129) -----
+    // ----- 分割线(以下为红版新增枚举值100-130) -----
 
     const TYPE_EXPEND_TEXT = 100; // 文字帖红包支出
 
@@ -115,6 +115,8 @@ class UserWalletLog extends Model
 
     const TYPE_TEXT_RETURN_THAW = 103; // 文字帖冻结返还
 
+    const TYPE_TEXT_ABNORMAL_REFUND = 104; // 文字帖订单异常返现
+
     const TYPE_EXPEND_LONG = 110; // 长文帖红包支出
 
     const TYPE_LONG_FREEZE = 111; // 长文帖红包冻结
@@ -123,6 +125,8 @@ class UserWalletLog extends Model
 
     const TYPE_LONG_RETURN_THAW = 113; // 长文帖冻结返还
 
+    const TYPE_LONG_ABNORMAL_REFUND = 114; // 长文帖订单异常返现
+
     const TYPE_INCOME_THREAD_REWARD = 120; // 悬赏问答收入
 
     const TYPE_INCOME_THREAD_REWARD_RETURN = 121; // 悬赏帖过期-悬赏帖剩余悬赏金额返回
@@ -130,6 +134,8 @@ class UserWalletLog extends Model
     const TYPE_INCOME_THREAD_REWARD_DIVIDE = 122; // 悬赏帖过期-悬赏帖剩余悬赏金额平分
 
     const TYPE_INCOME_THREAD_REWARD_DISTRIBUTION = 123; // 悬赏帖过期-悬赏帖剩余悬赏金额按点赞数分配
+
+    const TYPE_QUESTION_ABNORMAL_REFUND = 124; // 问答帖订单异常返现
 
     /**
      * 创建钱包动账记录

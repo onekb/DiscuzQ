@@ -36,4 +36,6 @@ class CacheKey
     public const LIST_SEQUENCE_THREAD_INDEX = 'list_sequences_thread_index';
 
     public const LIST_SEQUENCE_THREAD_INDEX_KEYS = 'list_sequences_thread_index_keys';
+
+    public const API_FREQUENCE = 'api_frequence';
 }

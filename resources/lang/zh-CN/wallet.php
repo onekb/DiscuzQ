@@ -52,10 +52,13 @@ return [
     'expend_text'               => '文字帖红包支出',
     'income_text'               => '文字帖红包收入',
     'return_text'               => '文字帖红包冻结返还',
+    'abnormal_return_text'      => '文字帖订单异常返现',
     'freeze_long'               => '长文帖红包冻结',
     'expend_long'               => '长文帖红包支出',
     'income_long'               => '长字帖红包收入',
     'return_long'               => '长文帖红包冻结返还',
+    'abnormal_return_long'      => '长文帖订单异常返现',
+    'abnormal_return_question'  => '问答帖订单异常返现',
 
     'cash_operate_desc'         => '提现',
 

@@ -98,7 +98,7 @@
           <div class="recycle-bin-table__main" slot="main">
             <a class="recycle-bin-table__main__cont-text" :href="'/topic/index?id=' + items._data.id" target="_blank" :style="{'display':(items.threadVideo ? 'inline':'block')}" v-html="items.firstPost._data.contentHtml"></a>
             <span class="iconfont iconvideo" v-if="items.threadVideo"></span>
-            <div class="recycle-bin-table__main__cont-imgs">
+            <div class="recycle-bin-table__main__cont-imgs" v-if="!items._data.title">
               <p class="recycle-bin-table__main__cont-imgs-p" v-for="(item,index) in items.firstPost.images" :key="item._data.thumbUrl">
                 <img  v-lazy="item._data.thumbUrl" @click="imgShowClick(items.firstPost.images,index)" :alt="item._data.fileName">
               </p>

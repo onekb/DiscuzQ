@@ -25,6 +25,8 @@ use Discuz\Api\Controller\AbstractResourceController;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
+use Discuz\Contracts\Setting\SettingsRepository;
+use Illuminate\Support\Arr;
 
 class ThreadVideoNotifyController extends AbstractResourceController
 {
@@ -33,12 +35,15 @@ class ThreadVideoNotifyController extends AbstractResourceController
 //     */
     protected $bus;
 
+    protected $settings;
+
     /**
      * @param Dispatcher $bus
      */
-    public function __construct(Dispatcher $bus)
+    public function __construct(Dispatcher $bus,SettingsRepository $settings)
     {
         $this->bus = $bus;
+        $this->settings = $settings;
     }
 
     /**
@@ -47,8 +52,18 @@ class ThreadVideoNotifyController extends AbstractResourceController
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $document = new Document();
-        $data     = $this->data($request, $document);
-        return DiscuzResponseFactory::XmlResponse($data);
+
+        $dbtoken = $this->settings->get('qcloud_vod_token', 'qcloud');
+        $inputtoken = Arr::get($request->getQueryParams(), 'qvodtoken');
+        if (empty($dbtoken) || (!empty($inputtoken) && strcmp($dbtoken, $inputtoken) === 0))
+        {
+            $data     = $this->data($request, $document);
+            return DiscuzResponseFactory::XmlResponse($data);
+        }
+        else
+        {
+            return DiscuzResponseFactory::XmlResponse("fobidden");
+        }
     }
 
     public function data(ServerRequestInterface $request, Document $document)

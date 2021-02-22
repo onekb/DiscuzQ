@@ -30,4 +30,8 @@ return [
     'order_question_onlooker_seen'       => '帖子已支付围观金额',
 
     'order_pay_group_closed' => '权限购买未开启',
+
+    'abnormal_text_order_return_money'      =>'文字帖订单异常返现',
+    'abnormal_long_order_return_money'      =>'长文帖订单异常返现',
+    'abnormal_question_order_return_money'  =>'问答帖订单异常返现',
 ];

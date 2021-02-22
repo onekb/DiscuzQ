@@ -24,6 +24,7 @@ use Discuz\Api\Controller\AbstractCreateController;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
+use Illuminate\Contracts\Validation\Factory;
 
 class CreateReportsController extends AbstractCreateController
 {
@@ -37,18 +38,25 @@ class CreateReportsController extends AbstractCreateController
      */
     protected $bus;
 
+    protected $validation;
+
     /**
      * @param Dispatcher $bus
      */
-    public function __construct(Dispatcher $bus)
+    public function __construct(Dispatcher $bus,Factory $validation)
     {
         $this->bus = $bus;
+        $this->validation = $validation;
     }
 
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $actor = $request->getAttribute('actor');
         $data = $request->getParsedBody()->get('data', []);
+
+        $this->validation->make($data['attributes'], [
+            'reason'  => 'required_without:message_text|max:450',
+        ])->validate();
 
         return $this->bus->dispatch(
             new CreateReport($actor, $data)

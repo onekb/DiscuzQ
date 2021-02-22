@@ -19,18 +19,32 @@ namespace App\Api\Controller\SignInFields;
 
 use App\Api\Serializer\UserSignInSerializer;
 use App\Commands\SignInFields\CreateUserSignIn;
+use App\Models\User;
 use Discuz\Api\Controller\AbstractCreateController;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
+use Illuminate\Contracts\Validation\Factory;
+use Discuz\Auth\AssertPermissionTrait;
+use App\Models\Setting;
+use Discuz\Auth\Exception\PermissionDeniedException;
 
 class CreateUserSignInController extends AbstractCreateController
 {
+    use AssertPermissionTrait;
+
     public $serializer = UserSignInSerializer::class;
+
     private $bus;
-    public function __construct(Dispatcher $bus)
+
+    protected $validation;
+
+    protected $setting;
+    public function __construct(Dispatcher $bus, Factory $validation, Setting $setting)
     {
+        $this->validation = $validation;
+        $this->setting = $setting;
         $this->bus = $bus;
     }
 
@@ -40,6 +54,24 @@ class CreateUserSignInController extends AbstractCreateController
         $ip = ip($request->getServerParams());
         $port = Arr::get($request->getServerParams(), 'REMOTE_PORT', 0);
         $data = $request->getParsedBody()->get('data');
+
+        $this->assertBatchData($data);
+
+        foreach ($data as $k=>$v) {
+            $this->validation->make($data[$k]['attributes'], [
+                'name'  => 'sometimes|max:20',
+                'fields_ext'  => 'sometimes|max:450',
+                'fields_desc'  => 'sometimes|max:450',
+            ])->validate();
+        }
+
+        if ($actor->status != User::STATUS_NEED_FIELDS) {
+            $isOpen = $this->setting->where('key', 'open_ext_fields')->where('value', 1)->count();
+            if ($isOpen == 0) {
+                throw new PermissionDeniedException;
+            }
+        }
+
         return $this->bus->dispatch(new CreateUserSignIn($actor,$data,$ip,$port));
     }
 }

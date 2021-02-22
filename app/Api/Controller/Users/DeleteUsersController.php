@@ -21,6 +21,7 @@ namespace App\Api\Controller\Users;
 use App\Api\Serializer\InfoSerializer;
 use App\Commands\Users\DeleteUsers;
 use Discuz\Api\Controller\AbstractListController;
+use Discuz\Auth\AssertPermissionTrait;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,6 +29,8 @@ use Tobscure\JsonApi\Document;
 
 class DeleteUsersController extends AbstractListController
 {
+    use AssertPermissionTrait;
+
     public $serializer = InfoSerializer::class;
 
     protected $bus;
@@ -47,6 +50,7 @@ class DeleteUsersController extends AbstractListController
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $attributes = Arr::get($request->getParsedBody(), 'data.attributes', []);
+        $this->assertBatchData($attributes);
 
         $data = collect();
         foreach ($attributes['id'] as $id) {

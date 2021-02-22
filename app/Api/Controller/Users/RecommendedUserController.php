@@ -80,6 +80,7 @@ class RecommendedUserController extends AbstractListController
     {
         $include = $this->extractInclude($request);
         $limit = (int)Arr::get($request->getQueryParams(), 'limit');
+        $limit = abs($limit);
         $limit > 20 && $limit = 20;
         $cacheKey = 'users_recommendedUser';
         $cacheData = $this->cache->get($cacheKey);

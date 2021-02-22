@@ -61,6 +61,13 @@ class ForumSettingSerializer extends AbstractSerializer
         $port = $this->request->getUri()->getPort();
         $siteUrl = $this->request->getUri()->getScheme() . '://' . $this->request->getUri()->getHost().(in_array($port, [80, 443, null]) ? '' : ':'.$port);
 
+        $site_skin = (int)$this->settingcache->getSiteSkin();
+        if($site_skin == 1){
+            $site_favicon = $favicon ?: app(UrlGenerator::class)->to('/favicon.ico');
+        }else{
+            $site_favicon = $favicon ?: app(UrlGenerator::class)->to('/favicon.png');
+        }
+
         $attributes = [
             // 站点设置
             'set_site' => [
@@ -72,8 +79,9 @@ class ForumSettingSerializer extends AbstractSerializer
                 'open_ext_fields'=>$this->settings->get('open_ext_fields'),
 //                'site_close' => (bool)$this->settings->get('site_close'),
                 'site_manage' => json_decode($this->settings->get('site_manage'), true),
+                'api_freq'    => $actor->isAdmin()?json_decode($this->settings->get('api_freq'), true):null,
                 'site_close_msg'=>$this->settings->get('site_close_msg'),
-                'site_favicon' => $favicon ?: app(UrlGenerator::class)->to('/favicon.ico'),
+                'site_favicon' => $site_favicon,
                 'site_logo' => $logo ?: '',
                 'site_header_logo' => $headerLogo ?: '',
                 'site_background_image' => $backgroundImage ?: '',
@@ -96,7 +104,7 @@ class ForumSettingSerializer extends AbstractSerializer
                 'site_create_thread4' => $this->settings->get('site_create_thread4') == "" ? 1 : (int)$this->settings->get('site_create_thread4'),
                 'site_create_thread5' => $this->settings->get('site_create_thread5') == "" ? 1 : (int)$this->settings->get('site_create_thread5'),
                 'site_create_thread6' => $this->settings->get('site_create_thread6') == "" ? 1 : (int)$this->settings->get('site_create_thread6'),
-                'site_skin' => (int)$this->settingcache->getSiteSkin()
+                'site_skin' => $site_skin
             ],
 
             // 注册设置
@@ -270,7 +278,11 @@ class ForumSettingSerializer extends AbstractSerializer
 
                 // UCenter设置
                 $attributes['ucenter'] += $this->forumField->getUCenterSettings();
+            } else {
+                $attributes['qcloud']['qcloud_vod_token'] = "";
             }
+        } else {
+            $attributes['qcloud']['qcloud_vod_token'] = "";
         }
 
         return $attributes + Arr::except($model, 'id');

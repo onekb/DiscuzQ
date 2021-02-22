@@ -143,7 +143,7 @@ class SetSettingsController implements RequestHandlerInterface
             $key = Arr::get($setting, 'key');
             $value = Arr::get($setting, 'value');
             $tag = Arr::get($setting, 'tag', 'default');
-            if ($key == 'site_manage') {
+            if ($key == 'site_manage' || $key == 'api_freq') {
                 if (is_array($value)) {
                     $value = json_encode($value, 256);
                 }

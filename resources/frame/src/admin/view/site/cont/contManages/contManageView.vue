@@ -149,7 +149,7 @@
               v-html="items.firstPost._data.contentHtml"
             ></a>
             <span class="iconfont iconvideo" v-if="items.threadVideo"></span>
-            <div class="cont-manage-theme__table-main__cont-imgs">
+            <div class="cont-manage-theme__table-main__cont-imgs" v-if="!items._data.title">
               <p
                 class="cont-manage-theme__table-main__cont-imgs-p"
                 v-for="(item,index) in items.firstPost.images"

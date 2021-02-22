@@ -40,7 +40,7 @@ class SequenceRepository extends AbstractRepository
      */
     public function getSequenceCache(){
         $sequenceList = Sequence::query()->first();
-        if(!isset($sequenceList) || empty($sequenceList)) {
+        if(empty($sequenceList)) {
             return false;
         }
 
@@ -122,6 +122,9 @@ class SequenceRepository extends AbstractRepository
      * @param mixed $index_thread_ids
      */
     public function updateSequenceCache($id){
+        if(empty($id)){
+            return false;
+        }
 
         $site_open_sort = Setting::query()->where('key', 'site_open_sort')->first();
         if($site_open_sort['value'] == 0){
@@ -129,19 +132,19 @@ class SequenceRepository extends AbstractRepository
         }
 
         $sequenceList = Sequence::query()->first();
-        if(!isset($sequenceList) || empty($sequenceList)) {
+        if(empty($sequenceList)) {
             return false;
         }
 
-        $thread = Thread::query()->select('threads.*')
-            ->where(['threads.id' => $id, 'threads.is_approved' => 1])->whereNull('threads.deleted_at')->first();
+        $thread = Thread::query()
+            ->where(['id' => $id, 'is_approved' => 1, 'is_draft' => 0, 'is_display' => 1])->whereNull('deleted_at')->first();
 
         $cacheKey = CacheKey::LIST_SEQUENCE_THREAD_INDEX;
         $index_thread_ids = $this->cache->get($cacheKey);
         $index_thread_ids = (array)$index_thread_ids;
 
-        if(!isset($thread) || empty($thread)) {
-            if(isset($index_thread_ids) && !empty($index_thread_ids)) {
+        if(empty($thread)) {
+            if(!empty($index_thread_ids)) {
                 if(in_array($id, $index_thread_ids)) {
                     foreach ($index_thread_ids as $key => $value) {
                         if($value == $id){
@@ -164,11 +167,26 @@ class SequenceRepository extends AbstractRepository
 
         $group_id = Thread::query()->select('group_user.group_id')->join('group_user', 'threads.user_id', '=', 'group_user.user_id')->where(['threads.id' => $id])->first();
 
-        $block_thread_ids = explode(',',$sequenceList['block_thread_ids']);
-        $block_user_ids = explode(',',$sequenceList['block_user_ids']);
-        $block_topic_ids = explode(',',$sequenceList['block_topic_ids']);
+        if(!empty($sequenceList['block_thread_ids'])){
+            $block_thread_ids = explode(',', $sequenceList['block_thread_ids']);
+        }else{
+            $block_thread_ids = array();
+        }
+
+        if(!empty($sequenceList['block_user_ids'])){
+            $block_user_ids = explode(',', $sequenceList['block_user_ids']);
+        }else{
+            $block_user_ids = array();
+        }
+
+        if(!empty($sequenceList['block_topic_ids'])){
+            $block_topic_ids = explode(',', $sequenceList['block_topic_ids']);
+        }else{
+            $block_topic_ids = array();
+        }
+
         if(in_array($id, $block_thread_ids) || in_array($thread['user_id'], $block_user_ids) || in_array($topic_id, $block_topic_ids)) {
-            if(isset($index_thread_ids) && !empty($index_thread_ids)) {
+            if(!empty($index_thread_ids)) {
                 if(in_array($id, $index_thread_ids)) {
                     foreach ($index_thread_ids as $key => $value) {
                         if($value == $id){
@@ -188,18 +206,42 @@ class SequenceRepository extends AbstractRepository
         }
 
         if(empty($sequenceList['category_ids']) && empty($sequenceList['group_ids']) && empty($sequenceList['user_ids']) && empty($sequenceList['topic_ids']) && empty($sequenceList['thread_ids'])){
-            $index_thread_ids = Thread::query()->where(['is_approved' => 1, 'is_draft' => 0])->whereNull('deleted_at')->pluck('id')->toArray();
-            $index_thread_ids = array_merge($index_thread_ids, (array)$id);
+            $index_thread_ids = Thread::query()->where(['is_approved' => 1, 'is_draft' => 0, 'is_display' => 1])->whereNull('deleted_at')->pluck('id')->toArray();
             $this->cache->put($cacheKey, $index_thread_ids, 1800);
             $this->appendCache(CacheKey::LIST_SEQUENCE_THREAD_INDEX_KEYS, $cacheKey, 1800);
             return true;
         }
 
-        $thread_ids = explode(',',$sequenceList['thread_ids']);
-        $category_ids = explode(',',$sequenceList['category_ids']);
-        $user_ids = explode(',',$sequenceList['user_ids']);
-        $topic_ids = explode(',',$sequenceList['topic_ids']);
-        $group_ids = explode(',',$sequenceList['group_ids']);
+        if(!empty($sequenceList['thread_ids'])){
+            $thread_ids = explode(',', $sequenceList['thread_ids']);
+        }else{
+            $thread_ids = array();
+        }
+
+        if(!empty($sequenceList['category_ids'])){
+            $category_ids = explode(',', $sequenceList['category_ids']);
+        }else{
+            $category_ids = array();
+        }
+
+        if(!empty($sequenceList['user_ids'])){
+            $user_ids = explode(',', $sequenceList['user_ids']);
+        }else{
+            $user_ids = array();
+        }
+
+        if(!empty($sequenceList['topic_ids'])){
+            $topic_ids = explode(',', $sequenceList['topic_ids']);
+        }else{
+            $topic_ids = array();
+        }
+
+        if(!empty($sequenceList['group_ids'])){
+            $group_ids = explode(',', $sequenceList['group_ids']);
+        }else{
+            $group_ids = array();
+        }
+
         if(in_array($id, $thread_ids) || in_array($thread['category_id'], $category_ids) ||
             in_array($thread['user_id'], $user_ids) || in_array($group_id['group_id'], $group_ids)) {
             if(isset($index_thread_ids) && !empty($index_thread_ids)) {

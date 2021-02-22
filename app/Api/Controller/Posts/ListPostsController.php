@@ -140,8 +140,11 @@ class ListPostsController extends AbstractListController
         $sort = $this->extractSort($request);
 
         $threadId = Arr::get($filter, 'thread');
-        $threadQuestionType = ThreadReward::query()->where('thread_id', $threadId)->first();
-        if($threadQuestionType->type !== 0){
+        if(!empty($threadId)){
+            $threadQuestionType = ThreadReward::query()->where('thread_id', $threadId)->first();
+        }
+        
+        if(!isset($threadQuestionType->type) || ($threadQuestionType->type !== 0)){
             //设置评论列表第一页缓存
             list($cacheKey, $posts) = $this->getCache($params,$filter, $document);
             if ($posts) {
@@ -199,7 +202,7 @@ class ListPostsController extends AbstractListController
             $posts = $sorted->values();
         }
 
-        if($this->canCache($params)){
+        if($this->canCache($params) && !empty($cacheKey)){
             $this->postCache->setPosts($posts);
             $this->cache->put($cacheKey, serialize($this->postCache), 5 * 60);
         }

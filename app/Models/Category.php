@@ -129,15 +129,22 @@ class Category extends Model
         $this->thread_count = Thread::query()
             ->where('is_approved', Thread::APPROVED)
             ->where('is_draft', 0)
-            ->wherein('category_id', $category_ids)
+            ->whereIn('category_id', $category_ids)
             ->whereNull('deleted_at')
             ->whereNotNull('user_id')
             ->count();
 
-        $categoryDetail =  Category::query()->where('id' ,$this->id)->first();
+        $categoryDetail =  Category::query()->where('id', $this->id)->first();
         if($categoryDetail->parentid !== 0){
-            $categoryFatherDetail =  Category::query()->where('id' ,$categoryDetail->parentid)->first();
-            $categoryFatherDetail->thread_count = $categoryFatherDetail->thread_count + 1;
+            $father_category_ids = Category::query()->where('id', $categoryDetail->parentid)->orWhere('parentid', $categoryDetail->parentid)->pluck('id')->toArray();
+            $categoryFatherDetail =  Category::query()->where('id', $categoryDetail->parentid)->first();
+            $categoryFatherDetail->thread_count = Thread::query()
+                            ->where('is_approved', Thread::APPROVED)
+                            ->where('is_draft', 0)
+                            ->whereIn('category_id', $father_category_ids)
+                            ->whereNull('deleted_at')
+                            ->whereNotNull('user_id')
+                            ->count();
             $categoryFatherDetail->save();
         }
 

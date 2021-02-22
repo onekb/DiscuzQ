@@ -33,6 +33,5 @@ class DatabaseSeeder extends Seeder
         $this->call(CategoriesTableSeeder::class);
         $this->call(EmojiTableSeeder::class);
         $this->call(NotificationTplSeeder::class);
-        $this->call(SettingSwitchTableSeeder::class);
     }
 }

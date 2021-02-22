@@ -63,57 +63,43 @@ class ListRecommendedThreadsController extends AbstractListController
     {
         $actor = $request->getAttribute('actor');
 
-        $typeId = array('0','1');
+        $typeId = [Thread::TYPE_OF_TEXT, Thread::TYPE_OF_LONG];
         $red_threads = Thread::query()
             ->whereVisibleTo($actor)
-            ->where(['is_approved' => 1, 'is_draft' => 0, 'is_red_packet' => 1])
-            ->whereNull('deleted_at')
-            ->wherein('type', $typeId)
-            ->get();
+            ->join('thread_red_packets', 'threads.id', '=', 'thread_red_packets.thread_id')
+            ->where(['threads.is_approved' => 1, 'threads.is_draft' => 0, 'threads.is_red_packet' => 1, 'threads.is_display' => 1, 'thread_red_packets.status' => 1])
+            ->where('thread_red_packets.remain_number', '>', 0)
+            ->whereNull('threads.deleted_at')
+            ->whereIn('threads.type', $typeId)
+            ->pluck('threads.id')
+            ->toArray();
+
         $reward_threads = Thread::query()
             ->whereVisibleTo($actor)
-            ->where(['is_approved' => 1, 'is_draft' => 0])
-            ->whereNull('deleted_at')
-            ->where('type', 5)
-            ->get();
-        
-        $red_threads = json_decode($red_threads, true);
-        $reward_threads = json_decode($reward_threads, true);
-        $threads = $red_threads + $reward_threads;
-        $threads = array_merge($threads);
-        $thread_ids = array_column($threads, 'id');
+            ->join('thread_rewards', 'threads.id', '=', 'thread_rewards.thread_id')
+            ->where(['threads.is_approved' => 1, 'threads.is_draft' => 0, 'threads.is_display' => 1, 'thread_rewards.type' => 0])
+            ->where('thread_rewards.remain_money', '>', 0)
+            ->where('thread_rewards.expired_at', '>', Carbon::now())
+            ->whereNull('threads.deleted_at')
+            ->where('threads.type', Thread::TYPE_OF_QUESTION)
+            ->pluck('threads.id')
+            ->toArray();
 
-        // get thread's content
-        $thread_content = Post::query()->where('is_first', 1)->wherein('thread_id', $thread_ids)->get();
-        $thread_content = json_decode($thread_content, true);
-        $thread_content = array_column($thread_content, null, 'thread_id');
-
-        // get thread's recommendability
-        $thread_red_packet = ThreadRedPacket::query()->where('remain_number', '>', 0)->where('status', 1)->wherein('thread_id', $thread_ids)->get();
-        $thread_red_packet = json_decode($thread_red_packet, true);
-        $thread_red_packet = array_column($thread_red_packet, null, 'thread_id');
-
-        $thread_question = ThreadReward::query()->where('type', 0)->where('remain_money', '>', 0)->where('expired_at', '>', Carbon::now())->wherein('thread_id', $thread_ids)->get();
-        $thread_question = json_decode($thread_question, true);
-        $thread_question = array_column($thread_question, null, 'thread_id');
-
-        // reorganize the array
-        if(isset($threads) && !empty($threads)){
-            foreach ($threads as $key => $value) {
-                if(!isset($thread_red_packet[$value['id']]) && !isset($thread_question[$value['id']])){
-                    unset($threads[$key]);
-                }
-            }
+        $recommend_thread_ids = array_merge($red_threads, $reward_threads);
+        if(empty($recommend_thread_ids)){
+            return [];
         }
-
-        $threads = array_merge($threads);
-        $recommend_thread_ids = array_column($threads, 'id');
+        $recommend_thread_ids = array_flip($recommend_thread_ids);
+        $recommend_thread_ids = array_keys($recommend_thread_ids);
+        $recommend_thread_ids = array_reverse($recommend_thread_ids);
         shuffle($recommend_thread_ids);
 
         if(count($recommend_thread_ids) > 5){
             $recommend_thread_ids = array_slice($recommend_thread_ids, 1, 5);
         }
 
-        return Thread::query()->wherein('id', $recommend_thread_ids)->get();
+        $recommendThreadData = Thread::query()->whereIn('id', $recommend_thread_ids)->get();
+
+        return $recommendThreadData;
     }
 }

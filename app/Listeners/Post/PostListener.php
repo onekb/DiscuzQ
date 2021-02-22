@@ -26,6 +26,7 @@ use App\Events\Post\Restored;
 use App\Events\Post\Revised;
 use App\Events\Post\Saved;
 use App\Events\Post\Saving;
+use App\Events\Thread\Deleting;
 use App\Listeners\User\CheckPublish;
 use App\Models\Post;
 use App\Models\PostGoods;
@@ -63,6 +64,7 @@ class PostListener
 
         // 删除首帖
         $events->listen(Deleted::class, [$this, 'whenPostWasDeleted']);
+        $events->listen(Deleting::class, [$this, 'whenDeleteThread']);
 
         // 修改内容
         $events->listen(Revised::class, [$this, 'whenPostWasRevised']);
@@ -82,6 +84,12 @@ class PostListener
 
         // 设置主题,商品关联关系
         $events->listen(Saved::class, [$this, 'postGoods']);
+    }
+
+    public function whenDeleteThread(Deleting $event){
+        $actor = $event->actor;
+        $actor->refreshUserLiked();
+        $actor->save();
     }
 
     /**

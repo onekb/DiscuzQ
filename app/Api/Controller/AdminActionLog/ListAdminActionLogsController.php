@@ -170,20 +170,34 @@ class ListAdminActionLogsController extends AbstractListController
         $log_start_time = Arr::get($filter, 'start_time'); //变动时间范围：开始
         $log_end_time = Arr::get($filter, 'end_time'); //变动时间范围：结束
 
-        $query->when($log_user, function ($query) use ($log_user) {
-            $query->where('user_id', $log_user);
-        });
-        $query->when($log_action_desc, function ($query) use ($log_action_desc) {
-            $query->where('action_desc', 'like', "%$log_action_desc%");
-        });
-        $query->when($log_start_time, function ($query) use ($log_start_time) {
-            $query->where('created_at', '>=', $log_start_time);
-        });
-        $query->when($log_end_time, function ($query) use ($log_end_time) {
-            $query->where('created_at', '<=', $log_end_time);
-        });
-        $query->when($log_username, function ($query) use ($log_username) {
-            $query->whereIn('admin_action_logs.user_id', User::where('users.username', $log_username)->select('id', 'username')->get());
-        });
+        if($log_user){
+            $query->when($log_user, function ($query) use ($log_user) {
+                $query->where('user_id', $log_user);
+            });
+        }
+
+        if($log_action_desc){
+            $query->when($log_action_desc, function ($query) use ($log_action_desc) {
+                $query->where('action_desc', 'like', "%$log_action_desc%");
+            });
+        }
+        
+        if($log_start_time){
+            $query->when($log_start_time, function ($query) use ($log_start_time) {
+                $query->where('created_at', '>=', $log_start_time);
+            });
+        }
+        
+        if($log_end_time){
+            $query->when($log_end_time, function ($query) use ($log_end_time) {
+                $query->where('created_at', '<=', $log_end_time);
+            });
+        }
+        
+        if($log_username){
+            $query->when($log_username, function ($query) use ($log_username) {
+                $query->whereIn('admin_action_logs.user_id', User::where('users.username', $log_username)->select('id', 'username')->get());
+            });
+        }
     }
 }

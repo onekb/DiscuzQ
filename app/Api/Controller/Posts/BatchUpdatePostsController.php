@@ -22,12 +22,14 @@ use App\Api\Serializer\PostSerializer;
 use App\Commands\Post\BatchEditPosts;
 use Discuz\Api\Client;
 use Discuz\Api\Controller\AbstractListController;
+use Discuz\Auth\AssertPermissionTrait;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
 
 class BatchUpdatePostsController extends AbstractListController
 {
+    use AssertPermissionTrait;
     /**
      * {@inheritdoc}
      */
@@ -67,6 +69,8 @@ class BatchUpdatePostsController extends AbstractListController
         $data = $request->getParsedBody()->get('data', []);
         $meta = $request->getParsedBody()->get('meta', []);
 
+        $this->assertAdmin($actor);
+        $this->assertBatchData($data);
         // 将操作应用到其他所有页面
         if (isset($meta['query']) && in_array($meta['type'], ['approve', 'ignore', 'delete', 'restore'])) {
             // 减少关联

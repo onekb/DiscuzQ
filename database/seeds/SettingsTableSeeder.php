@@ -97,44 +97,54 @@ class SettingsTableSeeder extends Seeder
                 'tag' => 'wx_miniprogram',
             ],
             [
-              'key' => 'site_open_sort',    // 是否开启智能排序，0不开启，1开启
-              'value' => 0,
-              'tag' => 'default',
+                'key' => 'site_open_sort',    // 是否开启智能排序，0不开启，1开启
+                'value' => 0,
+                'tag' => 'default',
             ],
             [
-              'key' => 'site_create_thread0',    // 允许发布文字帖(普通)，0为不允许，1为允许，以下一样
-              'value' => 1,
-              'tag' => 'default',
+                'key' => 'site_create_thread0',    // 允许发布文字帖(普通)，0为不允许，1为允许，以下一样
+                'value' => 1,
+                'tag' => 'default',
             ],
             [
-              'key' => 'site_create_thread1',    // 允许发布帖子(长文)
-              'value' => 1,
-              'tag' => 'default',
+                'key' => 'site_create_thread1',    // 允许发布帖子(长文)
+                'value' => 1,
+                'tag' => 'default',
             ],
             [
-              'key' => 'site_create_thread2',    // 允许发布视频帖
-              'value' => 1,
-              'tag' => 'default',
+                'key' => 'site_create_thread2',    // 允许发布视频帖
+                'value' => 1,
+                'tag' => 'default',
             ],
             [
-              'key' => 'site_create_thread3',    //允许发布图片帖
-              'value' => 1,
-              'tag' => 'default',
+                'key' => 'site_create_thread3',    //允许发布图片帖
+                'value' => 1,
+                'tag' => 'default',
             ],
             [
-              'key' => 'site_create_thread4',    // 允许发布语音帖
-              'value' => 1,
-              'tag' => 'default',
+                'key' => 'site_create_thread4',    // 允许发布语音帖
+                'value' => 1,
+                'tag' => 'default',
             ],
             [
-              'key' => 'site_create_thread5',    // 允许发布问答帖(悬赏帖)
-              'value' => 0,
-              'tag' => 'default',
+                'key' => 'site_create_thread5',    // 允许发布问答帖(悬赏帖)
+                'value' => 0,
+                'tag' => 'default',
             ],
             [
-              'key' => 'site_create_thread6',    // 允许发布商品帖
-              'value' => 1,
-              'tag' => 'default',
+                'key' => 'site_create_thread6',    // 允许发布商品帖
+                'value' => 1,
+                'tag' => 'default',
+            ],
+            [
+                'key' => 'site_manage',          // 站点开关：0 开启站点，1 关闭站点
+                'value' => '[{"key":1,"desc":"PC端","value":true},{"key":2,"desc":"H5端","value":true},{"key":3,"desc":"小程序端","value":true}]',                 // 默认开启
+                'tag' => 'default',
+            ],
+            [
+                'key' => 'api_freq',    // 允许发布商品帖
+                'value' => '{"get":{"freq":500,"forbidden":20},"post":{"freq":200,"forbidden":30}}',
+                'tag' => 'default',
             ]
         ]);
     }

@@ -180,12 +180,18 @@ class SaveQuestionToDatabase
                         }
                     }
 
+                    if(empty($question)){
+                        $answer_id = 0;
+                    }else{
+                        $answer_id = $question->be_user_id ? $question->be_user_id : 0;
+                    }
+
                     $threadRewardData = [
                         'thread_id' => $post->thread_id,
                         'post_id' => $post->id,
                         'type' => $questionData['type'],
                         'user_id' => $actor->id,
-                        'answer_id' => $question->be_user_id ? $question->be_user_id : 0,
+                        'answer_id' => $answer_id,
                         'money' => $price,
                         'remain_money' => $price,
                         'created_time' => date('Y-m-d H:i:s', time()),
@@ -239,7 +245,7 @@ class SaveQuestionToDatabase
                 }
 
                 // 延迟执行事件
-                if($question){
+                if(!empty($question)){
                     $this->dispatchEventsFor($question, $actor);
                 }
                 $this->events->dispatch($threadReward);

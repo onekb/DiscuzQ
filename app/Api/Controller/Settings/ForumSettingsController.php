@@ -75,9 +75,9 @@ class ForumSettingsController extends AbstractResourceController
         }
 
         if (in_array('users', $this->extractInclude($request))) {
-            $data['users'] = User::orderBy('created_at', 'desc')->limit(5)->get(['id', 'username', 'avatar']);
+            $data['users'] = [];
+//            $data['users'] = User::orderBy('created_at', 'desc')->limit(5)->get(['id', 'username', 'avatar']);
         }
-
         return $data + ['id' => 1];
     }
 }

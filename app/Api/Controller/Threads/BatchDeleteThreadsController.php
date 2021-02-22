@@ -22,7 +22,6 @@ use App\Api\Serializer\ThreadSerializer;
 use App\Commands\Thread\BatchDeleteThreads;
 use Discuz\Api\Controller\AbstractListController;
 use Discuz\Auth\AssertPermissionTrait;
-use Discuz\Auth\Exception\PermissionDeniedException;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
@@ -55,10 +54,10 @@ class BatchDeleteThreadsController extends AbstractListController
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
-        $this->assertAdmin($request->getAttribute('actor'));
         $ids = explode(',', Arr::get($request->getQueryParams(), 'ids'));
         $actor = $request->getAttribute('actor');
-
+        $this->assertAdmin($actor);
+        $this->assertBatchData($ids);
         $result = $this->bus->dispatch(
             new BatchDeleteThreads($ids, $actor)
         );

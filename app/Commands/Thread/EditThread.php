@@ -19,6 +19,8 @@
 namespace App\Commands\Thread;
 
 use App\Censor\Censor;
+use App\Events\Post\Saved;
+use App\Events\Thread\Deleting;
 use App\Repositories\SequenceRepository;
 use App\Events\Thread\Saving;
 use App\Events\Thread\ThreadWasApproved;
@@ -228,7 +230,6 @@ class EditThread
         $this->events->dispatch(
             new Saving($thread, $this->actor, $this->data)
         );
-
         $validator->valid($thread->getDirty());
 
         // 编辑视频帖或语音帖
@@ -257,7 +258,9 @@ class EditThread
         $thread->raise(new Updated($thread, $this->actor, $this->data));
 
         $thread->save();
-
+        if (isset($attributes['isDeleted'])){
+            $this->events->dispatch(new Deleting($thread, $this->actor, $this->data));
+        }
         if(!isset($attributes['isFavorite']) && !isset($attributes['isSticky']) && !isset($attributes['isEssence'])){
             app(SequenceRepository::class)->updateSequenceCache($this->threadId);
         }

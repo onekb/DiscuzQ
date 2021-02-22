@@ -57,6 +57,10 @@ class SaveRedPacketToDatabase
      */
     protected $bus;
 
+    public $baseInfo = '';
+
+    public $debugInfo = false; // false:默认不输出调试信息到日志上
+
     public function __construct(
         EventDispatcher $eventDispatcher,
         RedPacketValidator $redPacketValidator,
@@ -81,15 +85,15 @@ class SaveRedPacketToDatabase
         $post = $event->post;
         $actor = $event->actor;
         $data = $event->data;
-        $info = '访问用户id： ' . $actor->id.
-                ',访问帖子id：' . $post->thread->id.
-                ',post_id：'   . $post->id.
-                ',msg：';
+        $this->baseInfo =   '访问用户id： ' . $actor->id.
+                            ',访问帖子id：' . $post->thread->id.
+                            ',post_id：'   . $post->id.
+                            ',msg：';
 
         if (($post->thread->type != Thread::TYPE_OF_TEXT || $post->thread->type != Thread::TYPE_OF_LONG)
              && (empty($data['attributes']['redPacket']['money'])
                 || empty($data['attributes']['redPacket']['number']))) {
-            app('log')->info($info . '保存红包到数据库：该用户已经领取过红包了');
+            $this->outDebugInfo('保存红包到数据库：该用户已经领取过红包了');
             return;
         }
 
@@ -101,7 +105,7 @@ class SaveRedPacketToDatabase
             $id = $data['attributes']['id'];
             if (empty($id)) {
                 if (!($post->is_first == 1 && ($post->wasRecentlyCreated == true))) {
-                    app('log')->info($info . '保存红包到数据库：不是首帖创建内容');
+                    $this->outDebugInfo('保存红包到数据库：不是首帖创建内容');
                     return;
                 }
             }
@@ -109,7 +113,7 @@ class SaveRedPacketToDatabase
 
         $thread = Thread::query()->where('id',$post->thread_id)->first();
         if (empty($thread['is_red_packet'])) {
-            app('log')->info($info . '保存红包到数据库：该帖不为红包帖');
+            $this->outDebugInfo('保存红包到数据库：该帖不为红包帖');
             return;
         }
 
@@ -121,7 +125,7 @@ class SaveRedPacketToDatabase
         /**
          * Validator
          *
-         * @see QuestionValidator
+         * @see redPacketValidator
          */
         $threadData['actor'] = $actor;
         //草稿不验证
@@ -131,17 +135,32 @@ class SaveRedPacketToDatabase
 
         $rule = $threadData['redPacket']['rule'];
         $condition = $threadData['redPacket']['condition'];
+
         $likenum = Arr::get($threadData, 'redPacket.likenum', 0);
+        if ($likenum > 250) {
+            throw new Exception(trans('redpacket.likenum_lg_limit'));
+        }
+
         $number = $threadData['redPacket']['number'];
-        $money = $threadData['redPacket']['money'];
+        $money = $threadData['redPacket']['money']; // 总金额
+
+        //红包领取规则 0:定额 1:随机
+        if ($rule == 1 && $number > 200) { // 随机红包金额最大值为 200
+            throw new Exception(trans('redpacket.money_lg_limit'));
+        }
+
         $singleMoney = $money / $number;
+        if ($rule == 0 && $singleMoney > 200) { // 定额红包单个红包金额最大值为 200
+            throw new Exception(trans('redpacket.money_lg_limit'));
+        }
         if ($singleMoney < 0.01) {
-            if ($rule == 1) { //红包领取规则 0：定额 1：随机
+            if ($rule == 1) {
                 throw new Exception(trans('redpacket.redpacket_money_illegal'));
             } else {
                 throw new Exception(trans('redpacket.redpacket_average_money_illegal'));
             }
         }
+
         $remain_money = $money;
         $remain_number = $number;
         $status = 1;
@@ -220,14 +239,17 @@ class SaveRedPacketToDatabase
             $this->connection->commit();
         } catch (Exception $e) {
             $this->connection->rollback();
-            app('log')->info($info . '保存红包到数据库异常:' . $e->getMessage());
+            app('log')->info($this->baseInfo . '保存红包到数据库异常:' . $e->getMessage());
 
             throw $e;
         }
 
         // 延迟执行事件
         $this->dispatchEventsFor($redPacket, $actor);
+    }
 
-
+    public function outDebugInfo($info)
+    {
+        app('log')->info($this->baseInfo . $info);
     }
 }

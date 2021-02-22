@@ -26,21 +26,36 @@ use Illuminate\Contracts\Bus\Dispatcher;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
 use Illuminate\Support\Arr;
+use Discuz\Auth\AssertPermissionTrait;
+use Illuminate\Contracts\Validation\Factory;
 
 class UpdateGroupsController extends AbstractListController
 {
+    use AssertPermissionTrait;
+
     public $serializer = GroupSerializer::class;
+
+    protected $validation;
 
     protected $bus;
 
-    public function __construct(Dispatcher $bus)
+    public function __construct(Dispatcher $bus,Factory  $validation)
     {
+        $this->validation = $validation;
         $this->bus = $bus;
     }
 
     protected function data(ServerRequestInterface $request, Document $document)
     {
         $multipleData = Arr::get($request->getParsedBody(), 'data', []);
+
+        $this->assertBatchData($multipleData);
+
+        foreach ($multipleData as $k=>$v) {
+            $this->validation->make($multipleData[$k]['attributes'], [
+                'name'  => 'required_without:message_text|max:255',
+            ])->validate();
+        }
 
         $list = collect($multipleData)->reduce(function ($carry, $item) use ($request) {
             $carry = $carry ? $carry : ['data' => [], 'meta' => []];

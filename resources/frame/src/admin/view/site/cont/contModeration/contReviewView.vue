@@ -122,7 +122,7 @@
             v-html="items.firstPost && items.firstPost._data.contentHtml"
           ></a>
           <span class="iconfont iconvideo" v-if="items.threadVideo"></span>
-          <div class="cont-review-table__main__cont-imgs">
+          <div class="cont-review-table__main__cont-imgs" v-if="!items._data.title">
             <p
               class="cont-review-table__main__cont-imgs-p"
               v-for="(item,index) in items.firstPost && items.firstPost.images"

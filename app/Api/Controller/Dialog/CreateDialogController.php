@@ -25,10 +25,13 @@ use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
+use Illuminate\Contracts\Validation\Factory;
 
 class CreateDialogController extends AbstractCreateController
 {
     public $serializer = DialogSerializer::class;
+
+    protected $validation;
 
     /**
      * @var Dispatcher
@@ -38,8 +41,9 @@ class CreateDialogController extends AbstractCreateController
     /**
      * @param Dispatcher $bus
      */
-    public function __construct(Dispatcher $bus)
+    public function __construct(Dispatcher $bus,Factory $validation)
     {
+        $this->validation = $validation;
         $this->bus = $bus;
     }
 
@@ -50,6 +54,10 @@ class CreateDialogController extends AbstractCreateController
     {
         $actor = $request->getAttribute('actor');
         $attributes = Arr::get($request->getParsedBody(), 'data.attributes');
+
+        $this->validation->make($attributes, [
+            'message_text'  => 'required_without:message_text|max:450',
+        ])->validate();
 
         return $this->bus->dispatch(
             new CreateDialog($actor, $attributes)
