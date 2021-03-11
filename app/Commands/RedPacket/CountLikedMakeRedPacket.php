@@ -162,6 +162,8 @@ class CountLikedMakeRedPacket
 
     public function outDebugInfo($info)
     {
-        app('log')->info($this->baseInfo . $info);
+        if ($this->debugInfo) {
+            app('log')->info($this->baseInfo . $info);
+        }
     }
 }

@@ -61,7 +61,7 @@
               value="createThread.0.redPacket"
               @click.native="changeExpandItem('createThread.0.redPacket')"
             ></el-option>
-            <el-option 
+            <el-option
               label="位置"
               value="createThread.0.position"
               @click.native="changeExpandItem('createThread.0.position')"
@@ -90,12 +90,12 @@
             placeholder="请选择扩展功能"
             @remove-tag="changeExpandItem"
           >
-            <el-option 
+            <el-option
               label="红包"
               value="createThread.1.redPacket"
               @click.native="changeExpandItem('createThread.1.redPacket')"
             ></el-option>
-            <el-option 
+            <el-option
               label="位置"
               value="createThread.1.position"
               @click.native="changeExpandItem('createThread.1.position')"
@@ -354,23 +354,24 @@
               >发布主题</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList.createThread"
-            @remove-tag="clearItem($event, 'createThread')"
-            multiple
-            :disabled="checked.indexOf('switch.createThread') === -1"
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('createThread', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList.createThread"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.createThread') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'createThread')"
+            @remove-tag="clearItem($event, 'createThread')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="允许在内容分类回复主题的权限">
@@ -385,23 +386,24 @@
               >回复主题</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.reply']"
-            :disabled="checked.indexOf('switch.thread.reply') === -1"
-            @remove-tag="clearItem($event, 'thread.reply')"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.reply', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.reply']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.reply') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.reply')"
+            @remove-tag="clearItem($event, 'thread.reply')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="内容分类下内容允许被打赏的权限">
@@ -417,23 +419,24 @@
               >允许被打赏</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.canBeReward']"
-            multiple
-            collapse-tags
-            :disabled="checked.indexOf('switch.thread.canBeReward') === -1"
-            @remove-tag="clearItem($event, 'thread.canBeReward')"
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.canBeReward', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.canBeReward']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.canBeReward') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.canBeReward')"
+            @remove-tag="clearItem($event, 'thread.canBeReward')"
+          ></el-cascader>
         </Card>
       </div>
       <div class="user-operate">
@@ -453,23 +456,24 @@
               >查看主题列表</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList.viewThreads"
-            @remove-tag="clearItem($event, 'viewThreads')"
-            :disabled="checked.indexOf('switch.viewThreads') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('viewThreads', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList.viewThreads"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.viewThreads') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'viewThreads')"
+            @remove-tag="clearItem($event, 'viewThreads')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="查看内容分类主题详情的权限">
@@ -481,23 +485,24 @@
               >查看主题详情</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.viewPosts']"
-            @remove-tag="clearItem($event, 'thread.viewPosts')"
-            :disabled="checked.indexOf('switch.thread.viewPosts') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.viewPosts', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.viewPosts']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.viewPosts') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.viewPosts')"
+            @remove-tag="clearItem($event, 'thread.viewPosts')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="免费查看内容分类下的付费帖子">
@@ -509,23 +514,24 @@
               >免费查看付费帖子</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.freeViewPosts.1']"
-            @remove-tag="clearItem($event, 'thread.freeViewPosts.1')"
-            :disabled="checked.indexOf('switch.thread.freeViewPosts.1') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.freeViewPosts.1', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.freeViewPosts.1']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.freeViewPosts.1') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.freeViewPosts.1')"
+            @remove-tag="clearItem($event, 'thread.freeViewPosts.1')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="免费查看内容分类下的付费视频">
@@ -537,23 +543,24 @@
               >免费查看付费视频</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.freeViewPosts.2']"
-            @remove-tag="clearItem($event, 'thread.freeViewPosts.2')"
-            :disabled="checked.indexOf('switch.thread.freeViewPosts.2') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.freeViewPosts.2', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.freeViewPosts.2']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.freeViewPosts.2') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.freeViewPosts.2')"
+            @remove-tag="clearItem($event, 'thread.freeViewPosts.2')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="免费查看内容分类下的付费图片">
@@ -565,23 +572,24 @@
               >免费查看付费图片</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.freeViewPosts.3']"
-            @remove-tag="clearItem($event, 'thread.freeViewPosts.3')"
-            :disabled="checked.indexOf('switch.thread.freeViewPosts.3') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.freeViewPosts.3', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.freeViewPosts.3']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.freeViewPosts.3') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.freeViewPosts.3')"
+            @remove-tag="clearItem($event, 'thread.freeViewPosts.3')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="免费查看内容分类下的付费语音">
@@ -593,23 +601,24 @@
               >免费查看付费语音</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.freeViewPosts.4']"
-            @remove-tag="clearItem($event, 'thread.freeViewPosts.4')"
-            :disabled="checked.indexOf('switch.thread.freeViewPosts.4') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.freeViewPosts.4', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.freeViewPosts.4']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.freeViewPosts.4') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.freeViewPosts.4')"
+            @remove-tag="clearItem($event, 'thread.freeViewPosts.4')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="免费查看内容分类下的付费问答">
@@ -621,23 +630,24 @@
               >免费查看付费问答</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.freeViewPosts.5']"
-            @remove-tag="clearItem($event, 'thread.freeViewPosts.5')"
-            :disabled="checked.indexOf('switch.thread.freeViewPosts.5') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.freeViewPosts.5', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.freeViewPosts.5']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.freeViewPosts.5') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.freeViewPosts.5')"
+            @remove-tag="clearItem($event, 'thread.freeViewPosts.5')"
+          ></el-cascader>
         </Card>
       </div>
       <div class="user-operate">
@@ -712,23 +722,24 @@
               >加精</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.essence']"
-            @remove-tag="clearItem($event, 'thread.essence')"
-            :disabled="checked.indexOf('switch.thread.essence') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.essence', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.essence']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.essence') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.essence')"
+            @remove-tag="clearItem($event, 'thread.essence')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="前台单个主题的编辑权限">
@@ -743,23 +754,24 @@
               >编辑主题</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.edit']"
-            @remove-tag="clearItem($event, 'thread.edit')"
-            :disabled="checked.indexOf('switch.thread.edit') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.edit', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.edit']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.edit') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.edit')"
+            @remove-tag="clearItem($event, 'thread.edit')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="前台删除单个主题的权限">
@@ -774,23 +786,24 @@
               >删除主题</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.hide']"
-            @remove-tag="clearItem($event, 'thread.hide')"
-            :disabled="checked.indexOf('switch.thread.hide') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.hide', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.hide']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.hide') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.hide')"
+            @remove-tag="clearItem($event, 'thread.hide')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="前台单个回复的编辑权限">
@@ -805,23 +818,24 @@
               >编辑回复</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.editPosts']"
-            @remove-tag="clearItem($event, 'thread.editPosts')"
-            :disabled="checked.indexOf('switch.thread.editPosts') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.editPosts', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.editPosts']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.editPosts') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.editPosts')"
+            @remove-tag="clearItem($event, 'thread.editPosts')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="前台删除单个回复的权限">
@@ -836,23 +850,24 @@
               >删除回复</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.hidePosts']"
-            @remove-tag="clearItem($event, 'thread.hidePosts')"
-            :disabled="checked.indexOf('switch.thread.hidePosts') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.hidePosts', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.hidePosts']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.hidePosts') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.hidePosts')"
+            @remove-tag="clearItem($event, 'thread.hidePosts')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="作者编辑自己的主题或回复的权限">
@@ -867,23 +882,24 @@
               >编辑自己的主题或回复</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.editOwnThreadOrPost']"
-            @remove-tag="clearItem($event, 'thread.editOwnThreadOrPost')"
-            :disabled="checked.indexOf('switch.thread.editOwnThreadOrPost') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.editOwnThreadOrPost', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.editOwnThreadOrPost']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.editOwnThreadOrPost') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.editOwnThreadOrPost')"
+            @remove-tag="clearItem($event, 'thread.editOwnThreadOrPost')"
+          ></el-cascader>
         </Card>
         <Card class="hasSelect">
           <CardRow description="作者删除自己的主题或回复的权限">
@@ -898,23 +914,24 @@
               >删除自己的主题或回复</el-checkbox
             >
           </CardRow>
-          <el-select
-            v-model="selectList['thread.hideOwnThreadOrPost']"
-            @remove-tag="clearItem($event, 'thread.hideOwnThreadOrPost')"
-            :disabled="checked.indexOf('switch.thread.hideOwnThreadOrPost') === -1"
-            multiple
-            collapse-tags
+          <el-cascader
+            :key="Math.random()"
             placeholder="请选择"
-          >
-            <el-option
-              @click.native="changeCategory('thread.hideOwnThreadOrPost', item.id)"
-              v-for="item in categoriesList"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            >
-            </el-option>
-          </el-select>
+            v-model="selectList['thread.hideOwnThreadOrPost']"
+            :options="categoriesList"
+            :disabled="checked.indexOf('switch.thread.hideOwnThreadOrPost') === -1"
+            :props="{
+              value: 'id',
+              label: 'name',
+              children: 'children',
+              multiple: true,
+              checkStrictly: true,
+              expandTrigger: 'hover'
+            }"
+            collapse-tags
+            @change="changeCategory($event, 'thread.hideOwnThreadOrPost')"
+            @remove-tag="clearItem($event, 'thread.hideOwnThreadOrPost')"
+          ></el-cascader>
         </Card>
       </div>
     </div>

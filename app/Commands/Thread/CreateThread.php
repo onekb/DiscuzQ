@@ -198,7 +198,7 @@ class CreateThread
 
         // 红蓝版本对于位置权限的兼容性判断 红蓝，蓝1，红2，默认为1
         $site_skin = $settingcache->getSiteSkin();
-        if ($site_skin == SettingCache::RED_SKIN_CODE) {
+        if ($site_skin == SettingCache::RED_SKIN_CODE || $site_skin == SettingCache::BLUE_SKIN_CODE) {
             if (!empty($thread->longitude) || !empty($thread->latitude) || !empty($thread->address) || !empty($thread->location)) {
                 $this->assertCan($this->actor, 'createThread.' . $thread->type . '.position');
             }
@@ -230,7 +230,7 @@ class CreateThread
 
         $thread->save();
 
-        app(SequenceRepository::class)->updateSequenceCache($thread->id);
+        app(SequenceRepository::class)->updateSequenceCache($thread->id, 'add');
 
         try {
             $post = $bus->dispatch(

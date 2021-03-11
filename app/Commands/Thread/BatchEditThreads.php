@@ -180,7 +180,7 @@ class BatchEditThreads
             $thread->save();
 
             if($attributes['isFavorite'] == false){
-                app(SequenceRepository::class)->updateSequenceCache($id);
+                app(SequenceRepository::class)->updateSequenceCache($id, 'edit');
             }
 
             $result['data'][] = $thread;

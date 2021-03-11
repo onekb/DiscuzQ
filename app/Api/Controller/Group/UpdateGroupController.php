@@ -25,9 +25,11 @@ use Illuminate\Contracts\Bus\Dispatcher;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
 use Illuminate\Support\Arr;
+use Discuz\Auth\AssertPermissionTrait;
 
 class UpdateGroupController extends AbstractResourceController
 {
+    use AssertPermissionTrait;
     public $serializer = GroupSerializer::class;
 
     protected $bus;
@@ -39,6 +41,7 @@ class UpdateGroupController extends AbstractResourceController
 
     protected function data(ServerRequestInterface $request, Document $document)
     {
+        $this->assertAdmin($request->getAttribute('actor'));
         return $this->bus->dispatch(
             new UpdateGroup(
                 Arr::get($request->getQueryParams(), 'id'),

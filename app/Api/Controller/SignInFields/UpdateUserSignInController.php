@@ -58,8 +58,8 @@ class UpdateUserSignInController extends AbstractResourceController
         foreach ($data['attributes'] as $k=>$v) {
             $this->validation->make($data['attributes'][$k], [
                 'name'  => 'sometimes|max:20',
-                'fields_ext'  => 'sometimes|max:450',
-                'fields_desc'  => 'sometimes|max:450',
+                'fields_ext'  => 'sometimes|max:20000',
+                'fields_desc'  => 'sometimes|max:20000',
                 'remark'  => 'sometimes|max:200',
             ])->validate();
         }

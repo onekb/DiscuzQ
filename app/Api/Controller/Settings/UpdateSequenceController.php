@@ -82,82 +82,57 @@ class UpdateSequenceController implements RequestHandlerInterface
         Sequence::query()->insert($sequence);
 
         if($attributes['site_open_sort'] == 0){
-            $thread_ids = array();
-            $this->cache->put($cacheKey, $thread_ids, 1800);
+            $index_thread_ids = array();
+            $this->cache->put($cacheKey, $index_thread_ids, 1800);
             $this->appendCache(CacheKey::LIST_SEQUENCE_THREAD_INDEX_KEYS, $cacheKey, 1800);
             return DiscuzResponseFactory::EmptyResponse(204);
         }
 
-        if(empty($attributes['category_ids']) && empty($attributes['group_ids']) && empty($attributes['user_ids']) && empty($attributes['topic_ids']) && empty($attributes['thread_ids'])){
-            $ids = Thread::query()->where(['is_approved' => 1, 'is_draft' => 0])->whereNull('deleted_at')->pluck('id')->toArray();
-        }else{
-            if(!empty($attributes['category_ids'])) {
-                $category_threadsList = Thread::query()->whereIn('category_id', explode(',', $attributes['category_ids']))->whereNull('deleted_at')->where('is_approved',1)->pluck('id')->toArray();
-            }else{
-                $category_threadsList = null;
-            }
+        $query = Thread::query();
 
-            if(!empty($attributes['group_ids'])) {
-                $group_threadsList = Thread::query()->join('group_user', 'threads.user_id', '=', 'group_user.user_id')->whereIn('group_user.group_id', explode(',', $attributes['group_ids']))->whereNull('threads.deleted_at')->where('threads.is_approved',1)->pluck('id')->toArray();
-            }else{
-                $group_threadsList = null;
-            }
-            if(!empty($attributes['user_ids'])) {
-                $user_threadsList = Thread::query()->whereIn('user_id', explode(',', $attributes['user_ids']))->whereNull('deleted_at')->where('is_approved',1)->pluck('id')->toArray();
-            }else{
-                $user_threadsList = null;
-            }
-            if(!empty($attributes['topic_ids'])) {
-                $topic_threadsList = Thread::query()->join('thread_topic', 'threads.id', '=', 'thread_topic.thread_id')->whereIn('thread_topic.topic_id', explode(',', $attributes['topic_ids']))->whereNull('threads.deleted_at')->where('threads.is_approved',1)->pluck('id')->toArray();
-            }else{
-                $topic_threadsList = null;
-            }
+        if(!empty($attributes['category_ids'])){
+            $query->orWhereIn('threads.category_id', explode(',', $attributes['category_ids']));
+        }
 
-            if(!empty($attributes['thread_ids'])) {
-                $threadsList = explode(',', $attributes['thread_ids']);
-            }else{
-                $threadsList = null;
-            }
+        if(!empty($attributes['user_ids'])){
+            $query->orWhereIn('threads.user_id', explode(',', $attributes['user_ids']));
+        }
 
-            $ids = array_keys(array_flip((array)$category_threadsList) + array_flip((array)$group_threadsList) + array_flip((array)$user_threadsList) + array_flip((array)$topic_threadsList) + array_flip((array)$threadsList));
+        if(!empty($attributes['group_ids'])){
+            $query->leftJoin('group_user', 'threads.user_id', '=', 'group_user.user_id');
+            $query->orWhereIn('group_user.group_id', explode(',', $attributes['group_ids']));
+        }
+
+        if(!empty($attributes['topic_ids'])){
+            $query->leftJoin('thread_topic', 'threads.id', '=', 'thread_topic.thread_id');
+            $query->orWhereIn('thread_topic.topic_id', explode(',', $attributes['topic_ids']));
+        }
+
+        if(!empty($attributes['thread_ids'])) {
+            $query->orWhereIn('threads.id', explode(',', $attributes['thread_ids']));
         }
 
         if(!empty($attributes['block_user_ids'])) {
-            $block_user_threadsList = Thread::query()->whereIn('user_id', explode(',', $attributes['block_user_ids']))->whereNull('deleted_at')->where('is_approved',1)->pluck('id')->toArray();
-        }else{
-            $block_user_threadsList = null;
-        }
-        if(!empty($attributes['block_topic_ids'])) {
-            $block_topic_threadsList = Thread::query()->join('thread_topic', 'threads.id', '=', 'thread_topic.thread_id')->whereIn('thread_topic.topic_id', explode(',', $attributes['block_topic_ids']))->whereNull('threads.deleted_at')->where('threads.is_approved',1)->pluck('id')->toArray();
-        }else{
-            $block_topic_threadsList = null;
+            $query->whereNotIn('threads.user_id', explode(',', $attributes['block_user_ids']));
         }
 
         if(!empty($attributes['block_thread_ids'])) {
-            $block_threadsList = explode(',', $attributes['block_thread_ids']);
-        }else{
-            $block_threadsList = null;
+            $query->whereNotIn('threads.id', explode(',', $attributes['block_thread_ids']));
         }
 
-        $block_ids = array_keys(array_flip((array)$block_user_threadsList) + array_flip((array)$block_topic_threadsList) + array_flip((array)$block_threadsList));
-
-        $thread_ids = array();
-        if(isset($ids) && !empty($ids)) {
-            foreach ($ids as $key => $val) {
-                $thread_ids[$val] = $val;
-            }
+        if(!empty($attributes['block_topic_ids'])) {
+            $query->whereNotIn('thread_topic.topic_id', explode(',', $attributes['block_topic_ids']));
         }
 
-        if(isset($block_ids) && !empty($block_ids)){
-            foreach ($block_ids as $key => $value) {
-                if(isset($thread_ids[$value])){
-                    unset($thread_ids[$value]);
-                }
-            }
-        }
+        $query->where('threads.is_approved', 1);
+        $query->where('threads.is_draft', 0);
+        $query->whereNull('threads.deleted_at');
+        $query->whereNotNull('threads.user_id');
+        $query->orderBy('threads.created_at', 'desc');
+        $index_thread_ids['thread_count'] = $query->count();
+        $index_thread_ids['ids'] = $query->limit(20)->offset(0)->pluck('id')->toArray();
 
-        $thread_ids = array_merge($thread_ids);
-        $this->cache->put($cacheKey, $thread_ids, 1800);
+        $this->cache->put($cacheKey, $index_thread_ids, 1800);
         $this->appendCache(CacheKey::LIST_SEQUENCE_THREAD_INDEX_KEYS, $cacheKey, 1800);
 
         return DiscuzResponseFactory::EmptyResponse(204);

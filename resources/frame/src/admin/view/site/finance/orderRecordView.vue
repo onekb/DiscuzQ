@@ -93,7 +93,7 @@
           <template slot-scope="scope">
             <span
               :class="scope.row.thread ? 'cursor-pointer' : ''"
-              v-if="scope.row.thread && (scope.row._data.type === 2 || scope.row._data.type === 3 || scope.row._data.type === 5 || scope.row._data.type === 6 || scope.row._data.type === 7)" @click="
+              v-if="scope.row.thread && (scope.row._data.type === 2 || scope.row._data.type === 3 || scope.row._data.type === 5 || scope.row._data.type === 6 || scope.row._data.type === 7 || scope.row._data.type === 20 || scope.row._data.type === 21)" @click="
                 viewClick(scope.row.thread ? scope.row.thread._data.id : '')">
               {{ scope.row.thread._data.title }}
             </span>
@@ -105,6 +105,7 @@
             </span>
           </template>
         </el-table-column>
+
         <el-table-column
           prop="thread.firstPost._data.content"
           show-overflow-tooltip
@@ -132,6 +133,12 @@
             </span>
             <span v-else-if="scope.row._data.type === 7">
               付费附件
+            </span>
+            <span v-else-if="scope.row._data.type === 20">
+              文字帖红包
+            </span>
+            <span v-else-if="scope.row._data.type === 21">
+              长文帖红包
             </span>
           </template>
         </el-table-column>

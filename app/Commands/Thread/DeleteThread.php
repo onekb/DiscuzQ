@@ -94,7 +94,7 @@ class DeleteThread
 
         $thread->raise(new Deleted($thread));
         $thread->delete();
-        app(SequenceRepository::class)->updateSequenceCache($this->threadId);
+        app(SequenceRepository::class)->updateSequenceCache($this->threadId, 'delete');
 
         //删除视频、视频文件
         $bus->dispatch(

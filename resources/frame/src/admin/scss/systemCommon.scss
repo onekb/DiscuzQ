@@ -17,3 +17,8 @@
   border-radius: 1px;
   background-color: #336699;
 }
+.el-loading-mask.is-fullscreen{
+  .el-icon-loading {
+    font-size: 50px;
+  }
+}

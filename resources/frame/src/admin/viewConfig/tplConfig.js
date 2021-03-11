@@ -40,9 +40,7 @@ export default {
               title: "站点设置",
               name: "siteSet",
               attribution: "全局",
-              /*IFTRUE_pay*/
               alias: "站点信息"
-              /*FITRUE_pay*/
             }
           },
           "site-theme": {
@@ -51,19 +49,18 @@ export default {
             },
             metaInfo: {
               title: "站点设置",
-              name: "siteTheme",
+              name: "siteSet",
               attribution: "全局",
               alias: "主题设置"
             }
           },
-          /*IFTRUE_pay*/
           "site-function-set": {
             comLoad: function (resolve) {
               require(["../view/site/global/siteSet/siteFunctionSetView"], resolve);
             },
             metaInfo: {
               title: "站点设置",
-              name: "siteFunctionSet",
+              name: "siteSet",
               attribution: "全局",
               alias: "功能设置"
             }
@@ -74,24 +71,23 @@ export default {
             },
             metaInfo: {
               title: "站点设置",
-              name: "siteSortSet",
+              name: "siteSet",
               attribution: "全局",
               alias: "首页数据设置"
             }
           },
-          "operation-log": {
-            comLoad: function (resolve) {
-              require([
-                "../view/site/global/operationLogView"
-              ], resolve);
-            },
-            metaInfo: {
-              title: "操作日志",
-              name: "operationLog",
-              attribution: "全局",
-            }
-          },
-          /*FITRUE_pay*/
+          // "operation-log": {
+          //   comLoad: function (resolve) {
+          //     require([
+          //       "../view/site/global/operationLogView"
+          //     ], resolve);
+          //   },
+          //   metaInfo: {
+          //     title: "操作日志",
+          //     name: "operationLog",
+          //     attribution: "全局",
+          //   }
+          // },
           "sign-up-set": {
             comLoad: function (resolve) {
               require(["../view/site/global/signUpSetView"], resolve);
@@ -663,12 +659,8 @@ export default {
           },
           "rol-permission": {
             comLoad: function (resolve) {
-              /*IFTRUE_default*/
-              require(["../view/site/user/userRol/rolPermissionView"], resolve);
-              /*FITRUE_default*/
-              /*IFTRUE_pay*/
+              // require(["../view/site/user/userRol/rolPermissionView"], resolve);
               require(["../view/site/user/userRol/rolPermissionPayView"], resolve);
-              /*FITRUE_pay*/
             },
             metaInfo: {
               title: "用户角色",

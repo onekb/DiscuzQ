@@ -78,6 +78,7 @@ class QuestionAnswerMakeMoney
             $order = $question->thread->ordersByType(Thread::TYPE_OF_QUESTION); // 查询该主题所有订单
             /** @var Order $questionOrder */
             $questionOrder = $order->where('type', Order::ORDER_TYPE_QUESTION)->first();
+            /*
             // 如果不是钱包支付，一律不需要走钱包流程打款
             if ($questionOrder->payment_type != Order::PAYMENT_TYPE_WALLET) {
                 // 直接打款到收款人的钱包余额中
@@ -87,14 +88,18 @@ class QuestionAnswerMakeMoney
                 $this->connection->commit();
                 return;
             }
+            */
 
-            // freeze amount decrease
-            $data = [
-                'question_id' => $question->id, // 关联问答ID
-                'change_type' => UserWalletLog::TYPE_EXPEND_QUESTION, // 81 问答提问支出
-                'change_desc' => trans('wallet.expend_question'),
-            ];
-            $this->bus->dispatch(new ChangeUserWallet($question->user, UserWallet::OPERATE_DECREASE_FREEZE, $price, $data));
+            // 如果是钱包支付的话，这里只多一个修改支付人钱包记录数据
+            if($questionOrder->payment_type == Order::PAYMENT_TYPE_WALLET){
+                // freeze amount decrease
+                $data = [
+                    'question_id' => $question->id, // 关联问答ID
+                    'change_type' => UserWalletLog::TYPE_EXPEND_QUESTION, // 81 问答提问支出
+                    'change_desc' => trans('wallet.expend_question'),
+                ];
+                $this->bus->dispatch(new ChangeUserWallet($question->user, UserWallet::OPERATE_DECREASE_FREEZE, $price, $data));
+            }
 
             // 站长分成回答金额
             $siteAuthorScale = $this->settings->get('site_author_scale');

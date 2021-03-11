@@ -12,6 +12,7 @@ export default {
       // fileList:[],
       loading: true,
       fullscreenLoading: false,
+      siteTheme: 1,
       siteName: "",
       siteIntroduction: "",
       siteKeywords: "",
@@ -35,9 +36,7 @@ export default {
       deleBtn: false,
       disabled: true, // 付费模式置灰
       askPrice: "", // 问答围观价格
-      /*IFTRUE_default*/
-      purchase: false, // 权限购买
-      /*FITRUE_default*/
+      // purchase: false, // 权限购买
       purchaseNum: 0,
       numberimg: [
         {
@@ -45,12 +44,7 @@ export default {
           imgWidht: 0,
           imgHeight: 0,
           text: "站点LOGO",
-          /*IFTRUE_default*/
-          textrule: "尺寸：438px*88px",
-          /*FITRUE_default*/
-          /*IFTRUE_pay*/
-          textrule: "尺寸：300px*100px",
-          /*FITRUE_pay*/
+          textrule: "尺寸：438px*88px"
         },
         {
           imageUrl: "",
@@ -109,7 +103,11 @@ export default {
             } else {
               this.disabled = false;
             }
-            //
+            // logo size
+            this.siteTheme = data.readdata._data.set_site.site_skin;
+            this.numberimg[0].textrule = this.siteTheme === 1
+              ? "尺寸：438px*88px"
+              : "尺寸：300px*100px";
             this.siteName = data.readdata._data.set_site.site_name;
             this.siteIntroduction =
               data.readdata._data.set_site.site_introduction;
@@ -170,9 +168,7 @@ export default {
             }, []);
 
             this.siteCloseMsg = data.readdata._data.set_site.site_close_msg;
-            /*IFTRUE_default*/
-            this.purchase = !!Number(data.readdata._data.set_site.site_pay_group_close);
-            /*FITRUE_default*/
+            // this.purchase = !!Number(data.readdata._data.set_site.site_pay_group_close);
             // 微信支付关闭时置灰付费模式
             if (data.readdata._data.paycenter.wxpay_close == false) {
               this.disabled = true;
@@ -314,8 +310,9 @@ export default {
         file.type == "image/jpeg" ||
         file.type == "image/png" ||
         file.type == "image/gif" ||
-        file.type == "image/ico"  || 
-        file.type == "image/vnd.microsoft.icon";
+        file.type == "image/ico"  ||
+        file.type == "image/vnd.microsoft.icon" ||
+        file.type == "image/x-icon";
       const isLt2M = file.size / 1024 / 1024 < 2;
       if (!isJPG) {
         this.$message.warning("上传头像图片只能是 JPG/PNG/GIF/ICO 格式!");
@@ -501,15 +498,13 @@ export default {
                 tag: "default"
               }
             },
-            /*IFTRUE_default*/
-            {
-              attributes: {
-                key: "site_pay_group_close",
-                value: this.purchase,
-                tag: "default"
-              }
-            }
-            /*FITRUE_default*/
+            // {
+            //   attributes: {
+            //     key: "site_pay_group_close",
+            //     value: this.purchase,
+            //     tag: "default"
+            //   }
+            // }
           ]
         }
       })

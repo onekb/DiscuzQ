@@ -60,17 +60,19 @@ class PostMessage extends SimpleMessage
 
         return [
             $this->post->user->username,
-            $this->filterSpecialChar ? $this->strWords($message) : $message,
+            $message,
             Arr::get($data, 'refuse', '无'),
         ];
     }
 
     public function render()
     {
+        $postData = Arr::get($this->data, 'post');
         $build = [
-            'title'   => $this->getTitle(),
-            'content' => $this->getContent($this->data),
-            'raw'     => Arr::get($this->data, 'raw'),
+            'title'     => $this->getTitle(),
+            'content'   => $this->getContent($this->data),
+            'raw'       => Arr::get($this->data, 'raw'),
+            'thread_id' => $postData->thread_id
         ];
 
         Arr::set($build, 'raw.tpl_id', $this->firstData->id);

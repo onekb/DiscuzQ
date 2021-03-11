@@ -3,6 +3,9 @@
  */
 import webDb from "../../../helpers/webDbHelper";
 import appConfig from "../../../../../frame/config/appConfig";
+import Card from '@/admin/view/site/common/card/card';
+import CardRow from '@/admin/view/site/common/card/cardRow';
+
 export default {
   data: function() {
     return {
@@ -44,23 +47,21 @@ export default {
                 {
                   id: 1,
                   title: "主题设置",
-                  name: "siteTheme",
+                  name: "siteSet",
                   icon: "iconzhandianshezhi"
                 },
-                /*IFTRUE_pay*/
                 {
                   id: 2,
                   title: "功能设置",
-                  name: "siteFunctionSet",
+                  name: "siteSet",
                   icon: "iconzhandianshezhi"
                 },
                 {
                   id: 3,
                   title: "首页数据设置",
-                  name: "siteSortSet",
+                  name: "siteSet",
                   icon: "iconzhandianshezhi"
                 }
-                /*FITRUE_pay*/
               ]
             },
             {
@@ -111,28 +112,12 @@ export default {
               name: "noticeSet",
               icon: "icontongzhi"
             },
-            /*IFTRUE_default*/ 
             {
               id: 9,
               title: "其他服务设置",
               name: "otherServiceSet",
               icon: "iconqitafuwushezhi"
             },
-            /*FITRUE_default*/ 
-            /*IFTRUE_pay*/ 
-            // {
-            //   id: 9,
-            //   title: "操作日志",
-            //   name: "operationLog",
-            //   icon: "iconqitafuwushezhi"
-            // },
-            {
-              id: 10,
-              title: "其他服务设置",
-              name: "otherServiceSet",
-              icon: "iconqitafuwushezhi"
-            },
-            /*FITRUE_pay*/ 
             // {
             //   id:7,
             //   title:'后台用户管理',
@@ -145,6 +130,12 @@ export default {
             //   name:'adminRoleManage',
             //   icon:'iconjiaoseguanli'
             // }
+            // {
+            //   id: 9,
+            //   title: "操作日志",
+            //   name: "operationLog",
+            //   icon: "iconqitafuwushezhi"
+            // },
           ]
         },
         {
@@ -331,7 +322,12 @@ export default {
       sideSubmenu: [], //侧边栏子菜单
       sideSubmenuSelect: "", //侧边栏子菜单选中
 
-      userName: "" //用户名
+      userName: "", //用户名
+
+      dialogVisible: false, // 云API配置弹框
+      secretId:'', 
+      secretKey:'',
+      appId:'',
     };
   },
   methods: {
@@ -422,6 +418,8 @@ export default {
         default:
           this.sideList = [];
       }
+
+      this.checkQcloud();
     },
 
     /*
@@ -470,11 +468,9 @@ export default {
         case "noticeSet":
           this.$router.push({ path: "/admin/system-notice" });
           break;
-        /*IFTRUE_pay*/
-        case "operationLog":
-          this.$router.push({ path: "/admin/operation-log" });
-          break;
-        /*FITRUE_pay*/
+        // case "operationLog":
+        //   this.$router.push({ path: "/admin/operation-log" });
+        //   break;
         case "adminUserManage":
           this.$router.push({ path: "/admin/user-manage-set" });
           break;
@@ -537,6 +533,7 @@ export default {
           this.$router.push({ path: "/admin/other-service-set" });
           break;
       }
+      this.checkQcloud();
     },
 
     /*
@@ -559,7 +556,7 @@ export default {
       switch (title) {
         case "站点信息":
           this.sideSubmenuSelect = title;
-          this.$router.push({ 
+          this.$router.push({
             path: "/admin/site-set",
             query: { name: "站点设置" }
           });
@@ -568,7 +565,6 @@ export default {
           this.sideSubmenuSelect = title;
           this.$router.push({ path: "/admin/site-theme" });
           break;
-        /*IFTRUE_pay*/
         case "功能设置":
           this.sideSubmenuSelect = title;
           this.$router.push({ path: "/admin/site-function-set" });
@@ -577,7 +573,6 @@ export default {
           this.sideSubmenuSelect = title;
           this.$router.push({ path: "/admin/site-sort-set" });
           break;
-        /*FITRUE_pay*/
         case "最新主题":
           this.sideSubmenuSelect = title;
           this.$router.push({ path: "/admin/cont-manage" });
@@ -634,7 +629,6 @@ export default {
      * */
     setDataStatus() {
       //设置页面刷新前状态，通过路由获取
-
       let attribution = this.$router.history.current.meta.attribution; //导航名字
       let name = this.$router.history.current.meta.name; //子菜单唯一标识符
       let title = this.$router.history.current.meta.title; //子菜单名字
@@ -695,7 +689,6 @@ export default {
             this.sideSubmenu = this.navList[1].submenu[0].submenu;
             this.sideSubmenuSelect = this.navList[1].submenu[0].submenu[1].title;
             break;
-          /*IFTRUE_pay*/
           case "功能设置":
             this.sideSubmenu = this.navList[1].submenu[0].submenu;
             this.sideSubmenuSelect = this.navList[1].submenu[0].submenu[2].title;
@@ -704,7 +697,6 @@ export default {
             this.sideSubmenu = this.navList[1].submenu[0].submenu;
             this.sideSubmenuSelect = this.navList[1].submenu[0].submenu[3].title;
             break;
-          /*FITRUE_pay*/
           case "最新主题":
             this.sideSubmenu = this.navList[3].submenu[1].submenu;
             this.sideSubmenuSelect = this.navList[3].submenu[1].submenu[0].title;
@@ -761,15 +753,98 @@ export default {
     quitClick() {
       localStorage.clear();
       this.$router.push({ path: "/admin/login" });
+    },
+
+    // 判断腾讯云云api是否配置
+    checkQcloud() {
+      this.appFetch({
+        url: "checkQcloud",
+        method: "get",
+        data: {}
+      }).then(data => {
+        if (!data.readdata._data.isBuildQcloud) {
+          this.dialogVisible = true;
+          this.tencentCloudList()//初始化云API配置
+        }
+      })
+      .catch(error => {});
+    },
+
+    tencentCloudList(){
+      this.appFetch({
+        url:'forum',
+        method:'get',
+        data:{
+
+        }
+      }).then(res=>{
+        if (res.errors){
+          this.$message.error(res.errors[0].code);
+        }else {
+          this.appId = res.readdata._data.qcloud.qcloud_app_id
+          this.secretId = res.readdata._data.qcloud.qcloud_secret_id
+          this.secretKey = res.readdata._data.qcloud.qcloud_secret_key
+        }
+      })
+    },
+    async  Submission(){
+      try{
+        await this.appFetch({
+        url:'settings',
+        method:'post',
+        data:{
+          "data":[
+            {
+              "attributes":{
+                "key":'qcloud_app_id',
+                "value":this.appId,
+                "tag": "qcloud"
+              }
+            },
+            {
+              "attributes":{
+                "key":'qcloud_secret_id',
+                "value":this.secretId,
+                "tag": "qcloud",
+              }
+              },
+              {
+                "attributes":{
+                  "key":'qcloud_secret_key',
+                  "value":this.secretKey,
+                  "tag": "qcloud",
+                }
+              }
+
+          ]
+        }
+      }).then(res=>{
+        if(res.errors){
+          throw new Error(res.errors[0].code);
+        }
+          this.$message({ message: '提交成功', type: 'success' });
+      })
+      }
+        catch(err){
+          this.$message({
+            showClose: true,
+            message: err
+          });
+        }
     }
   },
   created() {
     this.setDataStatus();
     this.userName = webDb.getLItem("username");
+    this.checkQcloud();
   },
   watch: {
     $route() {
       this.setDataStatus();
     }
+  },
+  components:{
+    Card,
+    CardRow
   }
 };

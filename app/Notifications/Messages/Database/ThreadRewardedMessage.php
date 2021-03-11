@@ -29,6 +29,7 @@ class ThreadRewardedMessage extends SimpleMessage
         $this->user = $user;
         $this->order = $order;
         $this->data = $data;
+        $this->actor = $actor;
     }
 
     protected function titleReplaceVars()
@@ -48,8 +49,8 @@ class ThreadRewardedMessage extends SimpleMessage
             'user_id' => $this->user->id,
             'order_id' => $this->order->id,    // 订单 id
             'thread_id' => $this->data['raw']['thread_id'],   // 必传 可为0 主题关联 id
-            'thread_username' => $this->user->username,
-            'thread_title' => !empty($this->data['raw']['title']) ? $this->data['raw']['title'] : $this->data['raw']['content'],
+            'thread_username' => $this->actor->username,
+            'thread_title' => $this->data['raw']['content'],
             'content' => $this->data['raw']['content'],
             'thread_created_at' => $this->data['raw']['created_at'],
             'amount' => $this->data['raw']['actual_amount'], // 获取上级的实际分成金额数

@@ -44,6 +44,11 @@ class IterationNoticeCommand extends AbstractCommand
      */
     protected $notificationTplSeeder;
 
+    /**
+     * @var Collection $tplAll
+     */
+    protected $tplAll;
+
     public function __construct(NotificationTpl $tpl, NotificationTplSeeder $notificationTplSeeder)
     {
         parent::__construct();
@@ -60,22 +65,24 @@ class IterationNoticeCommand extends AbstractCommand
         /**
          * 优先级
          */
-        $this->boForUpdate();
+        $this->beForUpdate();
+
+        $this->afterUpdate();
 
         $this->finishUpdate();
     }
 
-    public function boForUpdate()
+    /*
+    |--------------------------------------------------------------------------
+    | beForUpdate
+    |--------------------------------------------------------------------------
+    */
+    public function beForUpdate()
     {
+        $this->tplAll = $this->tpl->all();
+
         // 2021/1/20 重构微信通知模板 版本
         $this->sortOutUnite();
-
-        $this->afterUpdate();
-    }
-
-    public function afterUpdate()
-    {
-        // TODO to do some things
     }
 
     /**
@@ -84,40 +91,90 @@ class IterationNoticeCommand extends AbstractCommand
      */
     public function sortOutUnite()
     {
-        /** @var Collection $tplAll */
-        $tplAll = $this->tpl->all();
+        $this->info('执行脚本 -> (1. 统一type_name名称) ... ...');
 
         try {
-            $tplAll->map(function ($item) {
-                if (isset($this->configTypeName[$item->id])) {
+            $this->tplAll->map(function ($item) {
+                if (isset($this->originConfigTypeName[$item->id])) {
                     $originName = $item->type_name; // 原 name
-                    $name = $this->configTypeName[$item->id]; // 变更 name
+                    $name = $this->originConfigTypeName[$item->id]; // 变更 name
                     if ($originName != $name) {
                         $item->type_name = $name;
+                        $item->save();
                         // 输出
                         $msg = "修改'$item->title'(id=$item->id): 【type_name修改】-> [$originName] -> [$name]";
                         $this->comment($msg);
                     }
-                } else {
-                    $this->error('NotificationTpl 数据表有更改变动，无法统一[type_name] - ' . $item->id);
                 }
-
-                if (isset($this->initPagePath[$item->id]) && empty($item->page_path)) {
-                    $pagePath = $this->initPagePath[$item->id];
-                    $trans = trans('template_variables.' . $pagePath);
-                    $item->page_path = $pagePath;
-                    // 输出
-                    $msg = "初始化'$item->title'(id=$item->id): 【pagePath 初始化为】-> [$pagePath] -> [$trans]";
-                    $this->comment($msg);
-                }
-
-                $item->save();
             });
         } catch (Exception $e) {
             $this->error('type_name/page_path error');
         }
+
+        $this->info('done ... ...');
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | afterUpdate
+    |--------------------------------------------------------------------------
+    */
+    public function afterUpdate()
+    {
+        // 2021/2/3  不再以自增 id 为唯一标识，新增模板唯一标识
+        $this->uniquelyNotice();
+        // 2021/2/3  用唯一标识初始化，小程序路径地址
+        $this->initPagePath();
+    }
+
+    /**
+     * 添加通知唯一标识
+     */
+    public function uniquelyNotice()
+    {
+        $this->info('执行脚本 -> (2. 添加通知唯一标识) ... ...');
+
+        $this->tplAll->each(function ($item) {
+            if (is_null($item->notice_id)) {
+                $noticeId = $this->comparisonUnique($item->type_name, $item->type);
+                $item->notice_id = $noticeId;
+                $item->save();
+                // 输出
+                $msg = "添加'$item->title'(id=$item->id): 【notice_id 为】-> [$noticeId]";
+                $this->comment($msg);
+            }
+        });
+
+        $this->info('done ... ...');
+    }
+
+    /**
+     * 初始化小程序模板默认跳转路由
+     */
+    public function initPagePath()
+    {
+        $this->info('执行脚本 -> (3. 初始化小程序模板默认跳转路由) ... ...');
+
+        $this->tplAll->each(function ($item) {
+            if (isset($this->initPagePath[$item->notice_id]) && empty($item->page_path)) {
+                $pagePath = $this->initPagePath[$item->notice_id];
+                $trans = trans('template_variables.' . $pagePath);
+                $item->page_path = $pagePath;
+                $item->save();
+                // 输出
+                $msg = "初始化'$item->title'(notice_id=$item->notice_id): 【pagePath 初始化为】-> [$pagePath] -> [$trans]";
+                $this->comment($msg);
+            }
+        });
+
+        $this->info('done ... ...');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | finishUpdate
+    |--------------------------------------------------------------------------
+    */
     public function finishUpdate()
     {
         // TODO to do some things

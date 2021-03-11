@@ -5,7 +5,8 @@ export default {
       newTheme: 1, // 当前绑定主题值
       currentUrl: '', // 预览图地址
       isPreview: false,
-      dialogVisible: false
+      dialogVisible: false,
+      Loading: ''
     }
   },
   mounted() {
@@ -50,7 +51,7 @@ export default {
         str = `
           <p style="text-indent:2em;">
             蓝色两栏版本功能升级中，现在切换回蓝色两栏版本时，
-            将会暂时丢失红色三栏版本下的红包、悬赏贴哟，您确定要切换吗？
+            将会暂时丢失红色三栏版本下的红包、悬赏帖，您确定要切换吗？
           </P>
           <p style="text-indent:2em;margin-top:10px;">
             <span style="color:red;">温馨小提示：</span>
@@ -77,6 +78,12 @@ export default {
         });
     },
     postThemeSelect() {
+      this.loading = this.$loading({
+        lock: true,
+        text: '正在切换...',
+        spinner: 'el-icon-loading',
+        background: 'rgba(0, 0, 0, 0.1)'
+      });
       this.appFetch({
         url: 'switchskin',
         method: 'post',
@@ -91,8 +98,12 @@ export default {
       .then(res => {
         this.handleResult(res);
       })
+      .catch(err => {
+        this.loading.close();
+      })
     },
     handleResult(res) {
+      this.loading.close();
       if (res.errors && res.errors[0].status === '500') {
         return this.$message.warning(res.rawData[0].code);
       }

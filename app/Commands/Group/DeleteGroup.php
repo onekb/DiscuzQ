@@ -63,7 +63,7 @@ class DeleteGroup
         $group = $groups->findOrFail($this->id, $this->actor);
 
         $this->assertCan($this->actor, 'delete', $group);
-
+        $this->assertAdmin($this->actor);
         $oldGroup = $group;
 
         $group->delete();

@@ -193,7 +193,7 @@ class SaveRedPacketToDatabase
             $redPacket->save();
 
             $threadData = Arr::get($data, 'relationships');
-            
+
             $orderSn = !empty($threadData['redpacket']) ? $threadData['redpacket']['data']['order_id'] : '';
             if (! empty($orderSn)) {
                 /**
@@ -252,6 +252,8 @@ class SaveRedPacketToDatabase
 
     public function outDebugInfo($info)
     {
-        app('log')->info($this->baseInfo . $info);
+        if ($this->debugInfo) {
+            app('log')->info($this->baseInfo . $info);
+        }
     }
 }

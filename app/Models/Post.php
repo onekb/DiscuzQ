@@ -173,13 +173,16 @@ class Post extends Model
      */
     public function getSummaryTextAttribute()
     {
-        $content = Str::of(strip_tags($this->formatContent()));
+       $content = Str::of($this->content ?: '');
 
         if ($content->length() > self::SUMMARY_LENGTH) {
-            $content = $content->substr(0, self::SUMMARY_LENGTH)->finish(self::SUMMARY_END_WITH);
-        }
 
-        return $content->__toString();
+            $content = static::$formatter->parse(
+                $content->substr(0, self::SUMMARY_LENGTH)->finish(self::SUMMARY_END_WITH)
+            );
+            $content = static::$formatter->render($content);
+        }
+        return str_replace('<br>', '', $content);
     }
 
     /**

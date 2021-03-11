@@ -254,11 +254,13 @@ class CreatePost
         }
 
         // 记录触发的审核词
-        if ($post->is_approved === Post::UNAPPROVED && $censor->wordMod) {
-            $stopWords = new PostMod;
-            $stopWords->stop_word = implode(',', array_unique($censor->wordMod));
+        if (!$isDraft = Arr::get($this->data, 'attributes.is_draft')) {
+            if ($post->is_approved === Post::UNAPPROVED && $censor->wordMod) {
+                $stopWords = new PostMod;
+                $stopWords->stop_word = implode(',', array_unique($censor->wordMod));
 
-            $post->stopWords()->save($stopWords);
+                $post->stopWords()->save($stopWords);
+            }
         }
 
         $post->raise(new Saved($post, $this->actor, $this->data));

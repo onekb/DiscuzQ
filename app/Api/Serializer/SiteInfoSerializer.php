@@ -38,11 +38,11 @@ class SiteInfoSerializer extends AbstractSerializer
 
         // 待审核主题数
         $unapprovedThreads = Thread::where('is_approved', Thread::UNAPPROVED)
-            ->whereNull('deleted_at')->count();
+            ->where('is_draft', 0)->whereNull('deleted_at')->whereNotNull('user_id')->count();
 
         // 待审核回复数
         $unapprovedPosts = Post::where('is_approved', Post::UNAPPROVED)
-            ->whereNull('deleted_at')->where('is_first', false)->count();
+            ->whereNull('deleted_at')->whereNotNull('user_id')->where('is_first', false)->count();
 
         // 待审核提申请现数
         $unapprovedMoneys = UserWalletCash::where('cash_status', UserWalletCash::STATUS_REVIEW)->count();

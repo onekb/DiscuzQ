@@ -21,6 +21,7 @@ namespace App\Api\Controller\Group;
 use App\Api\Serializer\GroupSerializer;
 use App\Models\Group;
 use Discuz\Api\Controller\AbstractListController;
+use Discuz\Auth\AssertPermissionTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,6 +29,7 @@ use Tobscure\JsonApi\Document;
 
 class ListGroupsController extends AbstractListController
 {
+    use AssertPermissionTrait;
     /**
      * {@inheritdoc}
      */
@@ -43,6 +45,8 @@ class ListGroupsController extends AbstractListController
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
+        $this->assertAdmin($request->getAttribute('actor'));
+
         $include = $this->extractInclude($request);
         $filter = $this->extractFilter($request);
 

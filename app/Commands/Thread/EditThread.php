@@ -98,6 +98,7 @@ class EditThread
         $attributes = Arr::get($this->data, 'attributes', []);
 
         $thread = $threads->findOrFail($this->threadId, $this->actor);
+        $action_desc = '';
 
         if (isset($attributes['title'])) {
             $this->assertCan($this->actor, 'edit', $thread);
@@ -262,7 +263,7 @@ class EditThread
             $this->events->dispatch(new Deleting($thread, $this->actor, $this->data));
         }
         if(!isset($attributes['isFavorite']) && !isset($attributes['isSticky']) && !isset($attributes['isEssence'])){
-            app(SequenceRepository::class)->updateSequenceCache($this->threadId);
+            app(SequenceRepository::class)->updateSequenceCache($this->threadId, 'edit');
         }
 
         if($action_desc !== '' && !empty($action_desc)){

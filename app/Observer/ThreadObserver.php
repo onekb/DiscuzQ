@@ -77,6 +77,8 @@ class ThreadObserver
             'thread_count',
             Thread::query()
                 ->where('is_approved', Thread::APPROVED)
+                ->where('is_draft', 0)
+                ->where('threads.category_id', '>=', 0)
                 ->whereNull('deleted_at')
                 ->whereNotNull('user_id')
                 ->count()

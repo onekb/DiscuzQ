@@ -59,13 +59,13 @@
 
         <Card header="实名认证姓名：">
           <CardRow>
-            <el-input v-model="userPhone"></el-input>
+            <el-input v-model="realname"></el-input>
           </CardRow>
         </Card>
 
         <Card header="实名认证身份证号：">
           <CardRow>
-            <el-input v-model="userPhone"></el-input>
+            <el-input v-model="identity"></el-input>
           </CardRow>
         </Card>
       </div>

@@ -89,6 +89,8 @@ class PermissionTableSeeder extends Seeder
         // 附件
         'attachment.create.0' => [10],          // 上传附件
         'attachment.create.1' => [10],          // 上传图片
+        'attachment.create.0' => [6],          // 待付费用户支持上传附件
+        'attachment.create.1' => [6],          // 待付费用户支持上传图片
         'attachment.delete' => [],              // 删除附件
 
         // 敏感词

@@ -159,7 +159,7 @@
   .el-button--text{
     padding-bottom: 0;
   }
-  
+
   .upload-demo {
     padding: 0;
     ul {
@@ -172,7 +172,7 @@
       margin-bottom: 0;
     }
   }
-  
+
   .el-upload-list__item {
     border: #E5E5E5 1PX solid;
   }
@@ -323,7 +323,7 @@
     .card-row-box {
       width: 45%;
     }
-    .el-select{
+    .el-select,.el-cascader{
       position: absolute;
       left: 45%;
       top: 0;

@@ -52,7 +52,7 @@ export default {
         },
         {
           value: 9,
-          label: '问答返还解冻' 
+          label: '问答返还解冻'
         },
         {
           value: 10,

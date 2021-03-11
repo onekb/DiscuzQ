@@ -96,7 +96,7 @@ class BatchDeleteThreads
 
                 $thread->raise(new Deleted($thread));
                 $thread->delete();
-                app(SequenceRepository::class)->updateSequenceCache($id);
+                app(SequenceRepository::class)->updateSequenceCache($id, 'delete');
 
                 //删除视频、视频文件
                 $bus->dispatch(

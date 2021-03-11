@@ -445,6 +445,7 @@ class User extends Model
         $this->thread_count = $this->threads()
             ->where('is_approved', Thread::APPROVED)
             ->where('type', '<>', Thread::TYPE_OF_QUESTION)
+            ->where('is_draft', '<>', 1)
             ->whereNull('deleted_at')
             ->count();
 
@@ -462,6 +463,7 @@ class User extends Model
             ->join('thread_rewards', 'threads.id', '=', 'thread_rewards.thread_id')
             ->where('threads.type', Thread::TYPE_OF_QUESTION)
             ->where('threads.is_approved', Thread::APPROVED)
+            ->where('is_draft', '<>', 1)
 //            ->where('threads.is_anonymous', false)
             ->whereNull('threads.deleted_at')
             ->where(function (Builder $query) {

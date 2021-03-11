@@ -213,8 +213,9 @@ class ListThreadsController extends AbstractListController
         $limit = $this->extractLimit($request);
         $offset = $this->extractOffset($request);
         $include = $this->extractInclude($request);
+        $page = $params['page'];
 
-        $threads = $this->search($actor, $filter, $sort, $limit, $offset);
+        $threads = $this->search($actor, $filter, $sort, $limit, $offset, $page);
 
         $this->addDocument($document, $params, $this->threadCount, $offset, $limit);
 
@@ -364,20 +365,49 @@ class ListThreadsController extends AbstractListController
      *
      * @return Collection
      */
-    public function search($actor, $filter, $sort, $limit = null, $offset = 0)
+    public function search($actor, $filter, $sort, $limit = null, $offset = 0, $page)
     {
         /** @var Builder $query */
         $query = $this->threads->query()->select('threads.*')->whereVisibleTo($actor);
 
+        if(!isset($filter['createdAtBegin'])){
+            // from index request
+            if(isset($filter['isSort']) && $filter['isSort'] == 1) {
+                $cacheKey = CacheKey::LIST_SEQUENCE_THREAD_INDEX;
+                $index_thread_ids = $this->cache->get($cacheKey);
+
+                if(empty($index_thread_ids['ids']) || $page['number'] !== 1){
+                    $index_thread_ids = app(SequenceRepository::class)->getSequenceCache($page);
+                }
+
+                if(!empty($index_thread_ids['ids']) && $page['number'] == 1){
+                    $index_thread_ids = array_slice($index_thread_ids, 0, $page['limit']);
+                }
+
+                if(!empty($index_thread_ids['ids'])){
+                    $query->whereIn('threads.id', $index_thread_ids['ids']);
+                }
+            }
+        }
+
         $this->applyFilters($query, $filter, $actor);
+
 
         if (Arr::get($filter, 'location')) {
             $this->threadCount = $limit > 0 ? Thread::query()->fromSub($query, 'count')->count() : null;
         } else {
-            $this->threadCount = $limit > 0 ? $query->count() : null;
+            if(isset($index_thread_ids) && !empty($index_thread_ids['thread_count'])) {
+                $this->threadCount = $index_thread_ids['thread_count'];
+            }else{
+                $this->threadCount = $limit > 0 ? $query->count() : null;
+            }
         }
 
-        $query->skip($offset)->take($limit);
+        if(isset($index_thread_ids) && !empty($index_thread_ids['ids'])) {
+            $query->skip(0)->take($limit);
+        }else{
+            $query->skip($offset)->take($limit);
+        }
 
         foreach ((array) $sort as $field => $order) {
             $query->orderBy(Str::snake($field), $order);
@@ -396,31 +426,6 @@ class ListThreadsController extends AbstractListController
      */
     private function applyFilters(Builder $query, array $filter, User $actor)
     {
-
-        if(!isset($filter['createdAtBegin'])){
-            // from index request
-            if(isset($filter['isSort']) && $filter['isSort'] == 1) {
-                $cacheKey = CacheKey::LIST_SEQUENCE_THREAD_INDEX;
-                $index_thread_ids = $this->cache->get($cacheKey);
-                // don't have ids cache
-                if(!isset($index_thread_ids) || empty($index_thread_ids)){
-                    $sequenceList = Sequence::query()->first();
-                    // new and return ids cache
-                    if(isset($sequenceList) && !empty($sequenceList)){
-                        $index_thread_ids = app(SequenceRepository::class)->getSequenceCache();
-                    }
-
-                    if(empty($index_thread_ids)){
-                        $query->where('threads.id', '>', 0);
-                    }
-                }
-            }
-        }
-
-        if(isset($index_thread_ids) && !empty($index_thread_ids)){
-            $query->wherein('threads.id', $index_thread_ids);
-        }
-
         $query->where(['threads.is_draft' => 0]);
 
         // 分类

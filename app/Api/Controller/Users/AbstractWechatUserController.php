@@ -41,6 +41,7 @@ use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Events\Dispatcher as Events;
 use Illuminate\Contracts\Validation\Factory as ValidationFactory;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Psr\Http\Message\ServerRequestInterface;
@@ -64,9 +65,11 @@ abstract class AbstractWechatUserController extends AbstractResourceController
 
     protected $bound;
 
+    protected $db;
+
     public $serializer = TokenSerializer::class;
 
-    public function __construct(Factory $socialite, Dispatcher $bus, Repository $cache, ValidationFactory $validation, Events $events, SettingsRepository $settings, Bound $bound)
+    public function __construct(Factory $socialite, Dispatcher $bus, Repository $cache, ValidationFactory $validation, Events $events, SettingsRepository $settings, Bound $bound, ConnectionInterface $db)
     {
         $this->socialite = $socialite;
         $this->bus = $bus;
@@ -75,6 +78,7 @@ abstract class AbstractWechatUserController extends AbstractResourceController
         $this->events = $events;
         $this->settings = $settings;
         $this->bound = $bound;
+        $this->db = $db;
     }
 
     /**
@@ -104,15 +108,29 @@ abstract class AbstractWechatUserController extends AbstractResourceController
         $this->socialite->setRequest($request);
 
         $driver = $this->socialite->driver($this->getDriver());
-
         $wxuser = $driver->user();
 
         /** @var User $actor */
         $actor = $request->getAttribute('actor');
 
-        /** @var UserWechat $wechatUser */
-        $wechatUser = UserWechat::where($this->getType(), $wxuser->getId())->orWhere('unionid', Arr::get($wxuser->getRaw(), 'unionid'))->first();
-
+        $this->db->beginTransaction();
+        try {
+            /** @var UserWechat $wechatUser */
+            $wechatUser = UserWechat::query()
+                ->where($this->getType(), $wxuser->getId())
+                ->orWhere('unionid', Arr::get($wxuser->getRaw(), 'unionid'))
+                ->lockForUpdate()
+                ->first();
+        } catch (Exception $e) {
+            $this->db->rollBack();
+        }
+        $wechatlog = app('wechatLog');
+        $wechatlog->info('wechat_info', [
+            'wechat_user' => $wechatUser == null ? '': $wechatUser->toArray(),
+            'user_info' => $wechatUser->user == null ? '' : $wechatUser->user->toArray(),
+            'rebind' => Arr::get($request->getQueryParams(), 'rebind', 0),
+            'register' => Arr::get($request->getQueryParams(), 'register', 0)
+        ]);
         // 换绑时直接返回token供后续操作使用
         if ($rebind = Arr::get($request->getQueryParams(), 'rebind', 0)) {
             $this->error($wxuser, new Guest(), $wechatUser, $rebind, $sessionToken);
@@ -129,6 +147,7 @@ abstract class AbstractWechatUserController extends AbstractResourceController
             if (Arr::get($request->getQueryParams(), 'register', 0) && $actor->isGuest()) {
                 // 站点关闭注册
                 if (!(bool)$this->settings->get('register_close')) {
+                    $this->db->rollBack();
                     throw new PermissionDeniedException('register_close');
                 }
 
@@ -142,7 +161,7 @@ abstract class AbstractWechatUserController extends AbstractResourceController
                 // 先设置关系，为了同步微信头像
                 $wechatUser->setRelation('user', $user);
                 $wechatUser->save();
-
+                $this->db->commit();
                 // 判断是否开启了注册审核
                 if (!(bool)$this->settings->get('register_validate')) {
                     // Tag 发送通知 (在注册绑定微信后 发送注册微信通知)
@@ -154,17 +173,20 @@ abstract class AbstractWechatUserController extends AbstractResourceController
                     $wechatUser->user_id = $actor->id;
                     $wechatUser->setRelation('user', $actor);
                     $wechatUser->save();
+                    $this->db->commit();
                 }
             }
         } else {
             // 登陆用户和微信绑定不同时，微信已绑定用户，抛出异常
             if (!$actor->isGuest() && $actor->id != $wechatUser->user_id) {
+                $this->db->rollBack();
                 throw new Exception('account_has_been_bound');
             }
 
             // 登陆用户和微信绑定相同，更新微信信息
             $wechatUser->setRawAttributes($this->fixData($wxuser->getRaw(), $wechatUser->user));
             $wechatUser->save();
+            $this->db->commit();
         }
 
         if ($wechatUser && $wechatUser->user) {
@@ -178,7 +200,7 @@ abstract class AbstractWechatUserController extends AbstractResourceController
             unset($data['user_id']);
             $wechatUser->setRawAttributes($data);
             $wechatUser->save();
-
+            $this->db->commit();
             GenJwtToken::setUid($wechatUser->user->id);
             $response = $this->bus->dispatch(
                 new GenJwtToken($params)
@@ -222,7 +244,7 @@ abstract class AbstractWechatUserController extends AbstractResourceController
         }
         $wechatUser->setRawAttributes($this->fixData($rawUser, $actor));
         $wechatUser->save();
-
+        $this->db->commit();
         if ($actor->id) {
             $this->serializer = UserProfileSerializer::class;
             return $actor;
