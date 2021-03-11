@@ -22,6 +22,7 @@ use App\Commands\Wallet\ChangeUserWallet;
 use App\Models\Order;
 use App\Models\RedPacket;
 use App\Models\Thread;
+use App\Models\User;
 use App\Models\UserWallet;
 use App\Models\UserWalletLog;
 use Discuz\Console\AbstractCommand;
@@ -160,8 +161,16 @@ class RedPacketExpireCommand extends AbstractCommand
                             . ', 原冻结金额：' . $userWallet['freeze_amount']
                 ;
 
+                $user = User::query()->where('id', $thread['user_id'])->first();
+                if (empty($user)) {
+                    $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_UNTREATED);
+                    $this->outDebugInfo('处理失败,用户不存在');
+                    $this->connection->commit();
+                    return;
+                }
+
                 if ($order['payment_type'] == Order::PAYMENT_TYPE_WALLET) {
-                    $this->bus->dispatch(new ChangeUserWallet($item->thread->user,
+                    $this->bus->dispatch(new ChangeUserWallet($user,
                                                               UserWallet::OPERATE_UNFREEZE,
                                                               $item->remain_money,
                                                               $data
@@ -173,7 +182,7 @@ class RedPacketExpireCommand extends AbstractCommand
                     || $order['payment_type']  == Order::PAYMENT_TYPE_WECHAT_MINI
                 ) {
                     // 其余支付类型 增加可用金额
-                    $this->bus->dispatch(new ChangeUserWallet($item->thread->user,
+                    $this->bus->dispatch(new ChangeUserWallet($user,
                                                               UserWallet::OPERATE_INCREASE,
                                                               $item->remain_money,
                                                               $data

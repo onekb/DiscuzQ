@@ -21,6 +21,7 @@ namespace App\Api\Serializer;
 use App\Models\Post;
 use App\Models\Thread;
 use App\Models\UserWalletLog;
+use Exception;
 use Tobscure\JsonApi\Relationship;
 
 class PostSerializer extends BasicPostSerializer
@@ -29,6 +30,7 @@ class PostSerializer extends BasicPostSerializer
      * {@inheritdoc}
      *
      * @param Post $model
+     * @throws Exception
      */
     public function getDefaultAttributes($model)
     {
@@ -37,7 +39,7 @@ class PostSerializer extends BasicPostSerializer
         $attributes['isFirst'] = (bool) $model->is_first;
         $attributes['isComment'] = false;
         $attributes['rewards'] = $model->rewards;
-        $attributes['redPacketAmount'] = $this->getPostRedPacketAmount($model->id, $model->thread_id);
+        $attributes['redPacketAmount'] = $this->getPostRedPacketAmount($model->id, $model->thread_id, $model->user_id);
         if (app()->has('isCalled')) {
             unset($attributes['contentHtml']);
             unset($attributes['content']);
@@ -63,24 +65,27 @@ class PostSerializer extends BasicPostSerializer
         return $this->hasMany($post, CommentPostSerializer::class);
     }
 
-    public function getPostRedPacketAmount($post_id, $thread_id)
+    public function getPostRedPacketAmount($post_id, $thread_id, $user_id)
     {
         $thread = Thread::query()->where('id', $thread_id)->first();
-        if ($thread->type == Thread::TYPE_OF_TEXT) {
-            $redPacketAmount = UserWalletLog::query()
-                        ->where([   'thread_id'     => $thread_id,
-                                    'post_id'       => $post_id,
-                                    'change_type'   => UserWalletLog::TYPE_INCOME_TEXT
-                                ])
-                        ->sum('change_available_amount');
-        } elseif ($thread->type == Thread::TYPE_OF_LONG) {
-            $redPacketAmount = UserWalletLog::query()
-                        ->where([   'thread_id'     => $thread_id,
-                                    'post_id'       => $post_id,
-                                    'change_type'   => UserWalletLog::TYPE_INCOME_LONG
-                                ])
-                        ->sum('change_available_amount');
+        if (empty($thread)) {
+            throw new Exception(trans('post.thread_id_not_null'));
         }
+        if ($thread->type == Thread::TYPE_OF_TEXT) {
+            $change_type = UserWalletLog::TYPE_INCOME_TEXT;
+        } elseif ($thread->type == Thread::TYPE_OF_LONG) {
+            $change_type = UserWalletLog::TYPE_INCOME_LONG;
+        } else {
+            $change_type = 0;
+        }
+        $redPacketAmount = UserWalletLog::query()
+                            ->where([   'thread_id'     => $thread_id,
+                                        'post_id'       => $post_id,
+                                        'change_type'   => $change_type,
+                                        'user_id'       => $user_id
+                                    ])
+                            ->sum('change_available_amount');
+
         return empty($redPacketAmount) ? 0 : $redPacketAmount;
     }
 }

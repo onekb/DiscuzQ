@@ -64,10 +64,15 @@ class ReplyPostMakeRedPacket
         $actor = $event->actor;
         $data = $event->data;
         $type = $event->post->getRelations()['thread']['type'];
-        $this->baseInfo =   '访问用户id:'  . $actor->id.
+        $this->baseInfo =   '访问用户id:'  . $actor->id . '(' . $actor->username . ')'.
                             ',访问帖子id:' . $post->thread->id.
                             ',post_id:'   . $post->id.
                             ',msg:';
+
+        if ($post->user_id != $actor->id) {
+            $this->outDebugInfo('回复领红包：不是回复的主人领取红包');
+            return;
+        }
 
         if (!($type == Thread::TYPE_OF_TEXT || $type == Thread::TYPE_OF_LONG)) {
             $this->outDebugInfo('回复领红包：该帖不为文字帖和长文贴');
@@ -79,12 +84,14 @@ class ReplyPostMakeRedPacket
             return;
         }
 
-        if ($post->is_first == 1 || $post->is_comment == 1 || $post->wasRecentlyCreated == false) {
+        if ($post->is_first == 1 || $post->is_comment == 1) {
             $this->outDebugInfo('回复领红包：该帖不为首帖、第一条评论');
             return;
         }
 
-        $redPacket = RedPacket::query() ->where(['thread_id' => $post->thread_id, 'status' => RedPacket::RED_PACKET_STATUS_VALID, 'condition' => 0])
+        $redPacket = RedPacket::query() ->where([   'thread_id' => $post->thread_id,
+                                                    'status' => RedPacket::RED_PACKET_STATUS_VALID,
+                                                    'condition' => 0])
                                         ->first();
         if (empty($redPacket) || empty($redPacket['remain_money']) || empty($redPacket['remain_number'])) {
             $this->outDebugInfo('回复领红包：该红包帖无剩余金额和个数');
@@ -93,7 +100,15 @@ class ReplyPostMakeRedPacket
 
         //领取过红包的用户不再领取
         $currentPostUser = Post::query()->where(['id' => $post->id])->first();
+        if (empty($currentPostUser)) {
+            $this->outDebugInfo('回复领红包：post_id为空');
+            return;
+        }
         $thread = Thread::query()->where(['id' => $currentPostUser['thread_id']])->first();
+        if (empty($thread)) {
+            $this->outDebugInfo('回复领红包：thread_id为空');
+            return;
+        }
         if ($thread['type'] == Thread::TYPE_OF_TEXT) {
             $change_type = UserWalletLog::TYPE_INCOME_TEXT;
         } else {

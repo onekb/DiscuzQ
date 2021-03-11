@@ -26,7 +26,7 @@ return [
     'redpacket_money_format_error'      => '红包金额非法',
     'redpacket_money_regex_error'       => '红包金额格式错误',
 
-    'redpack_order_thread_id_not_null'  => '订单帖子id不能为空',
+    'redpacket_order_thread_id_not_null'  => '订单帖子id不能为空',
     'user_wallet_log_null'              => '用户钱包日志为空',
 
     'thread_order_illegal'              => '该帖存在异常，请联系管理员处理',

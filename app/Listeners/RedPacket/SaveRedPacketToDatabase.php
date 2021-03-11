@@ -85,15 +85,15 @@ class SaveRedPacketToDatabase
         $post = $event->post;
         $actor = $event->actor;
         $data = $event->data;
-        $this->baseInfo =   '访问用户id： ' . $actor->id.
-                            ',访问帖子id：' . $post->thread->id.
-                            ',post_id：'   . $post->id.
-                            ',msg：';
+        $this->baseInfo =   '访问用户id:'  . $actor->id . '(' . $actor->username . ')'.
+                            ',访问帖子id:' . $post->thread->id.
+                            ',post_id:'   . $post->id.
+                            ',msg:';
 
         if (($post->thread->type != Thread::TYPE_OF_TEXT || $post->thread->type != Thread::TYPE_OF_LONG)
              && (empty($data['attributes']['redPacket']['money'])
                 || empty($data['attributes']['redPacket']['number']))) {
-            $this->outDebugInfo('保存红包到数据库：该用户已经领取过红包了');
+            $this->outDebugInfo('保存红包到数据库：不是有效红包帖或红包已分完');
             return;
         }
 
@@ -193,7 +193,9 @@ class SaveRedPacketToDatabase
             $redPacket->save();
 
             $threadData = Arr::get($data, 'relationships');
-            if (! empty($orderSn = $threadData['redpacket']['data']['order_id'])) {
+            
+            $orderSn = !empty($threadData['redpacket']) ? $threadData['redpacket']['data']['order_id'] : '';
+            if (! empty($orderSn)) {
                 /**
                  * Update Order relation thread_id
                  *
@@ -201,7 +203,7 @@ class SaveRedPacketToDatabase
                  */
                 $order = Order::query()->where('order_sn', $orderSn)->firstOrFail();
                 if (empty($order)) {
-                    throw new Exception(trans('redpacket.redpack_order_thread_id_not_null'));
+                    throw new Exception(trans('redpacket.redpacket_order_thread_id_not_null'));
                 }
                 $order->thread_id = $post->thread_id;
                 $order->save();

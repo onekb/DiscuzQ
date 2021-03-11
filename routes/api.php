@@ -455,3 +455,6 @@ $route->get('/redpacket/{id}', 'redpacket.resource', ApiController\RedPacket\Res
 */
 
 $route->post('/switchskin', 'switchskin', ApiController\SwitchSkin\SwitchSkinController::class);
+
+// 判断是否已配置腾讯云  CheckQcloudController
+$route->get('/checkQcloud', 'checkQcloud',  ApiController\CheckQcloudController::class);

@@ -223,7 +223,9 @@ class CreatePost
 
         $post->content = $censor->checkText($post->content);
 
-        if(mb_strlen($post->content)>5000){
+        $content = $post->content;
+
+        if(mb_strlen($post->content)>49999){
             throw new \Exception('字数超出限制');
         }
         // 存在审核敏感词时，将回复放入待审核
@@ -267,7 +269,7 @@ class CreatePost
         // });
 
         $post->rewards = floatval(sprintf('%.2f', $post->getPostReward()));
-
+        $post->content != $content && $post->content = $content;
         return $post;
     }
 }

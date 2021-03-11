@@ -49,6 +49,16 @@ class PostListener
     use AssertPermissionTrait;
     use PostNoticesTrait;
 
+    /**
+     * @var Dispatcher
+     */
+    private $bus;
+
+    public function __construct(Dispatcher $bus)
+    {
+        $this->bus = $bus;
+    }
+
     public function subscribe(Dispatcher $events)
     {
         // 发表回复
@@ -169,6 +179,12 @@ class PostListener
             PostMod::query()->where('post_id', $post->id)->delete();
 
             $action = 'approve';
+
+            if ($post->thread->is_red_packet == Thread::HAVE_RED_PACKET) { //当过审的回复为红包帖的回复时触发领红包事件
+                $this->bus->dispatch(
+                    new Saved($post, $post->user, $event->data)
+                );
+            }
         } elseif ($post->is_approved === Post::IGNORED) {
             $action = 'ignore';
         } else {
@@ -258,7 +274,7 @@ class PostListener
         if($post->thread->is_draft == 1){
             return;
         }
-        
+
         // 新建 或者 修改了是否合法字段 并且 合法时，发送 @ 通知
         if ($post->thread->is_draft == 0 || ($post->wasRecentlyCreated || $post->wasChanged('is_approved')) && $post->is_approved === Post::APPROVED) {
             $this->sendRelated($event->post, $event->post->user);

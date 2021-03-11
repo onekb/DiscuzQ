@@ -70,5 +70,7 @@ return [
     'post_reward_post_detail_not_found' => '该评论不是一级评论或者已被删除',
     'post_reward_type_error' => '悬赏金额类型错误，必须是数字！',
     'post_reward_order_error' => '悬赏帖订单信息错误，无法进行采纳！',
-    'post_reward_user_wallet_error' => '您的冻结金额不足，悬赏采纳失败！'
+    'post_reward_user_wallet_error' => '您的冻结金额不足，悬赏采纳失败！',
+
+    'thread_id_not_null' => '帖子id不可为空'
 ];
