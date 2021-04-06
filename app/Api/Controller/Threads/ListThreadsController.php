@@ -213,7 +213,8 @@ class ListThreadsController extends AbstractListController
         $limit = $this->extractLimit($request);
         $offset = $this->extractOffset($request);
         $include = $this->extractInclude($request);
-        $page = $params['page'];
+        $page = isset($params['page']) ? $params['page'] : 1;
+        
 
         $threads = $this->search($actor, $filter, $sort, $limit, $offset, $page);
 

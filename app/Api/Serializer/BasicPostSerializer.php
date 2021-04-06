@@ -89,6 +89,13 @@ class BasicPostSerializer extends AbstractSerializer
             'contentAttachIds'  => $contentAttachIds,
         ];
 
+        //更新 content 中的图片url，这里新增一个字段主要用户编辑
+        $attributes['parseContentHtml'] = $attributes['content'];
+        if(!empty($model->parseContentHtml)){
+            $attributes['parseContentHtml'] = $model->parseContentHtml;
+        }
+
+
         if ($canEdit || $this->actor->id === $model->user_id) {
             $attributes += [
                 'ip'    => $model->ip,

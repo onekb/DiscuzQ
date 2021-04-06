@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use DateTime;
 use Discuz\Auth\Anonymous;
 use Discuz\Base\DzqModel;
+use Discuz\Common\PubEnum;
 use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
 use Discuz\SpecialChar\SpecialCharServer;

@@ -27,7 +27,10 @@ use App\Api\Serializer\ThreadRewardSerializer;
 use App\Api\Serializer\ThreadSerializer;
 use App\Common\CacheKey;
 use App\Common\ResponseCode;
+use App\Formatter\Formatter;
+use App\Models\Attachment;
 use App\Models\Order;
+use App\Models\Post;
 use App\Models\PostGoods;
 use App\Models\PostUser;
 use App\Models\Question;
@@ -37,11 +40,12 @@ use App\Models\ThreadReward;
 use App\Models\ThreadUser;
 use App\Repositories\UserFollowRepository;
 use Discuz\Base\DzqController;
+use Illuminate\Contracts\Events\Dispatcher;
+use s9e\TextFormatter\Utils;
 
 class ResourceThreadV2Controller extends DzqController
 {
     public $userFollow;
-
 
     //返回的数据一定包含的数据
     public $include = [
@@ -69,6 +73,7 @@ class ResourceThreadV2Controller extends DzqController
         'onlookers' => Order::ORDER_TYPE_ONLOOKER                 //围观用户
     ];
 
+
     public function __construct(UserFollowRepository $userFollow)
     {
         $this->userFollow = $userFollow;
@@ -77,11 +82,11 @@ class ResourceThreadV2Controller extends DzqController
     public function main()
     {
         $thread_serialize = $this->app->make(ThreadSerializer::class);
-		$thread_serialize->setRequest($this->request);
+        $thread_serialize->setRequest($this->request);
         $post_serialize = $this->app->make(PostSerializer::class);
-		$post_serialize->setRequest($this->request);
+        $post_serialize->setRequest($this->request);
         $attachment_serialize = $this->app->make(AttachmentSerializer::class);
-		$attachment_serialize->setRequest($this->request);
+        $attachment_serialize->setRequest($this->request);
         $category_serialize = $this->app->make(CategorySerializer::class);
         $category_serialize->setRequest($this->request);
 
@@ -133,8 +138,11 @@ class ResourceThreadV2Controller extends DzqController
             return $item->only(['id','name','isDisplay']);
         });
 
+        $this->parseContent($thread->firstPost, $this->request);
 
         $data['firstPost'] = $post_serialize->getDefaultAttributes($thread->firstPost);
+        //为了前端编辑帖子，这里重写了 content
+        $data['firstPost']['parseContentHtml'] = !empty($thread->firstPost->parseContentHtml) ? $thread->firstPost->parseContentHtml : $data['firstPost']['content'];
         $data['firstPost']['canLike'] = (bool) $this->user->can('like', $thread->firstPost);
         if ($likeState = $thread->firstPost->likeState) {
             $data['firstPost']['isLiked'] = true;
@@ -273,6 +281,75 @@ class ResourceThreadV2Controller extends DzqController
             ->get();
 
         return $thread->setRelation($relation, $orderUsers->pluck('user')->filter());
+    }
+
+
+    /**
+     * 渲染content 内容
+     */
+    public function parseContent($post, $request){
+        // 图文混排需要替换插入文中的图片及附件地址
+
+        if(!($post->is_first && $post->thread->type === Thread::TYPE_OF_LONG)){
+            return '';
+        }
+
+
+        /** @var AttachmentSerializer $attachmentSerializer */
+        $attachmentSerializer = app(AttachmentSerializer::class);
+
+        $attachmentSerializer->setRequest($request);
+
+        // 所有图片及附件 URL
+        $attachments = $post->images
+            ->merge($post->attachments)
+            ->keyBy('id')
+            ->map(function (Attachment $attachment) use ($attachmentSerializer) {
+                if ($attachment->type === Attachment::TYPE_OF_IMAGE) {
+                    return $attachmentSerializer->getDefaultAttributes($attachment)['thumbUrl'];
+                } elseif ($attachment->type === Attachment::TYPE_OF_FILE) {
+                    return $attachmentSerializer->getDefaultAttributes($attachment)['url'];
+                }
+            });
+
+        // 数据原始内容，即 s9e 解析后的 XML
+        $xml = $post->getRawOriginal('content');
+
+        // 替换插入内容中的图片 URL
+        $xml = Utils::replaceAttributes($xml, 'IMG', function ($attributes) use ($attachments) {
+            if (isset($attributes['title']) && isset($attachments[$attributes['title']])) {
+                $attributes['src'] = $attachments[$attributes['title']];
+            }
+
+            return $attributes;
+        });
+
+        // 替换插入内容中的附件 URL
+        $xml = Utils::replaceAttributes($xml, 'URL', function ($attributes) use ($attachments) {
+            if (isset($attributes['title']) && isset($attachments[$attributes['title']])) {
+                $attributes['url'] = $attachments[$attributes['title']];
+            }
+
+            return $attributes;
+        });
+
+        $will_parse_content = $post->content;
+        $post->parseContentHtml = $will_parse_content;
+        if(!empty($post->content) && !empty($attachments)){
+            $post->parseContentHtml = preg_replace_callback(
+                '((!\[[^\]]*\])(\((https[^\)]*) ("\d+")\)))',
+                function($m) use ($attachments){
+                    if(!empty($m)){
+                        $id = trim($m[4], '"');
+                        return $m[1].'('.$attachments[$id].' '.$m[4].')';
+                    }
+                },
+                $will_parse_content
+            );
+        }
+
+
+        $post->parsedContent = $xml;
     }
 
 

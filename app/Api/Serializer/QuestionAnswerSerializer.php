@@ -39,10 +39,7 @@ class QuestionAnswerSerializer extends AbstractSerializer
      */
     public function getDefaultAttributes($model)
     {
-        $actor = $this->getActor();
-        if($actor->id !== $model->be_user_id){
-            $this->paidContent($model);
-        }
+        $this->paidContent($model);
 
         return [
             'id'                    => $model->id,

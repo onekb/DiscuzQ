@@ -37,6 +37,7 @@ use App\Models\ThreadReward;
 use App\Models\ThreadVideo;
 use App\Models\Topic;
 use App\Models\User;
+use App\Models\Setting;
 use Discuz\Base\DzqController;
 
 class ListThreadsV2Controller extends DzqController
@@ -85,7 +86,7 @@ class ListThreadsV2Controller extends DzqController
             $user = [
                 'userName' => '匿名用户'
             ];
-            if (!$thread['is_anonymous'] && !empty($users[$userId])) {
+            if ((!$thread['is_anonymous'] && !empty($users[$userId])) || $this->user->id == $thread['user_id']) {
                 $user = $this->getUserInfo($users[$userId]);
             }
             $group = [];
@@ -199,10 +200,10 @@ class ListThreadsV2Controller extends DzqController
         }
         switch ($thread['type']) {
             case Thread::TYPE_OF_IMAGE:
-            case Thread::TYPE_OF_AUDIO:
             case Thread::TYPE_OF_TEXT:
                 $data['title'] = Post::instance()->getContentSummary($thread['id']);
                 break;
+            case Thread::TYPE_OF_AUDIO:
             case Thread::TYPE_OF_VIDEO:
                 $data['title'] = Post::instance()->getContentSummary($thread['id']);
                 $data['extension'] = [
@@ -312,6 +313,12 @@ class ListThreadsV2Controller extends DzqController
             ->whereNull('th1.deleted_at')
             ->where('th1.is_approved', Thread::APPROVED)
             ->where('th1.is_draft', Thread::IS_NOT_DRAFT);
+
+        // $miniProgramVideo = Setting::isMiniProgram();
+        // if(!$miniProgramVideo){
+        //     $threads = $threads->where('th1.type', '<>', Thread::TYPE_OF_VIDEO);
+        // }
+
         if (!empty($categoryIds)) {
             $threads = $threads->whereIn('th1.category_id', $categoryIds);
         }
@@ -386,6 +393,12 @@ class ListThreadsV2Controller extends DzqController
             ->where('is_draft', Thread::IS_NOT_DRAFT)
             ->where('is_approved', Thread::APPROVED);
         !empty($essence) && $threads = $threads->where('is_essence', $essence);
+
+        // $miniProgramVideo = Setting::isMiniProgram();
+        // if(!$miniProgramVideo){
+        //     $threads = $threads->where('threads.type', '<>', Thread::TYPE_OF_VIDEO);
+        // }
+
         if ($sort == Thread::SORT_BY_THREAD) {//按照发帖时间排序
             $threads->orderByDesc('threads.created_at');
         } else if ($sort == Thread::SORT_BY_POST) {//按照评论时间排序

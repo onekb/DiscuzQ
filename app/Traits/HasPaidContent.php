@@ -53,8 +53,8 @@ trait HasPaidContent
     {
         Thread::setStateUser($this->actor);
 
-        // 作者本人 或 管理员 不处理（新增类型时请保证 $model->user_id 存在）
-        if ($this->actor->id === $model->user_id || $this->actor->isAdmin()) {
+        // 作者本人 或 管理员 或 回答者本人 不处理（新增类型时请保证 $model->user_id 存在）
+        if ($this->actor->id === $model->user_id || $this->actor->isAdmin() || $this->actor->id === $model->be_user_id) {
             return;
         }
 
