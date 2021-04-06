@@ -144,7 +144,8 @@ class ThreadPolicy extends AbstractPolicy
             if(Arr::get($request->getParsedBody(), 'data.attributes')){
                 $attributes = Arr::get($request->getParsedBody(), 'data.attributes', '');
             }
-            if(isset($attributes['is_old_draft']) && $attributes['is_old_draft'] == 1){
+
+            if($thread->user_id == $actor->id && isset($attributes['is_draft']) && isset($attributes['is_old_draft']) && $attributes['is_old_draft'] == 1){
                 return true;
             }
         }
