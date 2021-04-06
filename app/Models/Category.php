@@ -21,6 +21,7 @@ namespace App\Models;
 use App\Models\Thread;
 use App\Events\Category\Created;
 use Carbon\Carbon;
+use Discuz\Base\DzqModel;
 use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
 use Illuminate\Database\Eloquent\Model;
@@ -40,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property Carbon $updated_at
  * @property int $parentid
  */
-class Category extends Model
+class Category extends DzqModel
 {
     use EventGeneratorTrait;
     use ScopeVisibilityTrait;
@@ -85,7 +86,7 @@ class Category extends Model
      * @param string $ip
      * @return static
      */
-    public static function build(string $name, string $description, int $sort, int $parentid,string $icon = '', string $ip = '')
+    public static function build(string $name, string $description, int $sort, int $parentid, string $icon = '', string $ip = '')
     {
         $category = new static;
 
@@ -134,17 +135,17 @@ class Category extends Model
             ->whereNotNull('user_id')
             ->count();
 
-        $categoryDetail =  Category::query()->where('id', $this->id)->first();
-        if($categoryDetail->parentid !== 0){
+        $categoryDetail = Category::query()->where('id', $this->id)->first();
+        if ($categoryDetail->parentid !== 0) {
             $father_category_ids = Category::query()->where('id', $categoryDetail->parentid)->orWhere('parentid', $categoryDetail->parentid)->pluck('id')->toArray();
-            $categoryFatherDetail =  Category::query()->where('id', $categoryDetail->parentid)->first();
+            $categoryFatherDetail = Category::query()->where('id', $categoryDetail->parentid)->first();
             $categoryFatherDetail->thread_count = Thread::query()
-                            ->where('is_approved', Thread::APPROVED)
-                            ->where('is_draft', 0)
-                            ->whereIn('category_id', $father_category_ids)
-                            ->whereNull('deleted_at')
-                            ->whereNotNull('user_id')
-                            ->count();
+                ->where('is_approved', Thread::APPROVED)
+                ->where('is_draft', 0)
+                ->whereIn('category_id', $father_category_ids)
+                ->whereNull('deleted_at')
+                ->whereNotNull('user_id')
+                ->count();
             $categoryFatherDetail->save();
         }
 
@@ -171,15 +172,15 @@ class Category extends Model
     {
         static $categories;
 
-        if (! $categories) {
+        if (!$categories) {
             $categories = static::all();
         }
 
         $hasGlobalPermission = $user->hasPermission($permission);
 
         $canForCategory = function (self $category) use ($user, $permission, $hasGlobalPermission) {
-            return $user->hasPermission('switch.'.$permission)
-                && ($hasGlobalPermission || $user->hasPermission('category'.$category->id.'.'.$permission));
+            return $user->hasPermission('switch.' . $permission)
+                && ($hasGlobalPermission || $user->hasPermission('category' . $category->id . '.' . $permission));
         };
 
         $ids = [];
@@ -201,5 +202,57 @@ class Category extends Model
     public static function getIdsWhereCannot(User $user, string $permission): array
     {
         return static::getIdsWherePermission($user, $permission, false);
+    }
+
+    public function hasThreads($id)
+    {
+        $category = Category::query()->findOrFail($id);
+
+        $childCategoryIds = array();
+        if ($category->parentid == 0) {
+            $childCategoryIds = Category::query()->where('parentid', $category->id)->pluck('id')->toArray();
+        }
+
+        $threads = Thread::query()
+            ->where('category_id', $id)
+            ->orWhereIn('category_id', $childCategoryIds)
+            ->where('is_approved', Thread::APPROVED)
+            ->where('is_draft', Thread::IS_NOT_DRAFT)
+            ->whereNull('deleted_at')
+            ->whereNotNull('user_id')
+            ->get()->toArray();
+        if (!empty($threads)) {
+            return true;
+        }
+        return false;
+    }
+
+    public function getValidCategoryIds(User $user, $categoryids = [])
+    {
+        $groups = $user->groups->toArray();
+        if (empty($groups)) {
+            return false;
+        }
+        $groupIds = array_column($groups, 'id');
+        $permissions = Permission::categoryPermissions($groupIds);
+        $cids = self::query()->pluck('id')->toArray();
+        $p = [];
+        if ($user->isAdmin()) {
+            $p = $cids;
+        } else {
+            foreach ($cids as $cid) {
+                $viewThread = 'category' . $cid . '.viewThreads';
+                in_array($viewThread, $permissions) && $p[] = $cid;
+            }
+            if (in_array('viewThreads', $permissions)) {
+                $p = $cids;
+            }
+        }
+        if (empty($categoryids)) {
+            $categoryids = $p;
+        } else {
+            $categoryids = array_intersect($categoryids, $p);
+        }
+        return $categoryids;
     }
 }

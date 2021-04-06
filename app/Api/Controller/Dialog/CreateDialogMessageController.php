@@ -63,7 +63,8 @@ class CreateDialogMessageController extends AbstractCreateController
         $this->validation->make($attributes, [
             'dialog_id'     => 'required|int',
             'message_text'  => 'sometimes|max:450',
-            'attachment_id' => 'sometimes|int',
+            'image_url'     => 'sometimes|string',
+            'attachment_id' => 'required_with:image_url|int',
         ])->validate();
 
         return $this->bus->dispatch(

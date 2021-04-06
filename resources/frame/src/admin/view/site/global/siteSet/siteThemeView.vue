@@ -38,12 +38,6 @@
             >
           </el-radio>
         </div>
-        <div class="right">
-          <p>
-            蓝色两栏包含了原有功能；红色三栏包含原有功能再加上红包、悬赏功能；蓝色两栏版本也将陆续更新内容付费功能
-          </p>
-          <p>提示：切换后，如果无法正常显示，需要清除浏览器缓存重新进入</p>
-        </div>
       </div>
       <div v-if="isPreview" class="preview-box">
         <div class="preview-img-wrap">

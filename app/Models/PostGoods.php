@@ -16,6 +16,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Discuz\Base\DzqModel;
 use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
 use Illuminate\Database\Eloquent\Model;
@@ -41,13 +42,14 @@ use Illuminate\Support\Arr;
  * @method static create(array $array)
  * @method static first(array $array)
  */
-class PostGoods extends Model
+class PostGoods extends DzqModel
 {
     use EventGeneratorTrait;
     use ScopeVisibilityTrait;
 
     public static $key;
-
+    const STATUS_YES = 0;
+    const STATUS_NO = 1;
     /**
      * {@inheritdoc}
      */
@@ -251,5 +253,21 @@ class PostGoods extends Model
     public function post()
     {
         return $this->belongsTo(Post::class);
+    }
+
+    public function getPostGoods($postId){
+        $postGood = self::query()->where(['post_id'=>$postId,'status'=>self::STATUS_YES])->first();
+        if(empty($postGood))return false;
+        return [
+            'platformId'=>$postGood['platform_id'],
+            'title'=>$postGood['title'],
+            'price'=>$postGood['price'],
+            'imagePath'=>$postGood['image_path'],
+            'type'=>$postGood['type'],
+            'status'=>$postGood['status'],
+            'readyContent'=>$postGood['ready_content'],
+            'detailContent'=>$postGood['detail_content'],
+            'typeName' => PostGoods::enumTypeName($postGood['type']),
+        ];
     }
 }

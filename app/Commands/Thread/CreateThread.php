@@ -119,6 +119,18 @@ class CreateThread
 
         $thread_id = Arr::get($attributes, 'id');
         if ($thread_id) {
+            $oldThreadData = Thread::query()->where('id', $thread_id)->first();
+            // 不是本人编辑草稿，报错
+            if($oldThreadData->is_draft == 1 && $oldThreadData->user_id !== $this->actor->id){
+                throw new PermissionDeniedException;
+            }
+            // 正式帖子，不是本人、不是管理员、没有编辑权限，报错
+            if($oldThreadData->is_draft == 0 && $oldThreadData->user_id !== $this->actor->id){
+                if(!$this->actor->isAdmin() && !$this->actor->can('edit', $oldThreadData)){
+                    throw new PermissionDeniedException;
+                }
+            }
+
             $thread = $threads->findOrFail($thread_id, $this->actor);
         }
 
@@ -139,15 +151,7 @@ class CreateThread
 
             if (!empty($red_money)) {
                 $this->assertCan($this->actor, 'createThread.' . $thread->type . '.redPacket');
-
-                if ($thread->type === Thread::TYPE_OF_TEXT) {
-                    $thread->is_red_packet = Thread::HAVE_RED_PACKET;//0:未添加红包，1:有添加红包
-                } else {
-                    //长文帖价格参数和附件参数必须为0才允许添加红包
-                    if(empty((float) Arr::get($attributes, 'price')) && empty((float) Arr::get($attributes, 'attachment_price'))) {
-                        $thread->is_red_packet = Thread::HAVE_RED_PACKET;
-                    }
-                }
+                $thread->is_red_packet = Thread::HAVE_RED_PACKET;//0:未添加红包，1:有添加红包
             }
         }
 

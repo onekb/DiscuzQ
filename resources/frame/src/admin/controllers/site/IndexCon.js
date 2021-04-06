@@ -24,6 +24,12 @@ export default {
               title: "管理中心首页",
               name: "controlCenter",
               icon: "iconshouye"
+            },
+            {
+              id: 1,
+              title: "数据看板",
+              name: "dataPanel",
+              icon: "iconcaiwutongji"
             }
           ]
         },
@@ -434,6 +440,9 @@ export default {
       switch (item.name) {
         case "controlCenter":
           this.$router.push({ path: "/admin/home" });
+          break;
+        case "dataPanel":
+          this.$router.push({ path: "/admin/data-panel" });
           break;
 
         case "siteSet":

@@ -22,6 +22,7 @@ use App\Common\CacheKey;
 use App\Events\Question\Created;
 use App\Formatter\Formatter;
 use Carbon\Carbon;
+use Discuz\Base\DzqModel;
 use Discuz\Foundation\EventGeneratorTrait;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Model;
@@ -56,7 +57,7 @@ use Illuminate\Support\Stringable;
  * @property Thread $thread
  * @property UserWalletLog $userWalletLog
  */
-class Question extends Model
+class Question extends DzqModel
 {
     use EventGeneratorTrait;
 
@@ -68,6 +69,16 @@ class Question extends Model
 
     const TYPE_OF_EXPIRED = 2; // 已过期
 
+
+    /**
+     * 摘要长度
+     */
+    const SUMMARY_LENGTH = 80;
+
+    /**
+     * 摘要结尾
+     */
+    const SUMMARY_END_WITH = '...';
     /**
      * 通知内容展示长度(字)
      */
@@ -122,7 +133,7 @@ class Question extends Model
      */
     public function getContentAttribute($value)
     {
-        return static::$formatter->unparse($value);
+        return html_entity_decode(strip_tags($value), ENT_QUOTES, 'UTF-8');
     }
 
     /**
@@ -296,5 +307,37 @@ class Question extends Model
         $cache = app('cache');
         //删除帖子缓存
         $cache->forget(CacheKey::THREAD_RESOURCE_BY_ID . $this->thread_id);
+    }
+
+    public function getQuestions($threadId)
+    {
+        $question = self::query()->where(['thread_id' => $threadId])->first();
+        if (empty($question)) {
+            return false;
+        }
+        return [
+            'threadId' => $question['thread_id'],
+            'userId' => $question['user_id'],
+            'beUserId' => $question['be_user_id'],
+            'beUserName' => User::instance()->getUserName($question['be_user_id']),
+            'content' => $this->getContentSummary($question['content']),
+            'price' => $question['price'],
+            'onlookerUnitPrice' => $question['onlooker_unit_price'],
+            'onlookerPrice' => $question['onlooker_price'],
+            'onlookerNumber' => $question['onlooker_number'],
+            'isOnlooker' => $question['is_onlooker'],
+            'isAnswer' => $question['is_answer'],
+            'isApproved' => $question['is_approved'],
+            'expiredAt' => $question['expired_at'],
+            'answeredAt' => $question['answered_at']
+        ];
+    }
+    private function getContentSummary($content)
+    {
+        $content = strip_tags($content);
+        if (mb_strlen($content) > self::SUMMARY_LENGTH) {
+            $content = Str::substr($content, 0, self::SUMMARY_LENGTH) . self::SUMMARY_END_WITH;
+        }
+        return $content;
     }
 }

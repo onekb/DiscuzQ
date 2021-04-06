@@ -19,11 +19,12 @@
 namespace App\Models;
 
 use App\Events\ThreadReward\Created;
+use Discuz\Base\DzqModel;
 use Illuminate\Database\Eloquent\Model;
 use Discuz\Foundation\EventGeneratorTrait;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ThreadReward extends Model
+class ThreadReward extends DzqModel
 {
     use EventGeneratorTrait;
 
@@ -81,5 +82,20 @@ class ThreadReward extends Model
     public function images()
     {
         return $this->hasMany(Attachment::class, 'type_id')->where('type', Attachment::TYPE_OF_ANSWER)->orderBy('order');
+    }
+
+    public function getRewards($threadIds)
+    {
+        return self::query()->whereIn('thread_id', $threadIds)
+            ->select([
+                'thread_id as threadId',
+                'type',
+                'user_id as userId',
+                'answer_id as answerId',
+                'money',
+                'remain_money as remainMoney',
+                'expired_at as expiredAt'
+            ])
+            ->get()->pluck(null,'threadId')->toArray();
     }
 }

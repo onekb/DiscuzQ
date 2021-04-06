@@ -62,6 +62,7 @@ class ThreadSerializer extends AbstractSerializer
         $gate = $this->gate->forUser($this->actor);
 
         $attributes = [
+            'id'                => $model->id,
             'type'              => (int) $model->type,
             'title'             => $model->title,
             'price'             => $model->price,

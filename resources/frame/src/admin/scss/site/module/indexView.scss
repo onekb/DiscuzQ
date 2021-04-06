@@ -126,6 +126,7 @@
 
       .index-main-con__side-title{
         height: 42PX;
+        padding-bottom: 10PX;
         border-bottom: 1PX solid $borderColor;
         span{
           font-size:18PX;
@@ -177,7 +178,7 @@
 
       .index-main-con__side-footer{
         position: absolute;
-        bottom: 30PX;
+        bottom: 10PX;
         left: 50%;
         transform: translateX(-50%);
         white-space: nowrap;

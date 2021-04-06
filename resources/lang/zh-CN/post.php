@@ -74,5 +74,8 @@ return [
     'post_reward_user_wallet_error' => '您的冻结金额不足，悬赏采纳失败！',
     'post_reward_not_equal_to_order_price' => '悬赏帖总悬赏金额与订单实付金额不匹配，无法进行采纳',
 
-    'thread_id_not_null' => '帖子id不可为空'
+    'thread_id_not_null' => '帖子id不可为空',
+    'audio_video_not_null'  => '音视频不可为空',
+    'audio_video_is_being_transcoded' => '音视频正在转码中，请稍后重试。',
+    'audio_video_transcoding_failed'  => '音视频转码失败，请重新上传。'
 ];

@@ -116,7 +116,7 @@ class CreateThreadVideo
 
         $threadVideo->save();
 
-        if ($threadVideo->type === ThreadVideo::TYPE_OF_VIDEO && $this->thread->exists) {
+        if ($threadVideo->type === ThreadVideo::TYPE_OF_VIDEO && $this->thread->exists  && empty($this->thread->is_draft)) {
             // 发布文章时，转码
             $this->transcodeVideo($threadVideo->file_id, 'TranscodeTaskSet');
 

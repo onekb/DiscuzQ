@@ -23,6 +23,7 @@ use App\Common\SettingCache;
 use App\Traits\Notifiable;
 use Carbon\Carbon;
 use Discuz\Auth\Guest;
+use Discuz\Base\DzqModel;
 use Discuz\Contracts\Setting\SettingsRepository;
 use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
@@ -32,7 +33,6 @@ use Illuminate\Contracts\Filesystem\Factory as Filesystem;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -81,7 +81,7 @@ use Illuminate\Support\Str;
  * @method truncate()
  * @method hasAvatar()
  */
-class User extends Model
+class User extends DzqModel
 {
     use EventGeneratorTrait;
     use ScopeVisibilityTrait;
@@ -127,6 +127,11 @@ class User extends Model
     const STATUS_REFUSE = 3;//审核拒绝
     const STATUS_IGNORE = 4;//审核忽略
     const STATUS_NEED_FIELDS = 10;//待填写扩展审核字段
+
+    /*
+     * 姓名和身份证号一致
+     */
+    const NAME_ID_NUMBER_MATCH = 0;
 
     public static $statusMap = [
         self::STATUS_NORMAL => '正常',
@@ -459,17 +464,17 @@ class User extends Model
      */
     public function refreshQuestionCount()
     {
-        $this->question_count = Thread::query()
-            ->join('thread_rewards', 'threads.id', '=', 'thread_rewards.thread_id')
-            ->where('threads.type', Thread::TYPE_OF_QUESTION)
-            ->where('threads.is_approved', Thread::APPROVED)
-            ->where('is_draft', '<>', 1)
-//            ->where('threads.is_anonymous', false)
-            ->whereNull('threads.deleted_at')
-            ->where(function (Builder $query) {
-                $query->where('threads.user_id', $this->id)->orWhere('thread_rewards.answer_id', $this->id);
-            })
-            ->count();
+        $userId = $this->id;
+        $query = Thread::query();
+        $query->where('threads.type', Thread::TYPE_OF_QUESTION);
+        $query->where('threads.is_approved', Thread::APPROVED);
+        $query->where('threads.is_draft', '<>', 1);
+        $query->whereNull('threads.deleted_at');
+        $query->leftJoin('questions', 'threads.id', '=', 'questions.thread_id');
+        $query->where(function (Builder $query) use ($userId) {
+            $query->where('threads.user_id', $userId)->orWhere('questions.be_user_id', $userId);
+        });
+        $this->question_count = $query->count();
 
         return $this;
     }
@@ -483,7 +488,7 @@ class User extends Model
             if ($this->getSkin() == SettingCache::BLUE_SKIN_CODE) {
                 // 蓝版不显示红版的通知消息类型
                 $cached = $this->notifications()->whereNull('read_at')
-                    ->whereNotIn('type',['receiveredpacket','threadrewarded'])
+                    ->whereNotIn('type', ['receiveredpacket', 'threadrewarded'])
                     ->count();
             }
         }
@@ -503,7 +508,7 @@ class User extends Model
                 // 蓝版不显示红版的通知消息类型
                 $cachedAll = $this->notifications()
                     ->whereNull('read_at')
-                    ->whereNotIn('type',['receiveredpacket','threadrewarded'])
+                    ->whereNotIn('type', ['receiveredpacket', 'threadrewarded'])
                     ->selectRaw('type,count(*) as count')
                     ->groupBy('type')->pluck('type', 'count')->map(function ($val) {
                         return class_basename($val);
@@ -876,7 +881,7 @@ class User extends Model
         //查询是否需要填写扩展字段
         $settings = app(SettingsRepository::class);
         $open_ext_fields = $settings->get('open_ext_fields');
-        if($open_ext_fields){
+        if ($open_ext_fields) {
             $attributes['status'] = User::STATUS_NEED_FIELDS;
         }
         if (isset($attributes['register_port']) && empty($attributes['register_port'])) {
@@ -896,9 +901,10 @@ class User extends Model
     }
 
     //修改user的status为2，待审核状态
-    public static function setUserStatusMod($userId){
+    public static function setUserStatusMod($userId)
+    {
         $user = User::query()->find($userId);
-        if(!empty($user)){
+        if (!empty($user)) {
             $user->status = self::STATUS_MOD;
         }
         return $user->save();
@@ -913,29 +919,46 @@ class User extends Model
         return $user->save();
     }
 
-    public static function isStatusMod($userId){
+    public static function isStatusMod($userId)
+    {
         $user = User::query()->find($userId);
-        if(!empty($user)){
-            if($user->status == self::STATUS_MOD){
+        if (!empty($user)) {
+            if ($user->status == self::STATUS_MOD) {
                 return true;
             }
         }
         return false;
     }
-    public static function getUserReject($userId){
+
+    public static function getUserReject($userId)
+    {
         $user = User::query()->find($userId);
-        if(empty($user)){
+        if (empty($user)) {
             return false;
         }
         return [
-            'id'=>$user['id'],
-            'userName'=>$user['username'],
-            'rejectReason'=>$user['reject_reason']
+            'id' => $user['id'],
+            'userName' => $user['username'],
+            'rejectReason' => $user['reject_reason']
         ];
     }
 
-    public function getSkin(){
+    public function getSkin()
+    {
         $skin = app(SettingCache::class)->getSiteSkin();
         return $skin;
+    }
+
+    public function getUsers($userIds)
+    {
+        return self::query()->whereIn('id', $userIds)->get()->toArray();
+    }
+
+
+    public function getUserName($userId)
+    {
+        $user = self::query()->find($userId);
+        if (empty($user)) return null;
+        return $user->username;
     }
 }

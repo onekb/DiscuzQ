@@ -540,6 +540,11 @@ class ListThreadsController extends AbstractListController
             $query->where('threads.post_count', '<=', $postCountLt);
         }
 
+        // 主题ID（等于）
+        if ($threadID = Arr::get($filter, 'threadID')) {
+            $query->where('threads.id', '=', $threadID);
+        }
+
         // 精华帖
         if ($isEssence = Arr::get($filter, 'isEssence')) {
             if ($isEssence == 'yes') {

@@ -104,13 +104,6 @@ class ResourceAnalysisGoodsController extends AbstractResourceController
 
         $this->assertCan($actor, 'createThread.' . Thread::TYPE_OF_GOODS);
 
-        /*
-         * 判断地址是否符合要求
-         */
-        if(!$this->isSpecifyUrl($readyContent)){
-            throw new TranslatorException('post_goods_not_found_address');
-        }
-
         /**
          * 查询数据库中是否存在
          */
@@ -139,6 +132,12 @@ class ResourceAnalysisGoodsController extends AbstractResourceController
                 throw new TranslatorException('post_goods_does_not_resolve');
             }
         }
+
+        //过滤域名
+        $readyContent = $this->processUrl($readyContent, $domainUrl[0]);
+
+        //过滤ip
+        $readyContent = $this->processStr($readyContent);
 
         // Regular Expression Url
         $extractionUrlRegex = '/(https|http):\/\/(?<url>[0-9a-z.]+)/i';
@@ -287,12 +286,34 @@ class ResourceAnalysisGoodsController extends AbstractResourceController
         return $this->url->to('/images/goods/' . $imgName);
     }
 
-    protected function isSpecifyUrl($url){
-        foreach ($this->allowDomain as $v) {
-            if(strpos($url,$v)){
-                return true;
+    //过滤ip
+    protected function processStr($url){
+
+        preg_match_all("/\d+\.\d+\.\d+\.\d+/",$url,$arr);
+        if(!empty($arr[0])){
+            foreach ($arr[0] as $tcp){
+                $isVaildIp = preg_match("/^(((1?\d{1,2})|(2[0-4]\d)|(25[0-5]))\.){3}((1?\d{1,2})|(2[0-4]\d)|(25[0-5]))$/",$tcp);
+                if($isVaildIp > 0){
+                    $url = str_replace($tcp,'',$url);
+                }
             }
         }
-        return false;
+
+        return $url;
+    }
+
+    //过滤域名
+    protected function processUrl($url,$str){
+
+        $url = str_replace($str,'########',$url);
+        preg_match_all('/https:\/\/(([^:\/]*?)\.(?<url>.+?\.(cn|com)))/i', $url, $arr);
+        preg_match_all('/http:\/\/(([^:\/]*?)\.(?<url>.+?\.(cn|com)))/i', $url, $arr1);
+
+        $merge = array_merge($arr[0],$arr1[0]);
+        foreach ($merge as $merV) {
+            $url = str_replace($merV,'',$url);
+        }
+
+        return str_replace('########',$str,$url);
     }
 }

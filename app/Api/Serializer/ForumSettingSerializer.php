@@ -193,6 +193,13 @@ class ForumSettingSerializer extends AbstractSerializer
                 'can_create_thread_goods_position'      => $actor->can('createThread.' . Thread::TYPE_OF_GOODS . '.position'),     // 发布商品位置
                 'can_create_thread_red_packet'          => $actor->can('createThread.' . Thread::TYPE_OF_TEXT . '.redPacket'),     // 发文字帖红包
                 'can_create_thread_long_red_packet'     => $actor->can('createThread.' . Thread::TYPE_OF_LONG . '.redPacket'),     // 发长文帖红包
+                'can_create_thread_anonymous'           => $actor->can('createThread.' . Thread::TYPE_OF_TEXT . '.anonymous'),      // 发布文字匿名发布
+                'can_create_thread_long_anonymous'      => $actor->can('createThread.' . Thread::TYPE_OF_LONG . '.anonymous'),      // 发布长文匿名发布
+                'can_create_thread_video_anonymous'     => $actor->can('createThread.' . Thread::TYPE_OF_VIDEO . '.anonymous'),     // 发布视频匿名发布
+                'can_create_thread_image_anonymous'     => $actor->can('createThread.' . Thread::TYPE_OF_IMAGE . '.anonymous'),     // 发布图片匿名发布
+                'can_create_thread_audio_anonymous'     => $actor->can('createThread.' . Thread::TYPE_OF_AUDIO . '.anonymous'),     // 发布语音匿名发布
+                'can_create_thread_question_anonymous'  => $actor->can('createThread.' . Thread::TYPE_OF_QUESTION . '.anonymous'),  // 发布问答匿名发布
+                'can_create_thread_goods_anonymous'     => $actor->can('createThread.' . Thread::TYPE_OF_GOODS . '.anonymous'),     // 发布商品匿名发布
 
                 // 至少在一个分类下有发布权限
                 'can_create_thread_in_category' => (bool) Category::getIdsWhereCan($actor, 'createThread'),

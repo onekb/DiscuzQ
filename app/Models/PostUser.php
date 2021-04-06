@@ -19,7 +19,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Discuz\Base\DzqModel;
 
 /**
  * Models a post-user state record in the database.
@@ -30,10 +30,15 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property Thread $thread
  * @property User $user
  */
-class PostUser extends Pivot
+class PostUser extends DzqModel
 {
+    protected $table = 'post_user';
     public function likedUsers()
     {
         return $this->hasOne(User::class);
+    }
+    public function getPostIdsByUid($postIds,$userId){
+        return  self::query()->whereIn('post_id',$postIds)->where('user_id',$userId)
+            ->get()->pluck('post_id')->toArray();
     }
 }

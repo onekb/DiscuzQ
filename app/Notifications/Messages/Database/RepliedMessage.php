@@ -40,7 +40,7 @@ class RepliedMessage extends SimpleMessage
     public function render()
     {
         $build = [
-            'user_id' => $this->actor->id,
+            'user_id' => $this->post->user_id,
             'thread_id' => 0, // 必传
             'thread_username' => '', // 必传主题用户名
             'thread_title' => '',

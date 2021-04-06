@@ -61,4 +61,13 @@ class Permission extends Model
     {
         return $this->belongsTo(Group::class);
     }
+
+    public static function categoryPermissions($groupIds = [])
+    {
+        $permissions = Permission::query()->whereIn('group_id', $groupIds)->get()->toArray();
+        $permissions = array_column($permissions, 'permission');
+        return $permissions;
+    }
+
+
 }

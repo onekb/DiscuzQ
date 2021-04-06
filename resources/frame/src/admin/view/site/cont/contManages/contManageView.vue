@@ -7,6 +7,10 @@
           <span class="cont-manage-header_condition-title">作者：</span>
           <el-input size="medium" placeholder="搜索作者" v-model="searchData.themeAuthor" clearable></el-input>
         </div>
+        <div class="cont-manage-header_condition cont-manage-header_condition-lf">
+          <span class="cont-manage-header_condition-title">主题ID：</span>
+          <el-input size="medium" placeholder="搜索ID" v-model="searchData.threadID" clearable></el-input>
+        </div>
         <div class="cont-manage-header_condition cont-manage-header_condition-rh">
           <span class="cont-manage-header_condition-title">内容包含：</span>
           <el-input size="medium" placeholder="搜索内容" v-model="searchData.themeKeyWords" clearable></el-input>

@@ -32,6 +32,16 @@ export default {
               attribution: "首页"
             }
           },
+          "data-panel": {
+            comLoad: function (resolve) {
+              require(["../view/site/home/dataPanelView"], resolve);
+            },
+            metaInfo: {
+              title: "数据看板",
+              name: "dataPanel",
+              attribution: "首页"
+            }
+          },
           "site-set": {
             comLoad: function (resolve) {
               require(["../view/site/global/siteSetView"], resolve);

@@ -69,8 +69,9 @@ class AttachmentSerializer extends AbstractSerializer
      *
      * @param Attachment $model
      */
-    public function getDefaultAttributes($model)
+    public function getDefaultAttributes($model, $user = null)
     {
+        if($user)   $this->actor = $user;
         $this->paidContent($model);
 
         if ($model->is_remote) {
@@ -82,6 +83,7 @@ class AttachmentSerializer extends AbstractSerializer
         }
 
         $attributes = [
+            'id'                => $model->id,
             'order'             => $model->order,
             'type'              => $model->type,
             'type_id'           => $model->type_id,
@@ -97,7 +99,7 @@ class AttachmentSerializer extends AbstractSerializer
         ];
 
         // 图片缩略图地址
-        if ($model->type == Attachment::TYPE_OF_IMAGE) {
+        if (in_array($model->type, [Attachment::TYPE_OF_IMAGE, Attachment::TYPE_OF_DIALOG_MESSAGE])) {
             if ($model->getAttribute('blur')) {
                 $attributes['thumbUrl'] = $url;
             } else {

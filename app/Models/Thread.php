@@ -19,12 +19,14 @@
 namespace App\Models;
 
 use App\Common\CacheKey;
+use App\Common\Utils;
 use App\Events\Thread\Hidden;
 use App\Events\Thread\Restored;
 use App\Models\ThreadReward;
 use Carbon\Carbon;
 use DateTime;
 use Discuz\Auth\Anonymous;
+use Discuz\Base\DzqModel;
 use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
 use Discuz\SpecialChar\SpecialCharServer;
@@ -56,6 +58,7 @@ use Illuminate\Support\Stringable;
  * @property float $latitude
  * @property string $address
  * @property string $location
+ * @property Carbon posted_at
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property Carbon $deleted_at
@@ -88,7 +91,7 @@ use Illuminate\Support\Stringable;
  * @method increment($column, $amount = 1, array $extra = [])
  * @method decrement($column, $amount = 1, array $extra = [])
  */
-class Thread extends Model
+class Thread extends DzqModel
 {
     use EventGeneratorTrait;
     use ScopeVisibilityTrait;
@@ -117,10 +120,26 @@ class Thread extends Model
 
     const HAVE_RED_PACKET = 1;
 
+    const THREAD_VIDEO_STATUS_TRANSCODING = 0; //转码中
+
+    const THREAD_VIDEO_STATUS_COMPLETE = 1; //转码完成
+
+    const THREAD_VIDEO_STATUS_FAIL = 2; //转码失败
+
     /**
      * 通知内容展示长度(字)
      */
     const CONTENT_LENGTH = 80;
+
+    const  SORT_BY_THREAD = 1;
+    const  SORT_BY_POST = 2;
+
+    /**
+     * 草稿
+     */
+    const IS_NOT_DRAFT = 0;
+
+    const IS_DRAFT = 1;
 
     /**
      * {@inheritdoc}
@@ -143,6 +162,25 @@ class Thread extends Model
         'updated_at',
         'deleted_at',
     ];
+
+    const EXT_TEXT = 'text';
+    const EXT_LONG = 'thread';
+    const EXT_VIDEO = 'video';
+    const EXT_IMAGE = 'image';
+    const EXT_AUDIO = 'audio';
+    const EXT_QA = 'question';
+    const EXT_GOODS = 'goods';
+
+    public $threadDic = [
+        self::TYPE_OF_TEXT => '文字',
+        self::TYPE_OF_LONG => '帖子',
+        self::TYPE_OF_VIDEO => '视频',
+        self::TYPE_OF_IMAGE => '图片',
+        self::TYPE_OF_AUDIO => '语音',
+        self::TYPE_OF_QUESTION => '问答',
+        self::TYPE_OF_GOODS => '商品',
+    ];
+
 
     /**
      * The user for which the state relationship should be loaded.
@@ -260,7 +298,7 @@ class Thread extends Model
     {
         $this->last_posted_user_id = $post->user_id;
         $this->updated_at = $post->created_at->gt($this->updated_at) ? $post->created_at : $this->updated_at;
-
+        $this->posted_at = $post->created_at;
         return $this;
     }
 
@@ -683,6 +721,7 @@ class Thread extends Model
     private function deleteCacheKey()
     {
         $cache = app('cache');
+        $cache->forget(CacheKey::LIST_V2_THREADS);
         //删除帖子缓存
         $cache->forget(CacheKey::THREAD_RESOURCE_BY_ID . $this->id);
         $keys = $cache->get(CacheKey::LIST_THREAD_KEYS);
@@ -698,4 +737,99 @@ class Thread extends Model
         return true;
     }
 
+    public function formatThread($thread)
+    {
+        $data = [
+            'pid' => $thread['id'],
+            'type' => $thread['type'],
+            'categoryId' => $thread['category_id'],
+            'title' => $thread['title'],
+            'price' => $thread['price'],
+            'attachmentPrice' => $thread['attachment_price'],
+            'postCount' => $thread['post_count'] - 1,
+            'viewCount' => $thread['view_count'],
+            'rewardedCount' => $thread['rewarded_count'],
+            'paidCount' => $thread['paid_count'],
+            'address' => $thread['address'],
+            'location' => $thread['location'],
+            'createdAt' => date('Y-m-d H:i:s', strtotime($thread['created_at'])),
+            'diffCreatedAt' => Utils::diffTime($thread['created_at']),
+            'isRedPacket' => $thread['is_red_packet'],
+            'extension' => null
+        ];
+        switch ($thread['type']) {
+            case Thread::TYPE_OF_IMAGE:
+            case Thread::TYPE_OF_AUDIO:
+                $data['title'] = Post::instance()->getContentSummary($thread['id']);
+                break;
+            case Thread::TYPE_OF_VIDEO:
+                $data['title'] = Post::instance()->getContentSummary($thread['id']);
+                $data['extension'] = [
+                    Thread::EXT_VIDEO => ThreadVideo::instance()->getThreadVideo($thread['id'])
+                ];
+                break;
+            case Thread::TYPE_OF_GOODS:
+                $postId = true;
+                $data['title'] = Post::instance()->getContentSummary($thread['id'], $postId);;
+                $data['extension'] = [
+                    Thread::EXT_GOODS => PostGoods::instance()->getPostGoods($postId)
+                ];
+                break;
+            case Thread::TYPE_OF_QUESTION:
+                $data['title'] = Post::instance()->getContentSummary($thread['id']);
+                $data['extension'] = [
+                    Thread::EXT_QA => Question::instance()->getQuestions($thread['id'])
+                ];
+                break;
+            default:
+                break;
+        }
+        return $data;
+    }
+    /**
+     * @desc 获取本次查询要替换的特殊符号
+     * @param $linkString
+     * @return array[]
+     */
+    public function getReplaceString($linkString)
+    {
+        preg_match_all('/:[a-z]+:/i', $linkString, $m1);
+        preg_match_all('/@.+? /', $linkString, $m2);
+        preg_match_all('/#.+?#/', $linkString, $m3);
+        $m1 = array_unique($m1[0]);
+        $m2 = array_unique($m2[0]);
+        $m3 = array_unique($m3[0]);
+        $m2 = str_replace(['@', ''], '', $m2);
+        $m3 = str_replace('#', '', $m3);
+        $search = [];
+        $replace = [];
+        $emojis = Emoji::query()->select('code', 'url')->whereIn('code', $m1)->get()->map(function ($item) use ($search) {
+            $item['url'] = Utils::getDzqDomain() . '/' . $item['url'];
+            $item['html'] = sprintf('<img style="display:inline-block;vertical-align:top" src="%s" alt="ciya" class="qq-emotion">', $item['url']);
+            return $item;
+        })->toArray();
+        $ats = User::query()->select('id', 'username')->whereIn('username', $m2)->get()->map(function ($item) {
+            $item['username'] = '@' . $item['username'];
+            $item['html'] = sprintf('<span id="member" value="%s">%s</span>', $item['id'], $item['username']);
+            return $item;
+        })->toArray();
+        $topics = Topic::query()->select('id', 'content')->whereIn('content', $m3)->get()->map(function ($item) {
+            $item['content'] = '#' . $item['content'] . '#';
+            $item['html'] = sprintf('<span id="topic" value="%s">%s</span>', $item['id'], $item['content']);
+            return $item;
+        })->toArray();
+        foreach ($emojis as $emoji) {
+            $search[] = $emoji['code'];
+            $replace[] = $emoji['html'];
+        }
+        foreach ($ats as $at) {
+            $search[] = $at['username'];
+            $replace[] = $at['html'];
+        }
+        foreach ($topics as $topic) {
+            $search[] = $topic['content'];
+            $replace[] = $topic['html'];
+        }
+        return [$search, $replace];
+    }
 }

@@ -39,9 +39,13 @@ class QuestionAnswerSerializer extends AbstractSerializer
      */
     public function getDefaultAttributes($model)
     {
-        $this->paidContent($model);
+        $actor = $this->getActor();
+        if($actor->id !== $model->be_user_id){
+            $this->paidContent($model);
+        }
 
         return [
+            'id'                    => $model->id,
             'thread_id'             => $model->thread_id,
             'user_id'               => $model->thread->is_anonymous ? 0 : $model->user_id, // 判断是否是匿名
             'be_user_id'            => $model->be_user_id,

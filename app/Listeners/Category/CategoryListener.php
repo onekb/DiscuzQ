@@ -38,38 +38,68 @@ class CategoryListener
     {
         $category = $event->category;
 
-        $groupIds = Group::query()->where('id', '>=', Group::MEMBER_ID)->pluck('id');
+        $blockIds = [Group::ADMINISTRATOR_ID, Group::UNPAID];
+        $groupIds = Group::query()->whereNotIn('id', $blockIds)->pluck('id');
+        $ids = $groupIds->toArray();
+        $oldpPermissions = Permission::query()->whereIn('group_id', $ids)->get()->toArray();
+        $groupPermissions = [];
+        foreach ($oldpPermissions as $key => $value) {
+            if(isset($groupPermissions[$value['group_id']])){
+                $groupPermissions[$value['group_id']][] = $value['permission'];
+            }else{
+                $groupPermissions[$value['group_id']][] = $value['permission'];
+            }
+        }
 
-        $permissions = $groupIds->reduce(function ($carry, $groupId) use ($category) {
-            return array_merge($carry, [
-                [
-                    'group_id' => $groupId,
-                    'permission' => "category{$category->id}.viewThreads",
-                ],
-                [
-                    'group_id' => $groupId,
-                    'permission' => "category{$category->id}.thread.viewPosts",
-                ],
-                [
-                    'group_id' => $groupId,
-                    'permission' => "category{$category->id}.createThread",
-                ],
-                [
-                    'group_id' => $groupId,
-                    'permission' => "category{$category->id}.thread.reply",
-                ],
-            ]);
-        }, [
-            [
-                'group_id' => Group::GUEST_ID,
-                'permission' => "category{$category->id}.viewThreads",
-            ],
-            [
-                'group_id' => Group::GUEST_ID,
-                'permission' => "category{$category->id}.thread.viewPosts",
-            ],
-        ]);
+        $newPermissions = [];
+        foreach ($ids as $key => $value) {
+            if($value !== Group::GUEST_ID){
+                if(!in_array('createThread', $groupPermissions[$value])){
+                    $newPermissions[] = [
+                        'group_id' => $value,
+                        'permission' => "category{$category->id}.createThread",
+                    ];
+                }
 
-        Permission::query()->insert($permissions);
+                if(!in_array('viewThreads', $groupPermissions[$value])){
+                    $newPermissions[] = [
+                        'group_id' => $value,
+                        'permission' => "category{$category->id}.viewThreads",
+                    ];
+                }
+
+                if(!in_array('thread.reply', $groupPermissions[$value])){
+                    $newPermissions[] = [
+                        'group_id' => $value,
+                        'permission' => "category{$category->id}.thread.reply",
+                    ];
+                }
+
+                if(!in_array('thread.viewPosts', $groupPermissions[$value])){
+                    $newPermissions[] = [
+                        'group_id' => $value,
+                        'permission' => "category{$category->id}.thread.viewPosts",
+                    ];
+                }
+            }else{
+                if(!in_array('viewThreads', $groupPermissions[Group::GUEST_ID])){
+                    $newPermissions[] = [
+                        'group_id' => Group::GUEST_ID,
+                        'permission' => "category{$category->id}.viewThreads",
+                    ];
+                }
+
+                if(!in_array('thread.viewPosts', $groupPermissions[Group::GUEST_ID])){
+                    $newPermissions[] = [
+                        'group_id' => Group::GUEST_ID,
+                        'permission' => "category{$category->id}.thread.viewPosts",
+                    ];
+                }
+            }
+        }
+
+        if(!empty($newPermissions)){
+            Permission::query()->insert($newPermissions);
+        }
     }
 }

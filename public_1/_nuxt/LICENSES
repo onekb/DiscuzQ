@@ -96,7 +96,7 @@
  */
 
 /*!
- * vue-i18n v8.24.1 
+ * vue-i18n v8.24.2 
  * (c) 2021 kazuya kawaguchi
  * Released under the MIT License.
  */
@@ -118,6 +118,15 @@
 /*! @name m3u8-parser @version 4.4.0 @license Apache-2.0 */
 
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
+
+/**
+ * @license
+ * Lodash <https://lodash.com/>
+ * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
 
 /**
  * @videojs/http-streaming

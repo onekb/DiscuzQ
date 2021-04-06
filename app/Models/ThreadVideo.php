@@ -19,6 +19,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Discuz\Base\DzqModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -42,7 +43,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property Thread $thread
  * @property Post $post
  */
-class ThreadVideo extends Model
+class ThreadVideo extends DzqModel
 {
     const TYPE_OF_VIDEO = 0; // 视频
 
@@ -54,6 +55,11 @@ class ThreadVideo extends Model
 
     const VIDEO_STATUS_FAIL = 2;        // 转码失败
 
+
+    private $typeDic = [
+        self::TYPE_OF_AUDIO => '音频',
+        self::TYPE_OF_VIDEO => '视频'
+    ];
     /**
      * {@inheritdoc}
      */
@@ -85,5 +91,21 @@ class ThreadVideo extends Model
     public function post()
     {
         return $this->belongsTo(Post::class);
+    }
+
+    public function getThreadVideo($threadId)
+    {
+        $video = self::query()->where(['thread_id' => $threadId, 'status' => self::VIDEO_STATUS_SUCCESS])->first();
+        if (empty($video)) {
+            return false;
+        }
+        return [
+            'fileName' => $video['file_name'],
+            'height' => $video['height'],
+            'width' => $video['width'],
+            'duration' => $video['duration'],
+            'mediaUrl' => $video['media_url'],
+            'coverUrl' => $video['cover_url']
+        ];
     }
 }

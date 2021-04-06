@@ -1,0 +1,112 @@
+/*首页*/
+
+@import "../common/index";
+@import "../../../../../static/css/admin/discuzQfont.css";
+
+
+
+/*
+  首页数据看板
+*/
+.home-data-box{
+  .desc{
+    font-size: 18PX;
+    line-height: 40PX;
+    border-bottom: solid 1PX #e5e5e5;
+    margin-bottom: 25PX;
+  }
+  .statistics-wrap{
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    .statistics-item{
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 23%;
+      height: 130PX;
+      margin-bottom: 40PX;
+      border: solid 1PX #d7d7d7;
+      transition: all .5s;
+      &:hover{
+        background: #CCDFFF;
+        .statistics-item-title{
+          color: rgba(0, 0, 0, .8);
+        }
+      }
+    }
+    .statistics-item-title{
+      font-size: 20PX;
+      color: #7f7f7f;
+      line-height: 48PX;
+    }
+    .statistics-item-num{
+      font-size: 28PX;
+      color: #1f1e1e;
+      line-height: 48PX;
+    }
+  }
+  .chart-wrap{
+    position: relative;
+    height:560PX;
+    margin-bottom: 50PX;
+    background:rgba(255,255,255,1);
+    border:1PX solid rgba(220,223,230,1);
+    border-radius:4px;
+    .chart-head{
+      font-size: 14PX;
+      color:#6B6D71;
+      height:48PX;
+      display: flex;
+      justify-content:space-between;
+      flex-wrap: wrap;
+      border-bottom: 1PX solid #ccc;
+      align-items: center;
+      .iconcaiwutongji,.icondingdanzongshu{
+         margin-left:14PX;
+      }
+      .chart-head-left{
+        .chart-head-titles{
+          font-size: 20PX;
+          color: rgba(0, 0, 0, .8);
+        }
+      }
+      .chart-head-right{
+        display: flex;
+        align-items: center;
+        padding-right:14PX;
+        .active{
+          color:#3571A5
+        }
+        ul{
+          display: inline-block;
+        }
+        ul li {
+          float: left;
+          padding-right: 30PX;
+          font-size: 14PX;
+          cursor: pointer;
+          &:hover{
+            font-weight: bold;
+          }
+        }
+        .input-class{
+          width:300PX;
+        }
+      }
+
+    }
+    .noData{
+      position: absolute;
+      height: 473PX;
+      line-height: 473PX;
+      left: 50%;
+    }
+    .chart-content{
+      height: 473PX;
+      margin: 17px 15px 21PX 14PX;
+    }
+  }
+}
+

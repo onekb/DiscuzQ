@@ -20,10 +20,12 @@ namespace App\Models;
 
 use App\Events\Attachment\Created;
 use Carbon\Carbon;
+use Discuz\Base\DzqModel;
+use Discuz\Contracts\Setting\SettingsRepository;
 use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Contracts\Cache\Repository as Cache;
 
@@ -50,7 +52,7 @@ use Illuminate\Contracts\Cache\Repository as Cache;
  * @property User $user
  * @property Post $post
  */
-class Attachment extends Model
+class Attachment extends DzqModel
 {
     use EventGeneratorTrait;
     use ScopeVisibilityTrait;
@@ -73,6 +75,8 @@ class Attachment extends Model
 
     const APPROVED = 1;
 
+    const YES_REMOTE = 1;
+    const NO_REMOTE = 0;
     /**
      * {@inheritdoc}
      */
@@ -122,7 +126,8 @@ class Attachment extends Model
         $isApproved,
         $ip,
         $order = 0
-    ) {
+    )
+    {
         $attachment = new static;
 
         $attachment->uuid = Str::uuid();
@@ -230,4 +235,63 @@ class Attachment extends Model
         return $this->belongsTo(Thread::class, 'type_id');
     }
 
+
+    public function getAttachments($typeIds, $types)
+    {
+        return self::query()->whereIn('type_id', $typeIds)->whereIn('type', $types)->get();
+    }
+
+    //待完善
+    public static function getBeautyAttachment($attachment,$canView = false)
+    {
+
+        $url = '';
+        $thumbUrl = '';
+        $blurUrl = '';
+        $filesystem = app()->make('filesystem');
+        $settings = app()->make(SettingsRepository::class);
+
+        if ($attachment['is_remote'] == self::YES_REMOTE) {
+            $url = $settings->get('qcloud_cos_sign_url', 'qcloud', true)
+                ? $filesystem->disk('attachment_cos')->temporaryUrl($attachment['full_path'], Carbon::now()->addDay())
+                : $filesystem->disk('attachment_cos')->url($attachment['full_path']);
+            $thumbUrl = $url . (strpos($url, '?') === false ? '?' : '&')
+                . 'imageMogr2/thumbnail/' . Attachment::FIX_WIDTH . 'x' . Attachment::FIX_WIDTH;;
+            $blurUrl = $thumbUrl;
+
+        } else {
+            $domain = Request::capture()->getSchemeAndHttpHost();
+            $filePath = Str::replaceFirst('public/', '', $attachment['file_path']);
+            $url = $domain . '/storage/' . $filePath . $attachment['attachment'];
+            $pathInfo = pathinfo($attachment['attachment']);
+            $fileName = $pathInfo['filename'];
+            $extension = $pathInfo['extension'];
+            $localThumb = storage_path() . '/app/' . $attachment['file_path'] . $fileName . '_thumb.' . $extension;
+            $localBlur = storage_path() . '/app/' . $attachment['file_path'] . $fileName . '_blur.' . $extension;
+            if (file_exists($localThumb)) {
+                $thumbUrl = $domain . '/storage/' . $filePath . $fileName . '_thumb.' . $extension;
+            } else {
+                $thumbUrl = $url;
+            }
+            if (file_exists($localBlur)) {
+                $blurUrl = $domain . '/storage/' . $filePath . $fileName . '_blur.' . $extension;
+            }
+        }
+        $data = [
+            'uuid' => $attachment['uuid'],
+            'typeId' => $attachment['type_id'],
+            'file_name' => $attachment['file_name'],
+            'file_size' => $attachment['file_size'],
+            'file_type' => $attachment['file_type'],
+            'url' => $url,
+            'thumbUrl' => $thumbUrl,
+            'blurUrl' => $blurUrl,
+            'extension' => Str::afterLast($attachment['attachment'], '.')
+        ];
+        if(!$canView){
+            $data['thumbUrl'] = $blurUrl;
+            $data['url'] = $blurUrl;
+        }
+        return $data;
+    }
 }

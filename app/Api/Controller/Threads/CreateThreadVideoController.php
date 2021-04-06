@@ -66,13 +66,14 @@ class CreateThreadVideoController extends AbstractCreateController
     {
         $actor = $request->getAttribute('actor');
 
-        $this->assertCan($actor, 'createThread');
-
         $attributes = Arr::get($request->getParsedBody(), 'data.attributes', []);
 
         $type = (int) Arr::get($attributes, 'type', ThreadVideo::TYPE_OF_VIDEO);
-
-        $this->assertCan($actor, 'createThread.' . $type);
+        if($type == 1){
+            $this->assertCan($actor, 'createThread.' . Thread::TYPE_OF_AUDIO);
+        }else{
+            $this->assertCan($actor, 'createThread.' . Thread::TYPE_OF_VIDEO);
+        }
 
         $this->validation->make($attributes, [
             'file_id' => 'required',

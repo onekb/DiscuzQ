@@ -36,6 +36,7 @@ use App\Validators\ThreadValidator;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Foundation\EventsDispatchTrait;
+use Exception;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Arr;
@@ -90,6 +91,7 @@ class EditThread
      * @return Thread
      * @throws PermissionDeniedException
      * @throws ValidationException
+     * @throws Exception
      */
     public function handle(Dispatcher $events, ThreadRepository $threads, Censor $censor, ThreadValidator $validator, ThreadVideoRepository $threadVideos, BusDispatcher $bus)
     {
@@ -239,6 +241,16 @@ class EditThread
             $threadVideo = $threadVideos->findOrFailByThreadId($thread->id);
 
             if ($threadVideo->file_id != $fileId) {
+                $threadVideoStatus = ThreadVideo::query()->where('file_id', $fileId)->first();
+                if (empty($threadVideoStatus)) {
+                    throw new Exception(trans('post.audio_video_not_null'));
+                }
+                if ($threadVideoStatus->status == Thread::THREAD_VIDEO_STATUS_TRANSCODING) {
+                    throw new Exception(trans('post.audio_video_is_being_transcoded'));
+                } else if ($threadVideoStatus->status == Thread::THREAD_VIDEO_STATUS_FAIL){
+                    throw new Exception(trans('post.audio_video_transcoding_failed'));
+                }
+
                 // 将旧的视频或语音主题 id 设为 0
                 $threadVideo->thread_id = 0;
                 $threadVideo->save();
@@ -252,7 +264,7 @@ class EditThread
                 $threadVideo->type === ThreadVideo::TYPE_OF_AUDIO && $thread->setRelation('threadAudio', $video);
 
                 // 重新上传视频或语音修改为审核状态
-                $thread->is_approved = Thread::UNAPPROVED;
+//                $thread->is_approved = Thread::UNAPPROVED;
             }
         }
 

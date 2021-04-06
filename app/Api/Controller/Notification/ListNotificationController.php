@@ -166,7 +166,16 @@ class ListNotificationController extends AbstractListController
                              * 判断是否是问答、匿名提问
                              * @var Thread $thread
                              */
-                            if ($thread->type == Thread::TYPE_OF_QUESTION && ! empty($thread->question)) {
+
+                            if (
+                                ($thread->type == Thread::TYPE_OF_QUESTION && ! empty($thread->question)) ||
+                                $thread->type == Thread::TYPE_OF_TEXT ||
+                                $thread->type == Thread::TYPE_OF_LONG ||
+                                $thread->type == Thread::TYPE_OF_IMAGE ||
+                                $thread->type == Thread::TYPE_OF_GOODS ||
+                                $thread->type == Thread::TYPE_OF_VIDEO ||
+                                $thread->type == Thread::TYPE_OF_AUDIO
+                            ) {
                                 // 判断如果当前触发通知人又是匿名问答人，就准备匿名用户
                                 if ($user->id == $thread->user_id && $thread->is_anonymous) {
                                     // 判断如果是匿名人，但是不是推送的 问答提问通知、也不是财务通知，其余通知都不匿名

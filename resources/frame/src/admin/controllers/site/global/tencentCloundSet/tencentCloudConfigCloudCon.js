@@ -39,6 +39,8 @@ export default {
       })
     },
     async  Submission(){
+      this.secretId = this.secretId.trim();
+      this.secretKey = this.secretKey.trim();
       try{
         await this.appFetch({
         url:'settings',

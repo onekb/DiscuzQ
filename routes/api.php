@@ -308,6 +308,7 @@ $route->get('/emoji', 'emoji.list', ApiController\Emoji\ListEmojiController::cla
 $route->get('/statistic/finance', 'statistic.finance', ApiController\Statistic\FinanceProfileController::class);
 $route->get('/statistic/financeChart', 'statistic.financeChart', ApiController\Statistic\FinanceChartController::class);
 $route->post('/statistic/miniprogram', 'statistic.miniProgramStat', ApiController\Statistic\MiniProgramStatController::class);
+$route->get('/statistic/firstChart', 'statistic.firstChart', ApiController\Statistic\FirstChartController::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -458,3 +459,11 @@ $route->post('/switchskin', 'switchskin', ApiController\SwitchSkin\SwitchSkinCon
 
 // 判断是否已配置腾讯云  CheckQcloudController
 $route->get('/checkQcloud', 'checkQcloud',  ApiController\CheckQcloudController::class);
+
+$route->get('/threads.v2', 'threads.v2', ApiController\Threads\ListThreadsV2Controller::class);
+$route->get('/sticks.v2', 'sticks.v2', ApiController\Threads\ListStickThreadsV2Controller::class);
+$route->get('/categories.v2', 'categories.v2', ApiController\Category\ListCategoriesV2Controller::class);
+
+$route->get('/threads.detail.v2', 'threads.detail.v2', ApiController\Threads\ResourceThreadV2Controller::class);
+
+$route->get('/posts.v2', 'posts.v2', ApiController\Posts\ListPostsV2Controller::class);

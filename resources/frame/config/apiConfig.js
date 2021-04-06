@@ -84,6 +84,7 @@ module.exports = {
   exportUser: "/export/users?", //用户信息导出
   statistic: "/statistic/finance", //获取资金概况
   statisticChart: "/statistic/financeChart", //获取盈利图表数据
+  statisticPanel: "/statistic/firstChart", //首页数据看板数据
   noticeList: "/notification/tpl", //通知设置列表
   notification: "/notification/tpl/", //修改系统消息模版[通知设置]
   noticeConfigure: "/notification/tpl/", //通知配置列表,

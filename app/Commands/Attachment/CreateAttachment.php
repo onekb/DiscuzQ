@@ -57,7 +57,7 @@ class CreateAttachment
     public $ipAddress;
 
     /**
-     * 类型：0 附件 1 图片 2 音频 3 视频
+     * 类型：0 附件 1 图片 2 音频 3 视频 4 消息图片
      *
      * @var int
      */

@@ -40,8 +40,8 @@ class CheckQcloudController implements RequestHandlerInterface
     {
         $setting = Setting::query()->get()->toArray();
         $setting = array_column($setting, null, 'key');
-        $qcloudSecretId = $setting['qcloud_secret_id']['value'];
-        $qcloudSecretKey = $setting['qcloud_secret_key']['value'];
+        $qcloudSecretId = !empty($setting['qcloud_secret_id']) ? $setting['qcloud_secret_id']['value'] : '';
+        $qcloudSecretKey = !empty($setting['qcloud_secret_key']) ? $setting['qcloud_secret_key']['value'] : '';
         $ret['data']['attributes']['isBuildQcloud'] = false;
         if(empty($qcloudSecretId) || empty($qcloudSecretKey)){
             return DiscuzResponseFactory::JsonResponse($ret);

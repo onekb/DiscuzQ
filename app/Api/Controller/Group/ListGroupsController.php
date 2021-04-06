@@ -45,7 +45,7 @@ class ListGroupsController extends AbstractListController
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
-        $this->assertAdmin($request->getAttribute('actor'));
+        $this->assertRegistered($request->getAttribute('actor'));
 
         $include = $this->extractInclude($request);
         $filter = $this->extractFilter($request);

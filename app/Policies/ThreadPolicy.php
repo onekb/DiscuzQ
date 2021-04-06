@@ -190,5 +190,24 @@ class ThreadPolicy extends AbstractPolicy
         ) {
             return true;
         }
+        
+        $request = app('request');
+        $referer = Arr::get($request->getServerParams(), 'HTTP_REFERER');
+        if(strstr($referer, 'postpay')){
+            // 如果是草稿帖，只能作者本人查看
+            if($thread->is_draft && $thread->user_id == $actor->id){
+                return true;
+            }
+
+            // 如果不是草稿帖
+            if(!$thread->is_draft){
+                // 是作者本人且拥有自我编辑权限，或者是管理员，才能查看->编辑
+                if(($thread->user_id == $actor->id && $actor->can('editOwnThreadOrPost', $thread)) || $actor->isAdmin()){
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

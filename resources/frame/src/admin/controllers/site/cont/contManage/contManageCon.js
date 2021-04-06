@@ -103,6 +103,7 @@ export default {
         categoryId: [0],          //主题分类ID
         pageSelect: '10',         //每页显示数
         themeAuthor: '',          //主题作者
+        threadID: '',               // 主题ID
         themeKeyWords: '',        //主题关键词
         dataValue: ['', ''],      //发表时间范围
         viewedTimesMin: '',       //被浏览次数最小
@@ -423,6 +424,7 @@ export default {
           'filter[isDeleted]': 'no',
           'filter[isApproved]': '1',
           'filter[username]': searchData.themeAuthor,
+          'filter[threadID]': searchData.threadID,
           // 'filter[categoryId]': searchData.categoryId,
           'filter[categoryId]': searchData.categoryId[searchData.categoryId.length - 1],
           'page[number]': pageNumber,
