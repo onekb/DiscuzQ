@@ -91,41 +91,61 @@ class ThreadRewardExpireCommand extends AbstractCommand
                     $this->connection->beginTransaction();
                     try{
                         $change_freeze_amount = 0;
-                        if($threadRewardOrder['payment_type'] == Order::PAYMENT_TYPE_WALLET){
-                            $userWallet->freeze_amount = $userWallet->freeze_amount - $item->remain_money;
-                            $change_freeze_amount = $item->remain_money;
+                        $remain_money = $item->remain_money;
+
+                        // 通过订单实付金额、用户钱包流水统计实际已悬赏的金额，获取真实的剩余金额
+                        $postRewardLog = UserWalletLog::query()->where('thread_id', $item->thread_id)->get()->toArray();
+                        // 已悬赏金额
+                        $rewardTotal = $item->money - $item->remain_money;
+                        if(!empty($postRewardLog)){
+                            $rewardTotal = array_sum(array_column($postRewardLog, 'change_available_amount'));
                         }
-                        $userWallet->available_amount = $userWallet->available_amount + $item->remain_money;
-                        $userWallet->save();
+                        // 实际应返回 = 实付 - 实际已悬赏金额
+                        $trueRemainMoney = $threadRewardOrder['amount'] - $rewardTotal;
+                        if($trueRemainMoney <= 0){
+                            app('log')->info('过期悬赏返回错误：悬赏帖(ID为' . $item->thread_id . ')，作者(ID为' . $item->user_id . ')。异常错误记录：剩余金额 <= 0，无法返回');
+                        }else{
+                            if($trueRemainMoney !== $item->remain_money){
+                                $remain_money = $trueRemainMoney;
+                            }
+                            if($threadRewardOrder['payment_type'] == Order::PAYMENT_TYPE_WALLET){
+                                $userWallet->freeze_amount = $userWallet->freeze_amount - $remain_money;
+                                $change_freeze_amount = $remain_money;
+                            }
 
-                        UserWalletLog::createWalletLog(
-                            $item->user_id,
-                            $item->remain_money,
-                            -$change_freeze_amount,
-                            UserWalletLog::TYPE_INCOME_THREAD_REWARD_RETURN,
-                            trans('wallet.income_thread_reward_return_desc'),
-                            null,
-                            null,
-                            $item->user_id,
-                            0,
-                            0,
-                            $item->thread_id
-                        );
+                            $userWallet->available_amount = $userWallet->available_amount + $remain_money;
+                            $userWallet->save();
 
-                        // 发送悬赏问答通知
-                        app(ThreadRewardRepository::class)->returnThreadRewardNotify($item->thread_id, $item->user_id, $item->remain_money, UserWalletLog::TYPE_INCOME_THREAD_REWARD_RETURN);
+                            UserWalletLog::createWalletLog(
+                                $item->user_id,
+                                $remain_money,
+                                -$change_freeze_amount,
+                                UserWalletLog::TYPE_INCOME_THREAD_REWARD_RETURN,
+                                trans('wallet.income_thread_reward_return_desc'),
+                                null,
+                                null,
+                                $item->user_id,
+                                0,
+                                0,
+                                $item->thread_id
+                            );
+
+                            // 发送悬赏问答通知
+                            app(ThreadRewardRepository::class)->returnThreadRewardNotify($item->thread_id, $item->user_id, $remain_money, UserWalletLog::TYPE_INCOME_THREAD_REWARD_RETURN);
+                        }
 
                         $item->remain_money = 0;
                         $item->save();
-
                         $this->connection->commit();
+
                     }catch (Exception $e) {
                         app('log')->info('过期悬赏返回错误：悬赏帖(ID为' . $item->thread_id . ')，作者(ID为' . $item->user_id . ')。异常错误记录：' . $e->getMessage());
                         $this->connection->rollback();
                     }
                 }
-                $bar->advance();
             }
+
+            $bar->advance();
         });
 
         $bar->finish();

@@ -30,8 +30,10 @@ class ListDraftThreadController extends ListThreadsController
         $offset = $this->extractOffset($request);
         $include = $this->extractInclude($request);
         $sort = $this->extractSort($request);
+        $params = $request->getQueryParams();
+        $page = $params['page'];
 
-        $threads = $this->search($actor, $filter, $sort, $limit, $offset);
+        $threads = $this->search($actor, $filter, $sort, $limit, $offset, $page);
 
         $document->addPaginationLinks(
             $this->url->route('threads.index'),
@@ -55,7 +57,7 @@ class ListDraftThreadController extends ListThreadsController
         return $threads;
     }
 
-    public function search($actor, $filter, $sort, $limit = null, $offset = 0)
+    public function search($actor, $filter, $sort, $limit = null, $offset = 0, $page)
     {
         /** @var Builder $query */
         $query = $this->threads->query()->whereVisibleTo($actor);

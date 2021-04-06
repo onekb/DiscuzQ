@@ -118,6 +118,22 @@ class CreatePostRewardController implements RequestHandlerInterface
             throw new Exception(trans('post.post_reward_order_error'));
         }
 
+        // 订单实付金额 !== 悬赏帖金额，不允许进行采纳动作
+        if($threadRewardOrder['amount'] !== $threadReward['money']){
+            throw new Exception(trans('post.post_reward_not_equal_to_order_price'));
+        }
+
+        // 通过订单实付金额、用户钱包流水统计实际已悬赏的金额，获取真实的剩余金额
+        $postRewardLog = UserWalletLog::query()->where('thread_id', $thread_id)->get()->toArray();
+        $rewardTotal = 0;
+        if(!empty($postRewardLog)){
+            $rewardTotal = array_sum(array_column($postRewardLog, 'change_available_amount'));
+        }
+        $trueRemainMoney = $threadRewardOrder['amount'] - $rewardTotal;
+        if($trueRemainMoney < $rewards){
+            throw new Exception(trans('post.post_reward_not_sufficient_funds'));
+        }
+
         $this->connection->beginTransaction();
         try {
             if($threadRewardOrder['payment_type'] == Order::PAYMENT_TYPE_WALLET){

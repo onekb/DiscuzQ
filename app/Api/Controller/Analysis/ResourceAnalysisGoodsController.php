@@ -104,6 +104,13 @@ class ResourceAnalysisGoodsController extends AbstractResourceController
 
         $this->assertCan($actor, 'createThread.' . Thread::TYPE_OF_GOODS);
 
+        /*
+         * 判断地址是否符合要求
+         */
+        if(!$this->isSpecifyUrl($readyContent)){
+            throw new TranslatorException('post_goods_not_found_address');
+        }
+
         /**
          * 查询数据库中是否存在
          */
@@ -278,5 +285,14 @@ class ResourceAnalysisGoodsController extends AbstractResourceController
     protected function getDefaultIconUrl($imgName)
     {
         return $this->url->to('/images/goods/' . $imgName);
+    }
+
+    protected function isSpecifyUrl($url){
+        foreach ($this->allowDomain as $v) {
+            if(strpos($url,$v)){
+                return true;
+            }
+        }
+        return false;
     }
 }

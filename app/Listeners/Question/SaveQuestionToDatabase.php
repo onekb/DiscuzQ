@@ -95,6 +95,18 @@ class SaveQuestionToDatabase
                         throw new Exception(trans('post.post_question_missing_parameter')); // 问答缺失参数
                     }
 
+                    if (! empty($orderId = Arr::get($questionData, 'order_id', null))) {
+                        $orderData = Order::query()->where('order_sn', $orderId)->firstOrFail();
+                        if($orderData->amount > 0 && $orderData->status !== 1){
+                            throw new Exception(trans('post.post_question_order_pay_status_fail'));
+                        }
+
+                        if($questionData['price'] !== $orderData->amount){
+                            $questionData['price'] = $orderData->amount;
+                            app('log')->info('用户'.$actor->username . '(ID为' . $actor->id . ')存在拦截请求、篡改数据行为，金额传参与实付金额不匹配。订单ID为：' . $orderData->order_sn . ',帖子ID为：' . $post->thread_id);
+                        }
+                    }
+
                     if(!isset($questionData['type'])){
                         $questionData['type'] = 1;
                         // throw new Exception(trans('post.post_reward_does_not_have_type'));
@@ -137,15 +149,20 @@ class SaveQuestionToDatabase
                  * @see QuestionValidator
                  */
                 $questionData['actor'] = $actor;
-                if (! isset($questionData['order_id']) || empty($questionData['order_id'])) {
-                    $price = 0;
-                } else {
-                    $price = Arr::get($questionData, 'price', 0);
+                if (!$isDraft) {
+                    if (! isset($questionData['order_id']) || empty($questionData['order_id'])) {
+                        $price = 0;
+                    } else {
+                        $price = $orderData->amount;
+                    }
+                }else{
+                     $price = Arr::get($questionData, 'price', 0);
                 }
+
                 if($questionData['type'] == 1 && !$isDraft) {
                     $this->questionValidator->valid($questionData);
                 }
-                $price = Arr::get($questionData, 'price', 0);
+
                 $isOnlooker = Arr::get($questionData, 'is_onlooker', true); // 获取帖子是否允许围观
 
                 // get unit price

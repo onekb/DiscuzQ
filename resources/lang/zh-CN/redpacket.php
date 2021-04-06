@@ -36,4 +36,6 @@ return [
 
     'money_lg_limit'                    =>  '红包金额不能超过200',
     'likenum_lg_limit'                  =>  '集赞数不能超过250',
+
+    'redpacket_order_not_found'         =>  '红包订单数据未找到'
 ];

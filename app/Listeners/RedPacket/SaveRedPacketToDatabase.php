@@ -142,7 +142,23 @@ class SaveRedPacketToDatabase
         }
 
         $number = $threadData['redPacket']['number'];
-        $money = $threadData['redPacket']['money']; // 总金额
+
+        //草稿不验证
+        if (!$isDraft) {
+            $relationshipsData = Arr::get($data, 'relationships');
+            if (empty($relationshipsData['redpacket']['data']['order_id'])) {
+                throw new Exception(trans('redpacket.redpacket_order_not_found'));
+            }
+            $order_id = $relationshipsData['redpacket']['data']['order_id'];
+            $order = Order::query() ->where(['order_sn' => $order_id, 'status' => Order::ORDER_STATUS_PAID])
+                ->first();
+            if (empty($order)) {
+                throw new Exception(trans('order.order_not_found'));
+            }
+            $money = $order['amount'];
+        } else {
+            $money = $threadData['redPacket']['money'];
+        }
 
         //红包领取规则 0:定额 1:随机
         if ($rule == 1 && $number > 200) { // 随机红包金额最大值为 200

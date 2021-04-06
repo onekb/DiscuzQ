@@ -46,6 +46,7 @@ return [
     'post_question_payment_amount_fail' => '问答支付金额异常',
     'post_question_ask_yourself_fail' => '不能向自己提问',
     'post_question_ask_be_user_permission_denied' => '被提问用户没有权限回答',
+    'post_question_order_pay_status_fail' => '问答支付状态异常',
 
     'post_thread_missing_parameter' => '帖子缺失参数',
 
@@ -71,6 +72,7 @@ return [
     'post_reward_type_error' => '悬赏金额类型错误，必须是数字！',
     'post_reward_order_error' => '悬赏帖订单信息错误，无法进行采纳！',
     'post_reward_user_wallet_error' => '您的冻结金额不足，悬赏采纳失败！',
+    'post_reward_not_equal_to_order_price' => '悬赏帖总悬赏金额与订单实付金额不匹配，无法进行采纳',
 
     'thread_id_not_null' => '帖子id不可为空'
 ];
