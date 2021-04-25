@@ -178,7 +178,11 @@ class ResourceThreadV2Controller extends DzqController
         switch ($thread->type){
             case Thread::TYPE_OF_VIDEO:
                 $threadVideo = ThreadVideo::query()->where(['thread_id' => $thread->id, 'status' => 1, 'type' => 0])->first();
-                $threadVideo->mediaUrl = $threadVideo->media_url;
+                if ($threadVideo && isset($threadVideo->media_url)) {
+                    $threadVideo->mediaUrl = $threadVideo->media_url;
+                } else {
+                    $threadVideo = [];
+                }
                 if(empty($threadVideo)){        //如果没有转码成功的就去最后一个草稿
                     $threadVideo = ThreadVideo::query()->where(['thread_id' => $thread->id, 'status' => 0])->orderBy('id', 'desc')->first();
                 }
@@ -195,7 +199,11 @@ class ResourceThreadV2Controller extends DzqController
                 break;
             case Thread::TYPE_OF_AUDIO:
                 $threadAudio = ThreadVideo::query()->where(['thread_id' => $thread->id, 'status' => 1, 'type' => 1])->first();
-                $threadAudio->mediaUrl = $threadAudio->media_url;
+                if ($threadAudio && isset($threadAudio->media_url)) {
+                    $threadAudio->mediaUrl = $threadAudio->media_url;
+                } else {
+                    $threadAudio = [];
+                }
                 if(empty($threadAudio)){        //如果没有转码成功的就去最后一个草稿
                     $threadAudio = ThreadVideo::query()->where(['thread_id' => $thread->id, 'status' => 0, 'type' => 1])->orderBy('id', 'desc')->first();
                 }

@@ -285,6 +285,9 @@ class ListThreadsV2Controller extends DzqController
 
     private function canLikeThread($permissions)
     {
+        if ($this->user->isAdmin()) {
+            return true;
+        }
         $permission = 'thread.likePosts';
         return in_array($permission, $permissions);
     }
