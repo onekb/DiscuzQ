@@ -145,13 +145,22 @@
             <el-checkbox
               v-model="checked"
               label="canBeAsked"
-              :disabled="
-                $router.history.current.query.id === '1' ||
-                  $router.history.current.query.id === '7'
-              "
-              >允许被提问</el-checkbox
-            >
+              :disabled="$router.history.current.query.id === '1' ||
+                  $router.history.current.query.id === '7'"
+              >允许被提问</el-checkbox>
           </CardRow>
+          <!--
+          <el-input
+            style="position: absolute;left: 45%;top: 0;height: 40PX;width: 340PX"
+            clearable
+            placeholder="被提问的最低价格"
+            type="number"
+            :disabled="checked.indexOf('canBeAsked') === -1"
+            @input="getLowestPrice"
+            v-model="lowestPrice"
+            min="0"
+          ></el-input>
+          -->
         </Card>
         <Card>
           <CardRow

@@ -32,7 +32,7 @@ class PostGoodsSerializer extends AbstractSerializer
             'post_id' => $model->post_id,
             'platform_id' => $model->platform_id,
             'title' => $model->title,
-            'image_path' => $model->image_path,
+            'imagePath' => $model->image_path,
             'price' => $model->price,
             'type' => $model->type,
             'type_name' => PostGoods::enumTypeName($model->type),

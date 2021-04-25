@@ -40,6 +40,9 @@ class SessionToken extends Model
 
     const WECHAT_NOTICE_ERROR = 'wechat_notice_error'; // 微信通知错误
 
+    const WECHAT_MOBILE_LOGIN = 'wechat_mobile_login'; // 手机浏览器微信登录
+
+    const WECHAT_MOBILE_BIND = 'wechat_mobile_bind'; // 手机浏览器微信绑定
     /**
      * {@inheritdoc}
      */

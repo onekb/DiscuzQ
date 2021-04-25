@@ -4,7 +4,6 @@ namespace App\Notifications\Messages\Wechat;
 
 use App\Models\Post;
 use App\Models\Thread;
-use App\Notifications\Messages\Database\PostMessage;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Support\Arr;
@@ -71,21 +70,23 @@ class PostWechatMessage extends SimpleMessage
          * @parem $message_change 修改帖子的内容
          * @parem $thread_id 主题ID （可用于跳转参数）
          * @parem $thread_title 主题标题/首帖内容 (如果有title是title，没有则是首帖内容)
+         * @parem $notify_type 内容操作状态 (修改/不通过/通过/精华/置顶/删除)
          * @parem $reason 原因
          */
         $this->setTemplateData([
-            '{$user_id}'             => $this->post->user->id,
-            '{$user_name}'           => $this->post->user->username,
-            '{$actor_name}'          => $this->actor->username,
-            '{$message_change}'      => $this->strWords(Arr::get($data, 'message', '')),
-            '{$thread_id}'           => $this->post->thread->id,
-            '{$thread_title}'        => $this->strWords($threadTitle),
-            '{$reason}'              => Arr::get($data, 'refuse', '无'),
+            '{$user_id}'        => $this->post->user->id,
+            '{$user_name}'      => $this->post->user->username,
+            '{$actor_name}'     => $this->actor->username,
+            '{$message_change}' => $this->strWords(Arr::get($data, 'message', '')),
+            '{$thread_id}'      => $this->post->thread->id,
+            '{$thread_title}'   => $this->strWords($threadTitle),
+            '{$notify_type}'    => Post::enumNotifyType($this->data['notify_type']),
+            '{$reason}'         => Arr::get($data, 'refuse', '无'),
         ]);
 
         // redirect_url
         // 判断如果是删除通知，帖子被删除后无法跳转到详情页，threadId 清空跳主页
-        if ($data['notify_type'] == PostMessage::NOTIFY_DELETE_TYPE) {
+        if ($data['notify_type'] == Post::NOTIFY_DELETE_TYPE) {
             $redirectUrl = '';
         } else {
             $redirectUrl = '/topic/index?id=' . $this->post->thread_id;

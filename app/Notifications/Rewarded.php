@@ -17,6 +17,12 @@ namespace App\Notifications;
 
 use App\Models\User;
 use App\Notifications\Messages\Database\RewardedMessage;
+use App\Notifications\Messages\MiniProgram\ExpiredMiniProgramMessage;
+use App\Notifications\Messages\MiniProgram\RewardedMiniProgramMessage;
+use App\Notifications\Messages\MiniProgram\RewardedScaleMiniProgramMessage;
+use App\Notifications\Messages\Sms\ExpiredSmsMessage;
+use App\Notifications\Messages\Sms\RewardedScaleSmsMessage;
+use App\Notifications\Messages\Sms\RewardedSmsMessage;
 use App\Notifications\Messages\Wechat\ExpiredWechatMessage;
 use App\Notifications\Messages\Wechat\RewardedScaleWechatMessage;
 use App\Notifications\Messages\Wechat\RewardedWechatMessage;
@@ -40,7 +46,10 @@ class Rewarded extends AbstractNotification
 
     protected $message;
 
-    public $tplId = [];
+    /**
+     * @var array
+     */
+    public $tplId;
 
     /**
      * @var Collection
@@ -86,7 +95,7 @@ class Rewarded extends AbstractNotification
 
     public function getTplModel($type)
     {
-        return self::$tplData->where('id', $this->tplId[$type])->first();
+        return self::$tplData->where('notice_id', $this->tplId[$type])->first();
     }
 
     /**
@@ -114,6 +123,22 @@ class Rewarded extends AbstractNotification
         return (new NotificationManager)->driver('wechat')->setNotification($message)->build();
     }
 
+    public function toSms($notifiable)
+    {
+        $message = $this->getMessage('sms');
+        $message->setData($this->getTplModel('sms'), $this->user, $this->model, $this->data);
+
+        return (new NotificationManager)->driver('sms')->setNotification($message)->build();
+    }
+
+    public function toMiniProgram($notifiable)
+    {
+        $message = $this->getMessage('miniProgram');
+        $message->setData($this->getTplModel('miniProgram'), $this->user, $this->model, $this->data);
+
+        return (new NotificationManager)->driver('miniProgram')->setNotification($message)->build();
+    }
+
     protected function initNoticeMessage()
     {
         /**
@@ -130,24 +155,44 @@ class Rewarded extends AbstractNotification
          */
         if ($this->message instanceof RewardedWechatMessage) {
             // 内容支付通知
-            $this->tplId['database'] = 27;
             $this->data = array_merge($this->data, ['notice_types_of' => 1]); // 收入通知
-        }
-        if ($this->message instanceof RewardedScaleWechatMessage) {
-            // 内容支付分成通知
-            $this->tplId['database'] = 37;
+            $this->tplId = [
+                'database'    => 'system.post.paid',
+                'wechat'      => 'wechat.post.paid',
+                'sms'         => 'sms.post.paid',
+                'miniProgram' => 'miniprogram.post.paid',
+            ];
+            $this->messageRelationship['sms'] = app(RewardedSmsMessage::class);
+            $this->messageRelationship['miniProgram'] = app(RewardedMiniProgramMessage::class);
+        } // 分成
+        elseif ($this->message instanceof RewardedScaleWechatMessage) {
             // 分成通知
             $this->data = array_merge($this->data, [
                 'notice_types_of' => 2,
-                'is_scale_class' => true, // 是否是分成通知类
+                'is_scale_class'  => true, // 是否是分成通知类
             ]);
-        }
-        if ($this->message instanceof ExpiredWechatMessage) {
+
+            $this->tplId = [
+                'database'    => 'system.divide.income',
+                'wechat'      => 'wechat.divide.income',
+                'sms'         => 'sms.divide.income',
+                'miniProgram' => 'miniprogram.divide.income',
+            ];
+            $this->messageRelationship['sms'] = app(RewardedScaleSmsMessage::class);
+            $this->messageRelationship['miniProgram'] = app(RewardedScaleMiniProgramMessage::class);
+        } // 过期
+        elseif ($this->message instanceof ExpiredWechatMessage) {
             // 打赏过期通知
-            $this->tplId['database'] = 43;
             $this->data = array_merge($this->data, ['notice_types_of' => 3]); // 过期通知
+
+            $this->tplId = [
+                'database'    => 'system.question.expired',
+                'wechat'      => 'wechat.question.expired',
+                'sms'         => 'sms.question.expired',
+                'miniProgram' => 'miniprogram.question.expired',
+            ];
+            $this->messageRelationship['sms'] = app(ExpiredSmsMessage::class);
+            $this->messageRelationship['miniProgram'] = app(ExpiredMiniProgramMessage::class);
         }
-        // 31 内容支付通知  38 内容支付分成通知  44 过期通知
-        $this->tplId['wechat'] = $this->messageRelationship['wechat']->tplId;
     }
 }

@@ -165,6 +165,7 @@ class ListPostsV2Controller extends DzqController
             'replyCount' => $post['reply_count'],
             'likeCount' => $post['like_count'],
             'createdAt' => optional($post->created_at)->format('Y-m-d H:i:s'),
+            'updatedAt' => optional($post->updated_at)->format('Y-m-d H:i:s'),
             'isFirst' => $post['is_first'],
             'isComment' => $post['is_comment'],
             'isApproved' => $post['is_approved'],
@@ -172,6 +173,7 @@ class ListPostsV2Controller extends DzqController
             'canApprove' => $this->gate->allows('approve', $post),
             'canDelete' => $this->gate->allows('delete', $post),
             'canHide' => $this->gate->allows('hide', $post),
+            'canEdit' => $this->gate->allows('edit', $post),
             'user' => $this->getUser($post->user),
             'images' => $post->images->map(function (Attachment $image) {
                 return $this->attachmentSerializer->getDefaultAttributes($image);

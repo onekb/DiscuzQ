@@ -221,7 +221,10 @@ class CreatePost
             $post
         );
 
-        $post->content = $censor->checkText($post->content);
+        // first post 的内容，已经在 CreateThread 中检测过了
+        if (!$isFirst) {
+            $post->content = $censor->checkText($post->content);
+        }
 
         $content = $post->content;
 

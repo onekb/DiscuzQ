@@ -34,7 +34,21 @@ class NotificationTplSerializer extends AbstractSerializer
     /**
      * @var string[] 禁止修改的系统通知，只能设置开启关闭
      */
-    protected $disabledId = [25, 26, 27, 28, 33, 34, 37, 39, 41, 43, 45, 47, 49];
+    protected $disabledId = [
+        'system.post.replied',
+        'system.post.liked',
+        'system.post.paid',
+        'system.post.reminded',
+        'system.withdraw.noticed',
+        'system.withdraw.withdraw',
+        'system.divide.income',
+        'system.question.asked',
+        'system.question.answered',
+        'system.question.expired',
+        'system.red_packet.gotten',
+        'system.question.rewarded',
+        'system.question.rewarded.expired',
+    ];
 
     /**
      * @param NotificationTpl $model
@@ -42,9 +56,9 @@ class NotificationTplSerializer extends AbstractSerializer
      */
     protected function getDefaultAttributes($model)
     {
-        $trans = 'template_variables.' . ($this->templateVariables[$model->id] ?? '');
+        $trans = 'template_variables.' . ($this->getTemplateVariables($model->notice_id) ?? '');
 
-        return [
+        $result = [
             'tpl_id'             => $model->id,
             'status'             => $model->status,
             'type'               => $model->type,
@@ -53,6 +67,7 @@ class NotificationTplSerializer extends AbstractSerializer
             'content'            => $model->content,
             'template_id'        => $model->template_id,
             'template_variables' => $trans === 'template_variables.' ? [] : trans($trans),
+            'keys'               => $model->keys ?? [],
             'first_data'         => $model->first_data,
             'keywords_data'      => $model->keywords_data ? explode(',', $model->keywords_data) : [],
             'remark_data'        => $model->remark_data,
@@ -60,8 +75,17 @@ class NotificationTplSerializer extends AbstractSerializer
             'redirect_type'      => (int) $model->redirect_type,
             'redirect_url'       => (string) $model->redirect_url,
             'page_path'          => (string) $model->page_path,
-            'disabled'           => $model->type === NotificationTpl::SYSTEM_NOTICE && in_array($model->id, $this->disabledId),
+            'disabled'           => $model->type === NotificationTpl::SYSTEM_NOTICE && in_array($model->notice_id, $this->disabledId),
+            'is_error'           => $model->is_error,
+            'error_msg'          => $model->error_msg,
         ];
+
+        if ($model->type == NotificationTpl::MINI_PROGRAM_NOTICE) {
+            // 小程序通知模板统一，触发点的提示语
+            $result['mini_program_prompt'] = trans('template_variables.notice_prompt.' . $model->type_name);
+        }
+
+        return $result;
     }
 
     /**

@@ -18,6 +18,7 @@ export default {
       scale: 0, // 提成比例
       bindPhoneDisabled: false, // 是否开启短信验证
       wechatPayment: false, // 是否开启微信支付
+      isReward: false, // 是否开启打赏功能
       canBeOnlooker: false, // 是否可以设置围观
       categoriesList: [], // 分类列表
       selectList: {
@@ -76,6 +77,7 @@ export default {
       ],
       value: "",
       purchasePrice: "",
+      // lowestPrice: "", // 被提问的最低价格
       dyedate: "",
       ispad: "",
       allowtobuy: "",
@@ -145,6 +147,12 @@ export default {
     }
   },
   methods: {
+    // getLowestPrice: function(e) {
+    //   if (Number(e) < 0) {
+    //     this.lowestPrice = '';
+    //     this.$message.error('允许被提问的最低金额不能小于0');
+    //   }
+    // },
     duedata: function(evn) {
       this.duedata = evn.replace(/[^\d]/g, "");
     },
@@ -238,6 +246,7 @@ export default {
       this.realNameDisabled = data.qcloud.qcloud_faceid === false;
       this.bindPhoneDisabled =  data.qcloud.qcloud_sms === false;
       this.wechatPayment = data.paycenter.wxpay_close === false;
+      this.isReward = data.set_site.site_can_reward === 1;
       this.canBeOnlooker = siteData.site_onlooker_price > 0;
       this.allowtobuy = siteData.site_pay_group_close;
       if (!this.allowtobuy) {
@@ -258,6 +267,12 @@ export default {
       console.log('checkedData', checkedData);
       const selectList = this.selectList;
       checkedData.forEach((value, index) => {
+
+        // 最低金额回显
+        // if (value.indexOf('canBeAsked.money.') === 0 ) {
+        //   this.lowestPrice = value.slice(17,value.length);
+        // }
+
         // 1 红包、位置、匿名权限回显
         if(
           value.includes("redPacket")
@@ -349,17 +364,26 @@ export default {
       } else {
         checked = checked.filter(v => v !== "other.canInviteUserScale");
       }
+      // if (checked.includes('canBeAsked') > 0) {
+      //   checked = checked.filter(item => !item.includes("canBeAsked.money"));
+      //   checked.push(`canBeAsked.money.${this.lowestPrice}`)
+      // }
+      const param = {
+        data: {
+          attributes: {
+            groupId: this.groupId,
+            permissions: checked,
+          }
+        }
+      }
+      if (checked.includes('canBeAsked') > 0) {
+        param.data.attributes.can_be_asked_money = this.lowestPrice;
+      }
+      
       this.appFetch({
         url: "groupPermission",
         method: "post",
-        data: {
-          data: {
-            attributes: {
-              groupId: this.groupId,
-              permissions: checked
-            }
-          }
-        }
+        data: param
       })
         .then(res => {
           if (res.errors) {
@@ -577,6 +601,10 @@ export default {
           return false;
         }
       }
+      // if (this.checked.indexOf('canBeAsked') !== -1 && this.lowestPrice === '') {
+      //   this.$message.error('允许被提问的最低金额未填写');
+      //   return false;
+      // }
       return true;
     },
 

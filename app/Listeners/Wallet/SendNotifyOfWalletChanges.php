@@ -24,7 +24,6 @@ use App\Models\Question;
 use App\Models\Thread;
 use App\Models\UserWalletLog;
 use App\Notifications\Messages\Wechat\ExpiredWechatMessage;
-use App\Notifications\Messages\Wechat\ReceiveRedPacketWechatMessage;
 use App\Notifications\Messages\Wechat\RewardedWechatMessage;
 use App\Notifications\ReceiveRedPacket;
 use App\Notifications\Rewarded;
@@ -104,7 +103,7 @@ class SendNotifyOfWalletChanges
                         ]),
                     ];
                     // Tag 发送得到红包通知
-                    $user->notify(new ReceiveRedPacket(ReceiveRedPacketWechatMessage::class, $user, $order, $build));
+                    $user->notify(new ReceiveRedPacket($user, $order, $build));
                     break;
                 case UserWalletLog::TYPE_INCOME_LONG: // 112 长字帖红包收入通知
                     /**
@@ -128,7 +127,7 @@ class SendNotifyOfWalletChanges
                         ]),
                     ];
                     // Tag 发送得到红包通知
-                    $user->notify(new ReceiveRedPacket(ReceiveRedPacketWechatMessage::class, $user, $order, $build));
+                    $user->notify(new ReceiveRedPacket($user, $order, $build));
                     break;
             }
         }

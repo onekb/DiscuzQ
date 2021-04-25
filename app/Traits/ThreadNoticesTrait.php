@@ -18,6 +18,7 @@
 
 namespace App\Traits;
 
+use App\Models\Post;
 use App\Models\Question;
 use App\Models\Thread;
 use App\Models\User;
@@ -101,9 +102,9 @@ trait ThreadNoticesTrait
     private function sendIsSticky($thread, $actor)
     {
         $build = [
-            'message' => $this->getThreadTitle($thread),
-            'post' => $thread->firstPost,
-            'notify_type' => PostMessage::NOTIFY_STICKY_TYPE,
+            'message'     => $this->getThreadTitle($thread),
+            'post'        => $thread->firstPost,
+            'notify_type' => Post::NOTIFY_STICKY_TYPE,
         ];
 
         // Tag 发送通知
@@ -119,9 +120,9 @@ trait ThreadNoticesTrait
     private function sendIsEssence($thread, $actor)
     {
         $build = [
-            'message' => $this->getThreadTitle($thread),
-            'post' => $thread->firstPost,
-            'notify_type' => PostMessage::NOTIFY_ESSENCE_TYPE,
+            'message'     => $this->getThreadTitle($thread),
+            'post'        => $thread->firstPost,
+            'notify_type' => Post::NOTIFY_ESSENCE_TYPE,
         ];
 
         // Tag 发送通知
@@ -138,10 +139,10 @@ trait ThreadNoticesTrait
     private function sendIsDeleted($thread, $actor, array $attach)
     {
         $data = [
-            'message' => $this->getThreadTitle($thread),
-            'post' => $thread->firstPost,
-            'refuse' => $attach['refuse'],
-            'notify_type' => PostMessage::NOTIFY_DELETE_TYPE,
+            'message'     => $this->getThreadTitle($thread),
+            'post'        => $thread->firstPost,
+            'refuse'      => $attach['refuse'],
+            'notify_type' => Post::NOTIFY_DELETE_TYPE,
         ];
 
         // Tag 发送通知
@@ -159,16 +160,16 @@ trait ThreadNoticesTrait
     {
         $data = [
             'message' => $this->getThreadTitle($thread),
-            'post' => $thread->firstPost,
-            'refuse' => $attach['refuse'],
+            'post'    => $thread->firstPost,
+            'refuse'  => $attach['refuse'],
         ];
 
         if ($thread->is_approved == 1) {
             // 发送通过通知
-            $data = array_merge($data, ['notify_type' => PostMessage::NOTIFY_APPROVED_TYPE]);
+            $data = array_merge($data, ['notify_type' => Post::NOTIFY_APPROVED_TYPE]);
         } elseif ($thread->is_approved == 2) {
             // 忽略就发送不通过通知
-            $data = array_merge($data, ['notify_type' => PostMessage::NOTIFY_UNAPPROVED_TYPE]);
+            $data = array_merge($data, ['notify_type' => Post::NOTIFY_UNAPPROVED_TYPE]);
         }
 
         // Tag 发送通知

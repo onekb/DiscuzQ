@@ -89,17 +89,19 @@ class CreateThreadVideo
 
         $threadId = $this->thread->id ?? 0;
 
-        /** @var ThreadVideo $threadVideo */
-        if ($threadId) {
-            $threadVideo = ThreadVideo::query()->where('thread_id', 0)->where('file_id', $fileId)->firstOrNew();
+        // 存在thread_id为0，file_id相同，不新增
+        $threadVideo = ThreadVideo::query()->where('thread_id', 0)->where('file_id', $fileId)->first();
+        if (!$threadVideo && $threadId !== 0) {
+            // 存在thread_id相同，file_id相同，不新增
+            $threadVideo = ThreadVideo::query()->where('thread_id', $threadId)->where('file_id', $fileId)->first();
         }
 
         if (!$threadVideo) {
-            $threadVideo = ThreadVideo::query()->where('thread_id', $threadId)->where('file_id', $fileId)->firstOrNew();
+            $threadVideo = new ThreadVideo();
         }
 
         $threadVideo->user_id = $this->actor->id;
-        $threadVideo->thread_id = $this->thread->id ?? 0;
+        $threadVideo->thread_id = $threadId;
         $threadVideo->post_id = 0;  // 暂时用不到了
         $threadVideo->type = $this->type;
         $threadVideo->file_id = $fileId;

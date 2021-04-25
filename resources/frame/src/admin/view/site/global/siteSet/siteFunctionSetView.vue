@@ -63,6 +63,14 @@
         <el-checkbox v-model="purchase">权限购买功能</el-checkbox>
       </CardRow>
     </Card>
+    <Card>
+      <CardRow
+        class="card-points"
+        description="允许发布的内容被其它用户打赏"
+      >
+        <el-checkbox v-model="reward">打赏功能</el-checkbox>
+      </CardRow>
+    </Card>
 
     <el-button type="primary" size="medium" @click="handlePublishingSubmit">提交</el-button>
 

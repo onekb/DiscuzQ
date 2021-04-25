@@ -25,10 +25,17 @@
             label="通知方式"
             align="center"
           >
-            <!-- <template slot-scope="scope">
-              <span v-if="scope.row._data.status === 1" class="iconfont iconicon_select" ></span>
-              <span v-else class="iconfont iconicon_"  ></span>
-            </template> -->
+          <template slot-scope="scope">
+              <span
+                class="notice_type"
+                :class="item.is_error === 1 && 'notice_type_error'"
+                v-for="(item, index) in scope.row._data.type_status"
+                :key="item.type"
+                @click="handleError(item)"
+              >
+                {{ item.type + (index < scope.row._data.type_status.length -1? "、" : "") }}
+              </span>
+            </template>
           </el-table-column>
 
           <el-table-column
@@ -36,26 +43,11 @@
             label="操作"
             width="200">
             <template slot-scope="scope">
-              <!-- <div v-if="scope.row._data.status == 1"> -->
                 <el-button
                   size="mini"
                   @click="configClick(scope.row._data.id,scope.row._data.name)">
                   配置
                 </el-button>
-
-                <!-- <el-button
-                  @click.native.prevent="noticeSetting(scope.row._data.id,'close')"
-                  size="mini">
-                  关闭
-                </el-button> -->
-              <!-- </div> -->
-              <!-- <div v-if="scope.row._data.status == 0"> -->
-                <!-- <el-button
-                  size="mini"
-                  @click.native.prevent="noticeSetting(scope.row._data.id,'open')"
-                >开启
-                </el-button> -->
-              <!-- </div> -->
             </template>
           </el-table-column>
 

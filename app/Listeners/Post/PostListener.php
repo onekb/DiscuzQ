@@ -256,7 +256,7 @@ class PostListener
             $build = [
                 'message' => $event->content,
                 'post' => $event->post,
-                'notify_type' => PostMessage::NOTIFY_EDIT_CONTENT_TYPE,
+                'notify_type' => Post::NOTIFY_EDIT_CONTENT_TYPE,
             ];
 
             // Tag 发送通知

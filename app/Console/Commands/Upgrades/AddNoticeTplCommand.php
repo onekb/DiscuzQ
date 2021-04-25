@@ -8,23 +8,21 @@
 namespace App\Console\Commands\Upgrades;
 
 use App\Models\NotificationTpl;
+use App\Notifications\Messages\TemplateVariables;
 use Discuz\Console\AbstractCommand;
-use Exception;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Collection;
 use NotificationTplSeeder;
 use Throwable;
 
 class AddNoticeTplCommand extends AbstractCommand
 {
-    protected $signature = 'upgrade:notice';
+    use TemplateVariables;
+    use NoticeTrait;
+
+    protected $signature = 'upgrade:noticeAdd {--i|init}';
 
     protected $description = 'Initialization/new notification type data format.';
-
-    protected $table;
-
-    protected $isFirst = false;
-
-    protected $connection;
 
     /**
      * @var string
@@ -32,9 +30,19 @@ class AddNoticeTplCommand extends AbstractCommand
     protected $currentType;
 
     /**
+     * @var ConnectionInterface
+     */
+    protected $connection;
+
+    /**
      * @var NotificationTplSeeder
      */
     protected $notificationTplSeeder;
+
+    /**
+     * @var Collection $tplAll
+     */
+    protected $tplAll;
 
     /**
      * AddNoticeTplCommand constructor.
@@ -53,147 +61,78 @@ class AddNoticeTplCommand extends AbstractCommand
 
     public function handle()
     {
-        $data = $this->notificationTplSeeder->addData();
+        if ($this->option('init')) {
+            $this->initData();
+        } else {
+            $data = $this->notificationTplSeeder->getFilterTpl();
+            $this->tplAll = NotificationTpl::all();
 
-        try {
-            $this->connection->transaction(function () use ($data) {
-                collect($data)->each(function ($item, $key) {
-                    /**
-                     * 当新通知不存在时，执行添加
-                     */
-                    if (! NotificationTpl::query()->where('id', $key)->exists()) {
-                        // 设置当前通知类型
-                        $this->setCurrentType($item['type']);
+            if (! $this->tplAll->isEmpty()) {
+                try {
+                    $this->connection->transaction(function () use ($data) {
 
-                        // 添加数据
-                        $tplId = NotificationTpl::query()->insertGetId($item);
-
-                        // 验证数据库自增值是否对应通知ID值
-                        if ($tplId != $key) {
-                            // 删除刚刚插入的数据
-                            NotificationTpl::query()->where(['id' => $tplId])->delete();
-
-                            $this->comment('');
-                            $noticeName = $item['type_name'];
-                            $this->error('存在无法对应自增ID的通知：' . "[$key $noticeName]");
-                            $this->error('应插入通知ID：' . $key);
-                            $this->error('实际数据库自增值已到达：' . $tplId);
-                            if (! $this->confirm('是否重置自增值，尝试重新添加')) {
-                                $this->error('');
-                                $this->error('脚本已终止 原因：[通知表内容有改动，无法对应通知ID]');
-                            }
-
-                            /**
-                             * 尝试再次循环插入该条
-                             */
-                            $this->tryAgainInsert($item, $key);
-
-                        } else {
-                            // 插入成功后输出
-                            $this->pointOut('insert', $tplId, $item['type_name'], 'comment');
+                        // check iteration data
+                        if ($this->checkIterationBeforeData($this->tplAll)) {
+                            // change type_name
+                            $this->sortOutUnite();
                         }
-                    }
-                });
-            }, 2);
-        } catch (Throwable $e) {
-            $this->error($e->getMessage());
 
-            // 回滚事务
-            $this->connection->rollback();
+                        collect($data)->each(function ($item) {
+                            /**
+                             * 当新通知不存在时，执行添加
+                             */
+                            if (empty($this->tplAll->where('type_name', $item['type_name'])->where('type', $item['type'])->first())) {
+                                // 设置当前通知类型
+                                $this->setCurrentType($item['type']);
+
+                                /** @var NotificationTpl $create */
+                                $create = NotificationTpl::query()->create($item);
+
+                                // point out
+                                $message = '插入' . $this->currentType . '通知: ' . ' [notice_id] => ' . $create->notice_id . ' [名称] => ' . $create->type_name;
+                                $this->comment($message);
+                            }
+                        });
+                    }, 2);
+                } catch (Throwable $e) {
+                    $this->error($e->getMessage());
+
+                    // 回滚事务
+                    $this->connection->rollback();
+
+                    // 初始化
+                    $this->error('');
+                    $this->error('脚本已终止 原因：无法插入新通知，请去数据库核对通知表是否存在重复 notice_id ，或者输入 init 初始化通知数据表');
+                    $this->initData();
+                }
+            } else {
+                $this->initData('没有查询到数据，');
+                $this->comment('已初始化完成...');
+            }
         }
 
         $this->info('');
         $this->info('脚本执行 [完成]');
     }
 
-    /**
-     * 尝试重置ID后再次 执行添加通知内容
-     *
-     * @param $item
-     * @param $key
-     * @param bool $recursion 是否是递归
-     * @throws Exception
-     */
-    public function tryAgainInsert($item, $key, $recursion = false)
+    public function initData($supplement = '')
     {
-        // 重建自增ID
+        // 获取表名
         $notice = new NotificationTpl;
         $tableName = config('database.connections.mysql.prefix') . $notice->getTable();
-        $autoNum = $notice->count();
-        $sql = 'alter table ' . $tableName . ' auto_increment = ' . $autoNum;
-        $this->connection->statement($sql);
 
-        $tplId = NotificationTpl::query()->insertGetId($item);
+        // 初始化
+        if ($this->ask($supplement . '是否需要初始化通知模板数据表(' . $tableName . ')？ 同意请输入init') == 'init') {
+            NotificationTpl::query()->delete();
 
-        if ($tplId != $key) {
-            // 删除刚刚插入的数据
-            NotificationTpl::query()->where(['id' => $tplId])->delete();
+            // 重建自增ID
+            $autoNum = $notice->count();
+            $sql = 'alter table ' . $tableName . ' auto_increment = ' . $autoNum;
+            $this->connection->statement($sql);
 
-            // 检测是否存在自定义通知数据
-            $all = NotificationTpl::query()->get();
-            $ids = array_column($all->toArray(), 'id');
-            $lashId = array_pop($ids); // 获取最后一个ID
-
-            if ($lashId >= $key && $recursion == false) {
-                $this->error('');
-                $this->error('检测到存在自定义过的通知内容');
-                if ($this->ask('是否还原通知表，执行更新数据？ 同意请输入remove') == 'remove') {
-                    // 执行删除
-                    /** @var NotificationTpl $delData */
-                    $delData = NotificationTpl::query()->where('id', '>=', $key)->get();
-                    if ($delData->isNotEmpty()) {
-                        NotificationTpl::query()->whereIn('id', array_column($delData->toArray(), 'id'))->delete();
-
-                        // 删除通知后后输出
-                        $delIds = array_column($delData->toArray(), 'id');
-                        $delIds = implode('、', $delIds);
-                        $nameArr = array_column($delData->toArray(), 'type_name');
-                        $nameArr = implode('、', $nameArr);
-                        $this->pointOut('delete', $delIds, $nameArr, 'comment');
-                    }
-                    // 递归再次尝试添加
-                    $this->tryAgainInsert($item, $key, true);
-                } else {
-                    $this->error('');
-                    $this->error('脚本已终止 原因：[通知表数据无法初始化，请手动操作删除自定义的通知]');
-                    throw new Exception();
-                }
-            } else {
-                $this->error('');
-                $this->error('脚本已终止 原因：[无法插入新通知，请去数据库核对通知ID是否对应自增ID]');
-                if ($this->ask('是否需要初始化该数据表？ 同意请输入init') == 'init') {
-                    $this->notificationTplSeeder->run(); // php disco db:seed --class NotificationTplSeeder
-                }
-                throw new Exception();
-            }
-        } else {
-            // 插入成功后输出
-            $this->pointOut('insert', $tplId, $item['type_name'], 'comment');
+            // php disco db:seed --class NotificationTplSeeder
+            $this->notificationTplSeeder->run();
         }
-    }
-
-    /**
-     * @param $mode
-     * @param $id
-     * @param $name
-     * @param $method
-     */
-    public function pointOut($mode, $id, $name, $method)
-    {
-        switch ($mode) {
-            case 'delete':
-                $modeName = '删除';
-                break;
-            case 'insert':
-                $modeName = '插入';
-                break;
-            default:
-                $modeName = 'x';
-                break;
-        }
-
-        $msg = $modeName . $this->currentType . '通知: ' . ' id:' . $id . ' 名称[' . $name . ']';
-        $this->{$method}($msg);
     }
 
     /**
@@ -203,13 +142,44 @@ class AddNoticeTplCommand extends AbstractCommand
      */
     public function setCurrentType($type)
     {
-        if ($type == NotificationTpl::SYSTEM_NOTICE) {
-            $this->currentType = '*系统*';
-        } elseif ($type == NotificationTpl::WECHAT_NOTICE) {
-            $this->currentType = '[微信]';
-        } else {
-            $this->currentType = '非系统';
+        switch ($type) {
+            case NotificationTpl::SYSTEM_NOTICE:
+                $this->currentType = '*系统*';
+                break;
+            case NotificationTpl::WECHAT_NOTICE:
+                $this->currentType = '[微信]';
+                break;
+            case NotificationTpl::SMS_NOTICE:
+                $this->currentType = '[短信]';
+                break;
+            case NotificationTpl::ENTERPRISE_WECHAT_NOTICE:
+                $this->currentType = '[企业微信]';
+                break;
+            case NotificationTpl::MINI_PROGRAM_NOTICE:
+                $this->currentType = '[小程序]';
+                break;
+            default:
+                $this->currentType = '「未知」';
+                break;
         }
+    }
+
+    public function sortOutUnite()
+    {
+        $this->tplAll->each(function ($item) {
+            // 判断是否修改过数据库/或判断是否是老版本数据表
+            if (isset($this->originConfigTypeName[$item->id])) {
+                $originName = $item->type_name;                 // 原 name
+                $name = $this->originConfigTypeName[$item->id]; // 变更 name
+                if ($originName != $name) {
+                    $item->type_name = $name;
+                    $item->save();
+                    // 输出
+                    $msg = "修改'$item->title'(id=$item->id): 【type_name修改】-> [$originName] -> [$name]";
+                    $this->comment($msg);
+                }
+            }
+        });
     }
 
 }

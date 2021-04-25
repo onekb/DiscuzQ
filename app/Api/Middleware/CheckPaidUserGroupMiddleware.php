@@ -18,10 +18,12 @@
 
 namespace App\Api\Middleware;
 
+use App\Common\CacheKey;
 use App\Events\Group\PaidGroup;
 use App\Models\Group;
 use App\Models\GroupPaidUser;
 use App\Models\User;
+use Discuz\Cache\CacheManager;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Carbon;
 use Psr\Http\Message\ResponseInterface;
@@ -31,11 +33,15 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class CheckPaidUserGroupMiddleware implements MiddlewareInterface
 {
-    public $events;
+    const CHECK_INTERVAL = 30;
 
-    public function __construct(Dispatcher $events)
+    public $events;
+    protected $cache;
+
+    public function __construct(Dispatcher $events, CacheManager $cache)
     {
         $this->events = $events;
+        $this->cache = $cache;
     }
 
     /**
@@ -46,6 +52,21 @@ class CheckPaidUserGroupMiddleware implements MiddlewareInterface
         /** @var User $actor */
         $actor = $request->getAttribute('actor');
 
+        if (app()->config('middleware_cache')) {
+            // 通过加锁，避免每次请求都判断
+            $ttl = static::CHECK_INTERVAL;
+            if ($this->cache->add(CacheKey::CHECK_PAID_GROUP.$actor->id, 'lock', mt_rand($ttl, $ttl + 10))) {
+                $this->check($actor);
+            }
+        } else {
+            $this->check($actor);
+        }
+
+        return $handler->handle($request);
+    }
+
+    protected function check(User $actor)
+    {
         if ($actor->groups->count() && !$actor->isGuest()) {
             //检查到期付费用户组
             $groups = $actor->groups()->where('is_paid', Group::IS_PAID)->get();
@@ -73,7 +94,5 @@ class CheckPaidUserGroupMiddleware implements MiddlewareInterface
                 $actor->resetGroup();
             }
         }
-
-        return $handler->handle($request);
     }
 }

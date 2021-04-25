@@ -92,6 +92,7 @@ class CreateOrder
         ]);
 
         if ($validator_info->fails()) {
+            app('log')->info("创建订单验证参数错误,用户id:{$this->actor->id}" );
             throw new ValidationException($validator_info);
         }
 
@@ -288,12 +289,20 @@ class CreateOrder
                 $payeeId = 0; // 设置收款人 (红包无收款人)
 
                 break;
+            // 站点续费
+            case Order::ORDER_TYPE_RENEW:
+                $payeeId = Order::REGISTER_PAYEE_ID;
+                $amount = sprintf('%.2f', (float) $setting->get('site_price'));
+                
+                break;
             default:
+                app('log')->info("参数type枚举错误,传参枚举type:({$orderType}),用户id:{$this->actor->id}");
                 throw new OrderException('order_type_error');
         }
 
         // 订单金额需检查
         if (($amount == 0 && ! $order_zero_amount_allowed) || $amount < 0) {
+            app('log')->info("参数金额错误,用户id:{$this->actor->id}" );
             throw new OrderException('order_amount_error');
         }
 
@@ -326,6 +335,7 @@ class CreateOrder
         // 开始事务
         $db->beginTransaction();
         try {
+            app('log')->info("创建订单开启事务,用户id:{$this->actor->id}");
             if ($amount == 0 && $order_zero_amount_allowed) {
                 //用户组0付费
                 $order->status = 1;
@@ -339,9 +349,11 @@ class CreateOrder
                 );
             }
             $db->commit();          // 提交事务
+            app('log')->info("创建订单事务结束,用户id:{$this->actor->id}");
             return $order;
         } catch (Exception $e) {
             $db->rollback();        // 回滚事务
+            app('log')->info("创建订单事务回滚抛出异常:{$e->getMessage()},用户id:{$this->actor->id}");
             throw new OrderException('order_create_failure');
         }
     }

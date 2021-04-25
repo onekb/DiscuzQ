@@ -28,9 +28,10 @@ use App\Api\Serializer\UserSerializer;
 use Carbon\Carbon;
 use Discuz\Foundation\AbstractRepository;
 use Illuminate\Support\Arr;
+use App\Notifications\ThreadRewarded;
+use App\Notifications\ThreadRewardedExpired;
 use App\Notifications\Messages\Wechat\ThreadRewardedWechatMessage;
 use App\Notifications\Messages\Wechat\ThreadRewardedExpiredWechatMessage;
-use App\Notifications\ThreadRewarded;
 use Tobscure\JsonApi\Relationship;
 use Discuz\Api\Serializer\AbstractSerializer;
 use Illuminate\Support\Str;
@@ -80,10 +81,9 @@ class ThreadRewardRepository extends AbstractRepository
 
             $walletType = $type;
             if(Carbon::now() > $threadReward['expired_at']){
-                $user->notify(new ThreadRewarded(ThreadRewardedExpiredWechatMessage::class, $user, $order, $build, $walletType));
+                $user->notify(new ThreadRewardedExpired($user, $order, $build, $walletType));
             }else{
-                // Tag 发送悬赏问答通知
-                $user->notify(new ThreadRewarded(ThreadRewardedWechatMessage::class, $user, $order, $build, $walletType));
+                $user->notify(new ThreadRewarded($user, $order, $build, $walletType));
             }
         }else{
             app('log')->info('过期悬赏发送错误：悬赏帖(ID为' . $thread_id . ')，因查询不到用户信息(ID为' . $user_id . ')，无法发送通知');

@@ -48,6 +48,7 @@ class ResponseCode
     const NOT_FOUND_USER = -7005;
     const NOT_FOUND_USER_WECHAT = -7006;
     const PC_QRCODE_TIME_FAIL = -7007;
+    const GEN_QRCODE_TYPE_ERROR = -7008;
 
 
     public static $codeMap = [
@@ -73,6 +74,7 @@ class ResponseCode
         self::SESSION_TOKEN_EXPIRED => 'SESSION TOKEN过期',
         self::NOT_FOUND_USER => '未找到用户',
         self::NOT_FOUND_USER_WECHAT => '未找到微信用户',
-        self::PC_QRCODE_TIME_FAIL => '扫码登录失败'
+        self::PC_QRCODE_TIME_FAIL => '扫码登录失败',
+        self::GEN_QRCODE_TYPE_ERROR => '生成二维码参数类型错误',
     ];
 }

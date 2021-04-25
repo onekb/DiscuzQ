@@ -11,13 +11,6 @@ use Illuminate\Support\Arr;
  */
 class PostMessage extends SimpleMessage
 {
-    const NOTIFY_EDIT_CONTENT_TYPE = 'edit_content';    // 修改内容
-    const NOTIFY_UNAPPROVED_TYPE   = 'unapproved';      // 内容不合法/内容忽略
-    const NOTIFY_APPROVED_TYPE     = 'approved';        // 内容合法
-    const NOTIFY_ESSENCE_TYPE      = 'essence';         // 内容加精
-    const NOTIFY_STICKY_TYPE       = 'sticky';          // 内容置顶
-    const NOTIFY_DELETE_TYPE       = 'delete';          // 内容删除
-
     protected $actor;
 
     protected $data;

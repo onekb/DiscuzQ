@@ -22,6 +22,8 @@ use App\Api\Serializer\NotificationTplSerializer;
 use App\Models\NotificationTpl;
 use Discuz\Api\Controller\AbstractListController;
 use Discuz\Auth\AssertPermissionTrait;
+use Discuz\Contracts\Setting\SettingsRepository;
+use Discuz\Wechat\EasyWechatTrait;
 use Illuminate\Support\Arr;
 use Psr\Http\Message\ServerRequestInterface;
 use Tobscure\JsonApi\Document;
@@ -29,11 +31,24 @@ use Tobscure\JsonApi\Document;
 class ResourceNotificationTplController extends AbstractListController
 {
     use AssertPermissionTrait;
+    use EasyWechatTrait;
 
     /**
      * {@inheritdoc}
      */
     public $serializer = NotificationTplSerializer::class;
+
+    protected $settings;
+
+    /**
+     * WechatChannel constructor.
+     *
+     * @param SettingsRepository $settings
+     */
+    public function __construct(SettingsRepository $settings)
+    {
+        $this->settings = $settings;
+    }
 
     /**
      * @param ServerRequestInterface $request
@@ -43,13 +58,35 @@ class ResourceNotificationTplController extends AbstractListController
      */
     protected function data(ServerRequestInterface $request, Document $document)
     {
-        $actor = $request->getAttribute('actor');
-        $this->assertAdmin($actor);
-
         $type_name = Arr::get($request->getQueryParams(), 'type_name');
 
-        $query = NotificationTpl::query()->where('type_name', $type_name)->orderBy('type');
+        $tpl = NotificationTpl::query();
 
-        return $query->get();
+        $tpl->when(Arr::has($request->getQueryParams(), 'type'), function ($query) use ($request) {
+            $query->where('type', (int) Arr::get($request->getQueryParams(), 'type'));
+        });
+
+        $typeNames = explode(',', $type_name);
+
+        $query = $tpl->whereIn('type_name', $typeNames)->orderBy('type');
+
+        $data = $query->get();
+
+        /**
+         * 检测是否存在小程序通知，查询小程序模板变量 key 值
+         *
+         * @URL 订阅消息参数值内容限制说明: https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/subscribe-message/subscribeMessage.send.html
+         */
+        $miniProgram = $data->where('type', NotificationTpl::MINI_PROGRAM_NOTICE);
+        if ($miniProgram->isNotEmpty()) {
+            $data->map(function ($item) {
+                if ($item->type == NotificationTpl::MINI_PROGRAM_NOTICE) {
+                    $keys = $this->getMiniProgramKeys($item);
+                    $item->keys = $keys;
+                }
+            });
+        }
+
+        return $data;
     }
 }

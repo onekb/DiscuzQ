@@ -30,7 +30,7 @@
           </el-switch>
             </template>
           </el-table-column>
-          
+
           <!-- <el-table-column
             width="100">
             <template slot-scope="scope">

@@ -77,6 +77,8 @@ class Order extends Model
 
     const ORDER_TYPE_ATTACHMENT = 7; //付费附件
 
+    const ORDER_TYPE_RENEW = 8; //站点付费
+
     const ORDER_TYPE_TEXT = 20; //文字帖红包
 
     const ORDER_TYPE_LONG = 21; //长文帖红包
@@ -250,6 +252,7 @@ class Order extends Model
 
         return $bossAmount = $this->calculateAuthorAmount(); // 作者实际分成金额
     }
+
 
     /**
      * 计算围观问答人/答题人分红

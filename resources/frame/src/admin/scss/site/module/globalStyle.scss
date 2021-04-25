@@ -63,7 +63,7 @@
     color: #fff;
     border-radius: 50%;
   }
- 
+
 }
 
 .icon-add {
@@ -868,6 +868,9 @@
 .applets-input {
   // padding-left: 152PX;
 }
+.applet-keyst {
+  width: 134PX;
+}
 .applets-title {
   width:134PX;
 }
@@ -899,4 +902,27 @@
 }
 .applets-radio {
   width: 100%;
+}
+.notice_type_error {
+  color: red;
+  cursor: pointer;
+}
+.notice_error_info {
+  float: left;
+  width: 100%;
+}
+.notice_error_title {
+  border: 1px solid #EDEDEE;
+  background-color: #F2F2F3;
+  margin-right: 10PX;
+  margin-bottom: 5PX;
+  text-align: center;
+  width: 20%;
+  float: left;
+}
+.notice_error_message {
+  margin-bottom: 10PX;
+  float: left;
+  width: 75%;
+  overflow: auto;
 }

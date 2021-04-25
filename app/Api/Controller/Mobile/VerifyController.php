@@ -67,9 +67,11 @@ class VerifyController extends AbstractResourceController
 
         $mobile = Arr::get($data, 'mobile');
         $code = Arr::get($data, 'code');
+        $noAES = Arr::get($data, 'noAES');
 
         $data['sms_type'] = $type;
         $data['sms_code'] = $code;
+        $data['noAES'] = $noAES;
 
         $this->validation->make($data, [
             'mobile' => 'required',

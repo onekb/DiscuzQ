@@ -138,7 +138,7 @@ class WechatMiniProgramLoginController extends AbstractResourceController
 
                 $this->db->commit();
             } else {
-                $this->db->rollback();
+                $this->db->commit();
                 $noUserException = new NoUserException();
                 $noUserException->setUser(['username' => $wechatUser->nickname, 'headimgurl'=>$wechatUser->headimgurl]);
                 throw $noUserException;

@@ -133,6 +133,69 @@ class AttachmentSerializer extends AbstractSerializer
         return $attributes;
     }
 
+
+    public function getBeautyAttachment($model, $thread, $user = null)
+    {
+        if ($user) $this->actor = $user;
+        $this->paidContent($model);
+        if ($model->is_remote) {
+            $url = $this->settings->get('qcloud_cos_sign_url', 'qcloud', true)
+                ? $this->filesystem->disk('attachment_cos')->temporaryUrl($model->full_path, Carbon::now()->addDay())
+                : $this->filesystem->disk('attachment_cos')->url($model->full_path);
+        } else {
+            $url = $this->filesystem->disk('attachment')->url($model->full_path);
+        }
+        $attributes = [
+            'id' => $model->id,
+            'order' => $model->order,
+            'type' => $model->type,
+            'type_id' => $model->type_id,
+            'isRemote' => $model->is_remote,
+            'isApproved' => $model->is_approved,
+            'url' => $url,
+            'attachment' => $model->attachment,
+            'extension' => Str::afterLast($model->attachment, '.'),
+            'fileName' => $model->file_name,
+            'filePath' => $model->file_path,
+            'fileSize' => (int)$model->file_size,
+            'fileType' => $model->file_type,
+        ];
+
+        // 图片缩略图地址
+        if (in_array($model->type, [Attachment::TYPE_OF_IMAGE, Attachment::TYPE_OF_DIALOG_MESSAGE])) {
+            if ($model->getAttribute('blur')) {
+                $attributes['thumbUrl'] = $url;
+            } else {
+                if ($model->is_remote) {
+                    $attributes['thumbUrl'] = $url . (strpos($url, '?') === false ? '?' : '&')
+                        . 'imageMogr2/thumbnail/' . Attachment::FIX_WIDTH . 'x' . Attachment::FIX_WIDTH;
+                } else {
+                    // 缩略图不存在时使用原图
+                    $attributes['thumbUrl'] = $this->filesystem->disk('attachment')->exists($model->thumb_path)
+                        ? Str::replaceLast('.', '_thumb.', $url)
+                        : $url;
+                }
+            }
+        } elseif ($model->type == Attachment::TYPE_OF_ANSWER) {
+            $attributes['thumbUrl'] = $url;
+        }
+
+        // 绑定首帖的附件，如果是付费或开启了预览，返回后端地址
+        if (
+            $model->type == Attachment::TYPE_OF_FILE && !empty($thread) &&
+            (
+                ($thread['price'] > 0 || $thread['attachment_price'] > 0) ||
+                ($this->settings->get('qcloud_cos_doc_preview', 'qcloud') && $this->settings->get('qcloud_cos', 'qcloud'))
+            )
+        ) {
+            $attributes['url'] = $this->url->to('/api/attachments/' . $model->id) . '?t=' . Attachment::getFileToken($this->actor);
+        }
+
+        return $attributes;
+    }
+
+
+
     /**
      * @param $attachment
      * @return Relationship

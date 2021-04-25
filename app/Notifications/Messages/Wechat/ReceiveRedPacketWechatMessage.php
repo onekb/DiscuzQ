@@ -3,7 +3,6 @@
 namespace App\Notifications\Messages\Wechat;
 
 use App\Models\Order;
-use Carbon\Carbon;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Support\Arr;
@@ -15,7 +14,7 @@ use Illuminate\Support\Arr;
  */
 class ReceiveRedPacketWechatMessage extends SimpleMessage
 {
-    public $tplId = 46;
+    public $tplId = 'wechat.red_packet.gotten';
 
     protected $model;
 
@@ -99,6 +98,7 @@ class ReceiveRedPacketWechatMessage extends SimpleMessage
             '{$order_type_name}'     => $orderName,
             '{$actual_amount}'       => $actualAmount,
             '{$content}'             => $this->strWords($message),
+            '{$thread_id}'           => $threadId
         ]);
         // build data
         $expand = [

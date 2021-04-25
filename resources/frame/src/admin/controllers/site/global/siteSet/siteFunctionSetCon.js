@@ -5,6 +5,7 @@ export default {
   data(){
     return {
       purchase:false, // 购买权限
+      reward: false, // 打赏功能
       // 发布功能
       publishing:{
         text:true,
@@ -31,6 +32,8 @@ export default {
           } else {
             // 购买权限
             this.purchase = data.readdata._data.set_site.site_pay_group_close === '1';
+            // 打赏权限
+            this.reward = data.readdata._data.set_site.site_can_reward === 1;
 
             // 发布功能
             this.publishing.text = data.readdata._data.set_site.site_create_thread0===1;
@@ -77,6 +80,13 @@ export default {
         method: "post",
         data: {
           data: [
+            {
+              attributes: {
+                key: "site_can_reward",
+                value: this.reward ? 1 : 0,
+                tag: "default"
+              }
+            },
             {
               attributes: {
                 key: "site_pay_group_close",

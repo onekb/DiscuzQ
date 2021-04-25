@@ -190,5 +190,7 @@ return [
             'Access-Control-Allow-Credentials' => 'true'
 
         ]
-    ]
+    ],
+    // 开启部分中间件中的 sql 缓存
+    'middleware_cache' => false,
 ];

@@ -26,18 +26,31 @@ abstract class AbstractNotification extends Notification
      */
     protected static $tplData;
 
+    /**
+     * @var bool
+     */
+    protected static $tplError = false;
+
     protected static function getTemplate($tplId)
     {
-        $values = array_values($tplId);
-        if (self::$tplData) {
-            self::$tplData->whereIn('id', $values);
-        }
+        if (! empty($tplId)) {
+            $values = array_values($tplId);
+            if (self::$tplData) {
+                self::$tplData->whereIn('notice_id', $values);
+            }
 
-        self::$tplData = NotificationTpl::query()->whereIn('id', $values)->get();
+            self::$tplData = NotificationTpl::query()->whereIn('notice_id', $values)->get();
+        } else {
+            self::$tplError = true;
+        }
     }
 
     protected function getNotificationChannels()
     {
+        if (self::$tplError) {
+            return [];
+        }
+
         $channel = [];
         self::$tplData->each(function ($item) use (&$channel) {
             /** @var NotificationTpl $item */

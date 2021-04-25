@@ -83,6 +83,20 @@ class Setting extends Model
     ];
 
     /**
+     * 全局中的功能设置权限 -- 关联控制角色中的权限
+     */
+    public static $global_permission = [
+        'site_create_thread0' => ['createThread.0'],
+        'site_create_thread1' => ['createThread.1'],
+        'site_create_thread2' => ['createThread.2'],
+        'site_create_thread3' => ['createThread.3'],
+        'site_create_thread4' => ['createThread.4'],
+        'site_create_thread5' => ['createThread.5'],
+        'site_create_thread6' => ['createThread.6'],
+        'site_can_reward'  =>  ['switch.thread.canBeReward', 'thread.canBeReward']
+    ];
+
+    /**
      * Set the encrypt.
      *
      * @param $encrypt
@@ -131,7 +145,7 @@ class Setting extends Model
         }
     }
 
-    public static function isMiniProgram()
+    public static function isMiniProgramVideoOn()
     {
         $request = app('request');
         $headers = $request->getHeaders();
@@ -140,8 +154,7 @@ class Setting extends Model
         $serverStr = strtolower(json_encode($server, 256));
 
         if (strstr($serverStr, 'miniprogram') || strstr($headersStr, 'miniprogram') || 
-            strstr($serverStr, 'MicroMessenger') || strstr($headersStr, 'MicroMessenger') || 
-            strstr($server['HTTP_USER_AGENT'], 'MicroMessenger')) {
+            strstr($headersStr, 'compress')) {
             $settings = Setting::query()->where(['key' => 'miniprogram_video', 'tag' => 'wx_miniprogram'])->first();
             if(!$settings->value){
                 return false;

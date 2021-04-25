@@ -18,6 +18,7 @@
 namespace App\Api\Controller\Threads;
 
 use App\Common\ResponseCode;
+use App\Models\Permission;
 use App\Models\Post;
 use App\Models\Thread;
 use App\Models\Category;
@@ -37,10 +38,14 @@ class ListStickThreadsV2Controller extends DzqController
             }
         }
 
-        // $miniProgramVideo = Setting::isMiniProgram();
-        // if(!$miniProgramVideo){
-        //     $threads = $threads->where('type', '<>', Thread::TYPE_OF_VIDEO);
-        // }
+        $isMiniProgramVideoOn = Setting::isMiniProgramVideoOn();
+        if(!$isMiniProgramVideoOn){
+            $threads = $threads->where('type', '<>', Thread::TYPE_OF_VIDEO);
+        }
+
+        $groups = $this->user->groups->toArray();
+        $groupIds = array_column($groups, 'id');
+        $permissions = Permission::categoryPermissions($groupIds);
 
         $categoryIds = Category::instance()->getValidCategoryIds($this->user, $categoryIds);
         if (!$categoryIds) {
@@ -66,14 +71,15 @@ class ListStickThreadsV2Controller extends DzqController
             $id = $thread['id'];
             if (empty($title)) {
                 if (isset($posts[$id])) {
-                    $title = Post::instance()->getContentSummary($thread['id']);
+                    $title = Post::instance()->getContentSummary($posts[$id]);
                 }
             }
             $linkString .= $title;
             $data [] = [
                 'pid' => $thread['id'],
                 'categoryId' => $thread['category_id'],
-                'title' => $title
+                'title' => $title,
+                'canViewPosts' => $this->canViewPosts($thread, $permissions)
             ];
         }
         list($search, $replace) = Thread::instance()->getReplaceString($linkString);
@@ -81,5 +87,18 @@ class ListStickThreadsV2Controller extends DzqController
             $item['title'] = str_replace($search, $replace, $item['title']);
         }
         $this->outPut(ResponseCode::SUCCESS, '', $data);
+    }
+
+
+    private function canViewPosts($thread, $permissions)
+    {
+        if ($this->user->isAdmin() || $this->user->id == $thread['user_id']) {
+            return true;
+        }
+        $viewPostStr = 'category' . $thread['category_id'] . '.thread.viewPosts';
+        if (in_array('thread.viewPosts', $permissions) || in_array($viewPostStr, $permissions)) {
+            return true;
+        }
+        return false;
     }
 }

@@ -17,6 +17,9 @@ namespace App\Notifications;
 
 use App\Models\User;
 use App\Notifications\Messages\Database\ReceiveRedPacketMessage;
+use App\Notifications\Messages\MiniProgram\ReceiveRedPacketMiniProgramMessage;
+use App\Notifications\Messages\Sms\ReceiveRedSmsMessage;
+use App\Notifications\Messages\Wechat\ReceiveRedPacketWechatMessage;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Discuz\Notifications\NotificationManager;
 use Illuminate\Database\Eloquent\Model;
@@ -37,27 +40,24 @@ class ReceiveRedPacket extends AbstractNotification
 
     protected $message;
 
-    public $tplId = [];
+    public $tplId = [
+        'database'    => 'system.red_packet.gotten',
+        'wechat'      => 'wechat.red_packet.gotten',
+        'sms'         => 'sms.red_packet.gotten',
+        'miniProgram' => 'miniprogram.red_packet.gotten'
+    ];
 
     /**
      * @var Collection
      */
     protected $messageRelationship;
 
-    public function __construct($message, User $user, Model $model, $data = [])
+    public function __construct(User $user, Model $model, $data = [])
     {
-        $this->message = app($message);
-
+        $this->setTemplate();
         $this->user = $user;
         $this->model = $model;
         $this->data = $data;
-
-        /**
-         * 初始化要发送的模板中，对应的 tplId
-         */
-        $this->initNoticeMessage();
-
-        $this->setTemplate();
     }
 
     /**
@@ -83,7 +83,7 @@ class ReceiveRedPacket extends AbstractNotification
 
     public function getTplModel($type)
     {
-        return self::$tplData->where('id', $this->tplId[$type])->first();
+        return self::$tplData->where('notice_id', $this->tplId[$type])->first();
     }
 
     /**
@@ -97,7 +97,7 @@ class ReceiveRedPacket extends AbstractNotification
 
     public function toDatabase($notifiable)
     {
-        $message = $this->getMessage('database');
+        $message = app(ReceiveRedPacketMessage::class);
         $message->setData($this->getTplModel('database'), $this->user, $this->model, $this->data);
 
         return (new NotificationManager)->driver('database')->setNotification($message)->build();
@@ -105,28 +105,24 @@ class ReceiveRedPacket extends AbstractNotification
 
     public function toWechat($notifiable)
     {
-        $message = $this->getMessage('wechat');
+        $message = app(ReceiveRedPacketWechatMessage::class);
         $message->setData($this->getTplModel('wechat'), $this->user, $this->model, $this->data);
-
         return (new NotificationManager)->driver('wechat')->setNotification($message)->build();
     }
 
-    protected function initNoticeMessage()
+    public function toSms($notifiable)
     {
-        /**
-         * init database message
-         */
-        $this->messageRelationship = collect();
-        $this->messageRelationship['wechat'] = $this->message;
-
-        // set public database message relationship
-        $this->messageRelationship['database'] = app(ReceiveRedPacketMessage::class);
-
-        /**
-         * set tpl id
-         */
-        $this->tplId['database'] = 45;
-        $this->data = array_merge($this->data, ['notice_types_of' => 1]); // 收入通知
-        $this->tplId['wechat'] = $this->messageRelationship['wechat']->tplId;
+        $message = app(ReceiveRedSmsMessage::class);
+        $message->setData($this->getTplModel('sms'), $this->user, $this->model, $this->data);
+        return (new NotificationManager)->driver('sms')->setNotification($message)->build();
     }
+
+    public function toMiniProgram($notifiable)
+    {
+        $message = app(ReceiveRedPacketMiniProgramMessage::class);
+        $message->setData($this->getTplModel('miniProgram'), $this->user, $this->model, $this->data);
+
+        return (new NotificationManager)->driver('miniProgram')->setNotification($message)->build();
+    }
+
 }

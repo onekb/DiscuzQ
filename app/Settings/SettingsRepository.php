@@ -18,21 +18,28 @@
 
 namespace App\Settings;
 
+use App\Common\CacheKey;
 use App\Models\Setting;
+use Discuz\Cache\CacheManager;
 use Discuz\Contracts\Setting\SettingsRepository as ContractsSettingRepository;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 class SettingsRepository implements ContractsSettingRepository
 {
+    const CACHE_TTL = 30;
+
     /**
      * @var Collection
      */
     protected $settings = null;
 
-    public function __construct()
+    protected $cache;
+
+    public function __construct(CacheManager $cache)
     {
         $this->settings = new Collection();
+        $this->cache = $cache;
     }
 
     public function all()
@@ -41,15 +48,31 @@ class SettingsRepository implements ContractsSettingRepository
             return $this->settings;
         }
 
+        if (app()->config('middleware_cache')) {
+            $ttl = static::CACHE_TTL;
+            $settings = $this->cache->remember(
+                CacheKey::SETTINGS,
+                mt_rand($ttl, $ttl + 10),
+                function () {
+                    return $this->getAllFromDatabase();
+                });
+        } else {
+            $settings = $this->getAllFromDatabase();
+        }
+
+        $this->settings = collect($settings);
+
+        return $this->settings;
+    }
+
+    protected function getAllFromDatabase()
+    {
         $settings = [];
         Setting::all()->each(function ($setting) use (&$settings) {
             $tag = $setting['tag'] ?? 'default';
             $settings[$tag][$setting['key']] = $setting['value'];
         });
-
-        $this->settings = collect($settings);
-
-        return $this->settings;
+        return $settings;
     }
 
     public function get($key, $tag = 'default', $default = '')

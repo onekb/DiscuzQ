@@ -12,8 +12,6 @@ use Illuminate\Contracts\Routing\UrlGenerator;
  */
 class RegisterWechatMessage extends SimpleMessage
 {
-    public $tplId = 13;
-
     /**
      * @var User $actor
      */

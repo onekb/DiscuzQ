@@ -64,5 +64,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('clear:video')->daily();
         $schedule->command('clear:question')->daily();
         $schedule->command('clear:thread_draft')->daily();
+        $schedule->command('clear:session_token')->everyMinute();
     }
 }

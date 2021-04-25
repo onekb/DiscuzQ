@@ -19,6 +19,7 @@
 namespace App\Api\Controller\Notification;
 
 use App\Api\Serializer\NotificationTplSerializer;
+use App\Common\CacheKey;
 use App\Models\NotificationTpl;
 use Discuz\Api\Controller\AbstractListController;
 use Discuz\Auth\AssertPermissionTrait;
@@ -43,6 +44,10 @@ class UpdateNotificationTplController extends AbstractListController
      * @var Factory
      */
     protected $validation;
+    /**
+     * @var \Illuminate\Contracts\Foundation\Application|mixed
+     */
+    protected $cache;
 
     /**
      * @param Factory $validation
@@ -97,7 +102,7 @@ class UpdateNotificationTplController extends AbstractListController
                     $notificationTpl->content = Arr::get($attributes, 'content');
                 }
                 break;
-            case 1:
+            default:
                 if ($notificationTpl->status == 1) {
                     $this->validation->make($attributes, [
                         'template_id' => 'filled',
@@ -105,7 +110,15 @@ class UpdateNotificationTplController extends AbstractListController
                 }
 
                 if (Arr::has($attributes, 'template_id')) {
-                    $notificationTpl->template_id = Arr::get($attributes, 'template_id');
+                    $templateId = Arr::get($attributes, 'template_id');
+                    if ($notificationTpl->template_id != $templateId) {
+                        $notificationTpl->template_id = Arr::get($attributes, 'template_id');
+
+                        // 判断是否修改了小程序模板，清除小程序查询模板的缓存
+                        if ($notificationTpl->type == NotificationTpl::MINI_PROGRAM_NOTICE) {
+                            app('cache')->forget(CacheKey::NOTICE_MINI_PROGRAM_TEMPLATES);
+                        }
+                    }
                 }
                 break;
         }

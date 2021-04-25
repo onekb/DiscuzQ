@@ -15,8 +15,6 @@ use Illuminate\Contracts\Routing\UrlGenerator;
  */
 class RewardedScaleWechatMessage extends SimpleMessage
 {
-    public $tplId = 38;
-
     /**
      * @var Order $order
      */

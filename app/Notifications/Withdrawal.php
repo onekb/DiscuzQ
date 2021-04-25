@@ -18,6 +18,8 @@ namespace App\Notifications;
 use App\Models\User;
 use App\Models\UserWalletCash;
 use App\Notifications\Messages\Database\WithdrawalMessage;
+use App\Notifications\Messages\MiniProgram\WithdrawalMiniProgramMessage;
+use App\Notifications\Messages\Sms\WithdrawalSmsMessage;
 use App\Notifications\Messages\Wechat\WithdrawalWechatMessage;
 use Discuz\Notifications\NotificationManager;
 
@@ -34,7 +36,10 @@ class Withdrawal extends AbstractNotification
 
     public $data;
 
-    public $tplId = [];
+    /**
+     * @var array
+     */
+    public $tplId;
 
     public function __construct(User $actor, UserWalletCash $cash, $data = [])
     {
@@ -73,7 +78,7 @@ class Withdrawal extends AbstractNotification
 
     public function getTplModel($type)
     {
-        return self::$tplData->where('id', $this->tplId[$type])->first();
+        return self::$tplData->where('notice_id', $this->tplId[$type])->first();
     }
 
     public function toDatabase($notifiable)
@@ -90,6 +95,22 @@ class Withdrawal extends AbstractNotification
         $message->setData($this->getTplModel('wechat'), $this->actor, $this->cash, $this->data);
 
         return (new NotificationManager)->driver('wechat')->setNotification($message)->build();
+    }
+
+    public function toSms($notifiable)
+    {
+        $message = app(WithdrawalSmsMessage::class);
+        $message->setData($this->getTplModel('sms'), $this->actor, $this->cash, $this->data);
+
+        return (new NotificationManager)->driver('sms')->setNotification($message)->build();
+    }
+
+    public function toMiniProgram($notifiable)
+    {
+        $message = app(WithdrawalMiniProgramMessage::class);
+        $message->setData($this->getTplModel('miniProgram'), $this->actor, $this->cash, $this->data);
+
+        return (new NotificationManager)->driver('miniProgram')->setNotification($message)->build();
     }
 
     /**
@@ -110,14 +131,18 @@ class Withdrawal extends AbstractNotification
         if (UserWalletCash::notificationByWhich($status)) {
             // 提现通知
             $this->tplId = [
-                'database' => 33,
-                'wechat'   => 35,
+                'database'    => 'system.withdraw.noticed',
+                'wechat'      => 'wechat.withdraw.noticed',
+                'sms'         => 'sms.withdraw.noticed',
+                'miniProgram' => 'miniprogram.withdraw.noticed',
             ];
         } else {
             // 提现失败通知
             $this->tplId = [
-                'database' => 34,
-                'wechat'   => 36,
+                'database'    => 'system.withdraw.withdraw',
+                'wechat'      => 'wechat.withdraw.withdraw',
+                'sms'         => 'sms.withdraw.withdraw',
+                'miniProgram' => 'miniprogram.withdraw.withdraw',
             ];
         }
     }

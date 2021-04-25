@@ -16,6 +16,7 @@ return [
     'order_type_question'           => '问答提问支付',
     'order_type_onlooker'           => '问答围观',
     'order_type_attachment'         => '付费附件',
+    'order_type_renew'              => '站点付费',
     'order_thread_attachment_error' => '付费附件',
 
     'order_type_text'               =>'文字帖红包',

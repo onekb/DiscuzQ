@@ -8,7 +8,7 @@ use Discuz\Notifications\Messages\SimpleMessage;
 use Illuminate\Contracts\Routing\UrlGenerator;
 
 /**
- * 提现通知/提现失败通知
+ * 提现通知/提现失败通知 - 微信
  * Class WithdrawalWechatMessage
  *
  * @package App\Notifications\Messages\Wechat

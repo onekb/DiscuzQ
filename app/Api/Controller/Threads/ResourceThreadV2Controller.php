@@ -38,21 +38,26 @@ use App\Models\RedPacket;
 use App\Models\Thread;
 use App\Models\ThreadReward;
 use App\Models\ThreadUser;
+use App\Models\ThreadVideo;
 use App\Repositories\UserFollowRepository;
+use App\Settings\SettingsRepository;
+use Carbon\Carbon;
 use Discuz\Base\DzqController;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Str;
 use s9e\TextFormatter\Utils;
 
 class ResourceThreadV2Controller extends DzqController
 {
     public $userFollow;
+    public $settings;
 
     //返回的数据一定包含的数据
     public $include = [
         'firstPost',
         'firstPost.likedUsers:id,username,avatar',
         'firstPost.mentionUsers:id,username,avatar',
-        'user:id,username,avatar,follow_count as followCount',
+        'user:id,username,avatar,follow_count as followCount,updated_at as updatedAt',
         'user.groups:id,name,is_display as isDisplay',
         'category:id,name,description'
     ];
@@ -74,9 +79,10 @@ class ResourceThreadV2Controller extends DzqController
     ];
 
 
-    public function __construct(UserFollowRepository $userFollow)
+    public function __construct(UserFollowRepository $userFollow, SettingsRepository $settings)
     {
         $this->userFollow = $userFollow;
+        $this->settings = $settings;
     }
 
     public function main()
@@ -122,7 +128,10 @@ class ResourceThreadV2Controller extends DzqController
             if(empty($thread->$key)){
                 $data[$key] = [];
             }else{
-                $data[$key] = $thread->$key;
+                $data[$key] = $thread->$key->map(function ($item){
+                    $item->avatarUrl = $item->avatar;
+                    return $item->only(['id','username','avatarUrl']);
+                });
             }
         }
         $thread->loadMissing($include);
@@ -151,14 +160,54 @@ class ResourceThreadV2Controller extends DzqController
             $data['firstPost']['isLiked'] = false;
         }
 
-        $data['likedUsers'] = $thread->firstPost->likedUsers ?? [];
+        if($thread->firstPost->likedUsers){
+            $data['likedUsers'] = $thread->firstPost->likedUsers->map(function ($item){
+                    $item->avatarUrl = $item->avatar;
+                    return $item->only(['id','username','avatarUrl','pivot']);
+                });
+        }else{
+            $data['likedUsers'] = [];
+        }
         $data['mentionUsers'] = $thread->firstPost->mentionUsers ?? [];
         $data['images'] = [];
+        $urlKey = ''; $urlExpire = 0;
+        if(in_array($thread->type, [Thread::TYPE_OF_VIDEO, Thread::TYPE_OF_AUDIO])){
+            $urlKey = $this->settings->get('qcloud_vod_url_key', 'qcloud');
+            $urlExpire = (int) $this->settings->get('qcloud_vod_url_expire', 'qcloud');
+        }
         switch ($thread->type){
             case Thread::TYPE_OF_VIDEO:
+                $threadVideo = ThreadVideo::query()->where(['thread_id' => $thread->id, 'status' => 1, 'type' => 0])->first();
+                $threadVideo->mediaUrl = $threadVideo->media_url;
+                if(empty($threadVideo)){        //如果没有转码成功的就去最后一个草稿
+                    $threadVideo = ThreadVideo::query()->where(['thread_id' => $thread->id, 'status' => 0])->orderBy('id', 'desc')->first();
+                }
+                $thread->threadVideo = $threadVideo;
+                if ($urlKey && $urlExpire && $thread->threadVideo->mediaUrl) {
+                    $currentTime = Carbon::now()->timestamp;
+                    $dir = Str::beforeLast(parse_url($thread->threadVideo->mediaUrl)['path'], '/') . '/';
+                    $t = dechex($currentTime+$urlExpire);
+                    $us = Str::random(10);
+                    $sign = md5($urlKey . $dir . $t . $us);
+                    $thread->threadVideo->mediaUrl = $thread->threadVideo->mediaUrl . '?t=' . $t . '&us='. $us . '&sign='.$sign;
+                }
                 $data['threadVideo'] = $thread->threadVideo ?? [];
                 break;
             case Thread::TYPE_OF_AUDIO:
+                $threadAudio = ThreadVideo::query()->where(['thread_id' => $thread->id, 'status' => 1, 'type' => 1])->first();
+                $threadAudio->mediaUrl = $threadAudio->media_url;
+                if(empty($threadAudio)){        //如果没有转码成功的就去最后一个草稿
+                    $threadAudio = ThreadVideo::query()->where(['thread_id' => $thread->id, 'status' => 0, 'type' => 1])->orderBy('id', 'desc')->first();
+                }
+                $thread->threadAudio = $threadAudio;
+                if ($urlKey && $urlExpire && $thread->threadAudio->mediaUrl) {
+                    $currentTime = Carbon::now()->timestamp;
+                    $dir = Str::beforeLast(parse_url($thread->threadAudio->mediaUrl)['path'], '/') . '/';
+                    $t = dechex($currentTime+$urlExpire);
+                    $us = Str::random(10);
+                    $sign = md5($urlKey . $dir . $t . $us);
+                    $thread->threadAudio->mediaUrl = $thread->threadAudio->mediaUrl . '?t=' . $t . '&us='. $us . '&sign='.$sign;
+                }
                 $data['threadAudio'] = $thread->threadAudio ?? [];
                 break;
             case Thread::TYPE_OF_GOODS:
@@ -216,7 +265,7 @@ class ResourceThreadV2Controller extends DzqController
             $redPacket = RedPacket::query()->where('thread_id', $thread_id)->first();
             $data['redPacket'] = $redPacket ? $redPacket->toArray() : [];
         }
-        $data['canFavorite'] = (bool) $this->user->can('favorite', $thread->firstPost);
+        $data['canFavorite'] = (bool) $this->user->can('favorite', $thread);
 
         if ($favoriteState = $thread->favoriteState) {
             $data['isFavorite'] = true;
@@ -236,9 +285,10 @@ class ResourceThreadV2Controller extends DzqController
         $data['isPaidAttachment'] = !empty($thread->attachment_price) ? true : false;
 
 
+        $thread->timestamps = false;
         if(!$stopViewCount)     $thread->increment('view_count');
 
-//        $cache->put($cacheKey, serialize($data), 5*60);
+
         $data = $this->camelData($data);
 
         //为了兼容前端
@@ -306,7 +356,7 @@ class ResourceThreadV2Controller extends DzqController
             ->keyBy('id')
             ->map(function (Attachment $attachment) use ($attachmentSerializer) {
                 if ($attachment->type === Attachment::TYPE_OF_IMAGE) {
-                    return $attachmentSerializer->getDefaultAttributes($attachment)['thumbUrl'];
+                    return $attachmentSerializer->getDefaultAttributes($attachment)['url'];
                 } elseif ($attachment->type === Attachment::TYPE_OF_FILE) {
                     return $attachmentSerializer->getDefaultAttributes($attachment)['url'];
                 }

@@ -79,6 +79,16 @@ class Post extends DzqModel
     use ScopeVisibilityTrait;
 
     /**
+     * 通知 Post 操作方式
+     */
+    const NOTIFY_EDIT_CONTENT_TYPE = 'edit_content';    // 内容修改
+    const NOTIFY_UNAPPROVED_TYPE   = 'unapproved';      // 内容不合法/内容忽略
+    const NOTIFY_APPROVED_TYPE     = 'approved';        // 内容合法
+    const NOTIFY_ESSENCE_TYPE      = 'essence';         // 内容加精
+    const NOTIFY_STICKY_TYPE       = 'sticky';          // 内容置顶
+    const NOTIFY_DELETE_TYPE       = 'delete';          // 内容删除
+
+    /**
      * 摘要长度
      */
     const SUMMARY_LENGTH = 80;
@@ -128,6 +138,21 @@ class Post extends DzqModel
     ];
 
     /**
+     * Post 操作方式的变量音译
+     * 修改/不通过/通过/精华/置顶/删除
+     *
+     * @var string[]
+     */
+    protected static $notifyType = [
+        'edit_content' => '修改',
+        'unapproved'   => '不通过',
+        'approved'     => '通过',
+        'essence'      => '精华',
+        'sticky'       => '置顶',
+        'delete'       => '删除',
+    ];
+
+    /**
      * The user for which the state relationship should be loaded.
      *
      * @var User
@@ -140,6 +165,19 @@ class Post extends DzqModel
      * @var Formatter
      */
     protected static $formatter;
+
+    /**
+     * 根据 值/类型 获取对应值
+     *
+     * @param $string
+     * @return string
+     */
+    public static function enumNotifyType($string): string
+    {
+        $arr = static::$notifyType;
+
+        return array_key_exists($string, $arr) ? $arr[$string] : '未知';
+    }
 
     /**
      * datetime 时间转换
@@ -675,9 +713,9 @@ class Post extends DzqModel
             ->get()->toArray();
     }
 
-    public function getContentSummary($threadId, &$postId = false)
+    public function getContentSummary($post, &$postId = false)
     {
-        $post = self::query()->where(['thread_id' => $threadId, 'is_first' => self::FIRST_YES])->first();
+//        $post = self::query()->where(['thread_id' => $threadId, 'is_first' => self::FIRST_YES])->first();
         if (empty($post)) {
             return '';
         } else {

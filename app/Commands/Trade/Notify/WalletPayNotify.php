@@ -102,6 +102,10 @@ class WalletPayNotify
                     $change_type = UserWalletLog::TYPE_EXPEND_ATTACHMENT;
                     $change_type_lang = 'wallet.expend_attachment';
                     break;
+                case Order::ORDER_TYPE_RENEW:
+                    $change_type = UserWalletLog::TYPE_EXPEND_RENEW;
+                    $change_type_lang = 'wallet.expend_renew';
+                    break;
                 case Order::ORDER_TYPE_TEXT:
                     $change_type = UserWalletLog::TYPE_TEXT_FREEZE;
                     $change_type_lang = 'wallet.freeze_text';
@@ -143,6 +147,7 @@ class WalletPayNotify
             }
             $connection->commit();
             if ($order_info) {
+                app('payLog')->info("微信支付成功,用户id:{$this->data['user_id']}");
                 return [
                     'wallet_pay' => [
                         'result' => 'success',

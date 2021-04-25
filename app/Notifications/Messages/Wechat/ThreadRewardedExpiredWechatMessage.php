@@ -14,7 +14,7 @@ use Illuminate\Support\Arr;
  */
 class ThreadRewardedExpiredWechatMessage extends SimpleMessage
 {
-    public $tplId = 50;
+    public $tplId = 'wechat.question.rewarded.expired';
 
     protected $user;
 

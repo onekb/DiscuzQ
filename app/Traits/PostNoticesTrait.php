@@ -102,7 +102,7 @@ trait PostNoticesTrait
             'message' => $post->formatContent(), // 解析表情
             'post' => $post,
             'refuse' => $attach['refuse'],
-            'notify_type' => PostMessage::NOTIFY_DELETE_TYPE,
+            'notify_type' => Post::NOTIFY_DELETE_TYPE,
         ];
 
         // Tag 发送通知
@@ -126,7 +126,7 @@ trait PostNoticesTrait
 
         if ($post->is_approved == 1) {
             // 发送通过通知
-            $data = array_merge($data, ['notify_type' => PostMessage::NOTIFY_APPROVED_TYPE]);
+            $data = array_merge($data, ['notify_type' => Post::NOTIFY_APPROVED_TYPE]);
 
             // 发送回复人的主题通知 (回复自己主题不发送通知)
             if ($post->user_id != $post->thread->user_id) {
@@ -135,7 +135,7 @@ trait PostNoticesTrait
             }
         } elseif ($post->is_approved == 2) {
             // 忽略就发送不通过通知
-            $data = array_merge($data, ['notify_type' => PostMessage::NOTIFY_UNAPPROVED_TYPE]);
+            $data = array_merge($data, ['notify_type' => Post::NOTIFY_UNAPPROVED_TYPE]);
         }
 
         // Tag 发送通知
@@ -150,6 +150,6 @@ trait PostNoticesTrait
      */
     public function getPostTitle(Post $post)
     {
-        return $post->thread->type === Thread::TYPE_OF_LONG ? $post->thread->title : $post->formatContent();
+        return $post->thread->type === Thread::TYPE_OF_LONG ? $post->thread->title : $post->content;
     }
 }

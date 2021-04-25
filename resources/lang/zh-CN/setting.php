@@ -75,5 +75,8 @@ return [
 
     'offiaccount_error' => '微信公众号配置错误。',
 
-    'onlooker_price_not_divisible' => '围观单价减掉站点分成后，提问人和回答人不能平分，该金额不能被整除请重新填写'
+    'onlooker_price_not_divisible' => '围观单价减掉站点分成后，提问人和回答人不能平分，该金额不能被整除请重新填写',
+
+    // notice message
+    'template_app_id_secret_not_found' => '模板ID、appID、secret 未找到',
 ];

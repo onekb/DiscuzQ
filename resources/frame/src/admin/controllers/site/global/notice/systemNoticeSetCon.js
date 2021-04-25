@@ -4,7 +4,6 @@
 
 import Card from "../../../../view/site/common/card/card";
 import CardRow from "../../../../view/site/common/card/cardRow";
-import TableContAdd from "../../../../view/site/common/table/tableContAdd";
 import Page from "../../../../view/site/common/page/page";
 
 export default {
@@ -13,7 +12,8 @@ export default {
       tableData: [],
       pageNum: 1,
       pageLimit: 20,
-      total: 0
+      total: 0,
+      type: [],
       // pageCount: 0
     };
   },
@@ -35,10 +35,8 @@ export default {
           if (res.errors) {
             this.$message.error(res.errors[0].code);
           } else {
-            console.log(res, 'res');
             this.tableData = res.readdata;
             this.total = res.meta.total;
-            // this.pageCount = res.meta.pageCount;
           }
         })
         .catch(err => {});
@@ -81,7 +79,6 @@ export default {
       return (this.pageNum - 1) * this.pageLimit + $index + 1;
     },
     handleCurrentChange(val) {
-      console.log("val~~~", val);
       this.pageNum = val;
       this.getNoticeList();
     },
@@ -91,6 +88,27 @@ export default {
         path: "/admin/notice-configure",
         query: { id: id,typeName: typeName }
       });
+    },
+    // 通知类型的点击事件
+    handleError(item) {
+      if (item.is_error === 1) {
+        let json = item.error_msg;
+
+        this.$alert(`
+          <div class="notice_error_info">
+            <div class="notice_error_title">Code</div>
+            <div class="notice_error_message">${json.err_code}</div>
+          </div>
+          <div class="notice_error_info">
+            <div class="notice_error_title">Message</div>
+            <div class="notice_error_message">${json.err_msg}</div>
+          </div>`,
+          `${json.type_name}（${item.type}）`, {
+          dangerouslyUseHTMLString: true,
+        }).catch(() => {
+          console.log('点击了关闭')
+        })
+      }
     }
   },
 

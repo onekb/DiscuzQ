@@ -30,6 +30,7 @@ use App\Models\MobileCode;
 use App\Models\SessionToken;
 use App\Models\User;
 use App\Models\UserWalletFailLogs;
+use App\Models\UserWechat;
 use App\Notifications\Messages\Wechat\RegisterWechatMessage;
 use App\Notifications\System;
 use App\Repositories\MobileCodeRepository;
@@ -130,7 +131,15 @@ class VerifyMobile
             $this->bind->withToken($token, $this->mobileCode->user);
             if (!(bool)$this->settings->get('register_validate')) {
                 // Tag 发送通知 （在注册绑定微信后 发送注册微信通知）
-                $this->mobileCode->user->notify(new System(RegisterWechatMessage::class, $this->mobileCode->user, ['send_type' => 'wechat']));
+                /** @var User $user */
+                $user = $this->mobileCode->user;
+                if (empty($user->wechat)) {
+                    $wechatUser = UserWechat::where('user_id', $user->id)->first();
+                    if (! empty($wechatUser)) {
+                        $user->setRelation('wechat', $wechatUser);
+                    }
+                }
+                $user->notify(new System(RegisterWechatMessage::class, $this->mobileCode->user, ['send_type' => 'wechat']));
             }
         }
 
@@ -138,8 +147,12 @@ class VerifyMobile
         $js_code = Arr::get($this->params, 'js_code');
         $iv = Arr::get($this->params, 'iv');
         $encryptedData = Arr::get($this->params, 'encryptedData');
-        if ($js_code && $iv && $encryptedData) {
+        $noAES = Arr::get($this->params, 'noAES');
+        if ($js_code && $iv && $encryptedData && ! $noAES) {
             $this->bind->bindMiniprogram($js_code, $iv, $encryptedData, null, $this->mobileCode->user);
+        }
+        if($js_code && $noAES) {
+            $this->bind->bindMiniprogramByCode($js_code, $this->mobileCode->user);
         }
 
         //手机号登录需要填写扩展字段审核的场景

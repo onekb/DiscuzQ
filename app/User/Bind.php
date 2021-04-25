@@ -60,7 +60,7 @@ class Bind
      * @param int $rebind 是否更换绑定
      * @throws Exception
      */
-    public function withToken($token, $user, $rebind = null)
+    public function withToken($token, &$user, $rebind = null)
     {
         $session = SessionToken::get($token);
         $scope = Arr::get($session, 'scope');
@@ -94,6 +94,7 @@ class Bind
              * @see UserWechatObserver
              */
             $wechat->save();
+            $user = $user->setRelation('wechat', $wechat);
         }
         if ($scope === 'ucenter') {
             $payload = Arr::get($session, 'payload');
@@ -204,5 +205,33 @@ class Bind
                 throw new Exception('user_has_mobile');
             }
         }
+    }
+
+    public function bindMiniprogramByCode($js_code, $user)
+    {
+        $app = $this->miniProgram();
+        $jscode2session = $app->auth->session($js_code);
+        if (isset($jscode2session['errcode']) && $jscode2session['errcode'] != 0) {
+            throw new SocialiteException($jscode2session['errmsg'], $jscode2session['errcode']);
+        }
+
+        $unionid = Arr::get($jscode2session, 'unionid', '');
+        $openid  =  Arr::get($jscode2session, 'openid');
+
+        //获取小程序用户信息
+        /** @var UserWechat $wechatUser */
+        $wechatUser = UserWechat::query()
+            ->when($unionid, function ($query, $unionid) {
+                return $query->where('unionid', $unionid);
+            })
+            ->orWhere('min_openid', $openid)
+            ->lockForUpdate()
+            ->first();
+
+
+        $wechatUser->user_id = $user->id ?: null;
+        $wechatUser->save();
+
+        return $wechatUser;
     }
 }

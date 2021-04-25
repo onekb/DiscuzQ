@@ -25,6 +25,7 @@ use App\Models\User;
 use Discuz\Cache\CacheManager;
 use Discuz\Foundation\Application;
 use Discuz\Http\UrlGenerator;
+use Illuminate\Support\Str;
 use s9e\TextFormatter\Configurator;
 use s9e\TextFormatter\Unparser;
 
@@ -74,6 +75,8 @@ class BaseFormatter
         'blockquote'    => ['class'],
     ];
 
+    protected static $autoloadRegistered = false;
+
     /**
      * @param UrlGenerator $url
      * @param CacheManager $cache
@@ -85,6 +88,31 @@ class BaseFormatter
         $this->cache = $cache;
         $this->app = $app;
         $this->cacheDir = $app->storagePath().'/formatter';
+
+        $this->registerAutoload();
+    }
+
+    protected function registerAutoload()
+    {
+        if (static::$autoloadRegistered) {
+            return;
+        }
+
+        spl_autoload_register(function ($class) {
+            if (!Str::startsWith($class, 'Renderer')) {
+                return;
+            }
+
+            if (file_exists($file = $this->cacheDir.'/'.$class.'.php')) {
+                include $file;
+            } else {
+                $this->flush();
+
+                $this->cacheFormatter();
+            }
+        });
+
+        static::$autoloadRegistered = true;
     }
 
     /**
@@ -206,16 +234,6 @@ class BaseFormatter
      */
     protected function getRenderer()
     {
-        spl_autoload_register(function ($class) {
-            if (file_exists($file = $this->cacheDir.'/'.$class.'.php')) {
-                include $file;
-            } else {
-                $this->flush();
-
-                $this->cacheFormatter();
-            }
-        });
-
         return $this->getComponent('renderer');
     }
 

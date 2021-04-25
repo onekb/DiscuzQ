@@ -59,6 +59,17 @@ class OrderSubscriber
             $order->save();
         }
 
+        // 续费站点的订单，支付成功后修改用户信息
+        if ($order->type == Order::ORDER_TYPE_RENEW && $order->status == Order::ORDER_STATUS_PAID) {
+            $day = app()->make(SettingsRepository::class)->get('site_expire');
+            // 修改用户过期时间、订单过期时间,如果没有有效期，订单过期时间设置为null
+            $days = $order->user->expired_at->modify("+{$day} days");
+            $order->user->expired_at = $days;
+            $order->expired_at = $days;
+            $order->user->save();
+            $order->save();
+        }
+
         // 打赏主题的订单
         if ($order->type == Order::ORDER_TYPE_REWARD && $order->status == Order::ORDER_STATUS_PAID) {
             // 更新主题打赏数

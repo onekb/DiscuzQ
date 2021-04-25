@@ -23,6 +23,8 @@ use App\Events\Group\PermissionUpdated;
 use App\Models\Group;
 use App\Models\Permission;
 use App\Models\AdminActionLog;
+use App\Models\Setting;
+use App\Settings\SettingsRepository;
 use Discuz\Api\Controller\AbstractListController;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
@@ -47,11 +49,17 @@ class UpdateGroupPermissionController extends AbstractListController
     protected $events;
 
     /**
+     * @var SettingsRepository
+     */
+    public $settings;
+
+    /**
      * @param Dispatcher $events
      */
-    public function __construct(Dispatcher $events)
+    public function __construct(Dispatcher $events, SettingsRepository $settings)
     {
         $this->events = $events;
+        $this->settings = $settings;
     }
 
     /**
@@ -71,6 +79,24 @@ class UpdateGroupPermissionController extends AbstractListController
         /** @var Group $group */
         $group = Group::query()->findOrFail((int) Arr::get($attributes, 'groupId'));
 
+        // 查看请求的权限中是否有与全局权限相交的，如果有需要判断
+        $request_permissions = $attributes['permissions'] ?? [];
+        $global_permissions = [];
+        $setting_global_permission = Setting::$global_permission;
+        foreach ($setting_global_permission as $val){
+            $global_permissions = array_merge($global_permissions, $val);
+        }
+        $judge_permissions = array_intersect($request_permissions, $global_permissions);
+        $settings = app(SettingsRepository::class);
+        if(!empty($judge_permissions)){
+            foreach ($setting_global_permission as $key => $val){
+                if(!empty(array_intersect($val, $judge_permissions))){          //如果在对应的全局中，则判断这个全局功能权限是否开启
+                    if($settings->get($key, 'default') == 0){
+                        throw new PermissionDeniedException($key. 'permission_denied');
+                    }
+                }
+            }
+        }
         $oldPermissions = Permission::query()->where('group_id', $group->id)->pluck('permission');
 
         // 合并默认权限，去空，去重
@@ -78,9 +104,7 @@ class UpdateGroupPermissionController extends AbstractListController
             ->merge(Permission::DEFAULT_PERMISSION)
             ->filter()
             ->unique();
-
         Permission::query()->where('group_id', $group->id)->delete();
-
         Permission::query()->insert($newPermissions->map(function ($item) use ($group) {
             return ['group_id' => $group->id, 'permission' => $item];
         })->toArray());

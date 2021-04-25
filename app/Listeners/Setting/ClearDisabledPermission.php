@@ -80,5 +80,9 @@ class ClearDisabledPermission
         if ($permissions) {
             Permission::query()->whereIn('permission', $permissions)->delete();
         }
+
+        if(! $this->settings->get('site_can_reward', 'default')){
+            Permission::query()->where('permission', 'like', '%thread.canBeReward%')->delete();
+        }
     }
 }

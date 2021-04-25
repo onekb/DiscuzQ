@@ -2,10 +2,13 @@
 
 /**
  * Copyright (C) 2020 Tencent Cloud.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +21,10 @@ namespace App\Notifications;
 use App\Models\Question;
 use App\Models\User;
 use App\Notifications\Messages\Database\QuestionedMessage;
+use App\Notifications\Messages\MiniProgram\QuestionedAnswerMiniProgramMessage;
+use App\Notifications\Messages\MiniProgram\QuestionedMiniProgramMessage;
+use App\Notifications\Messages\Sms\QuestionedAnswerSmsMessage;
+use App\Notifications\Messages\Sms\QuestionedSmsMessage;
 use App\Notifications\Messages\Wechat\QuestionedAnswerWechatMessage;
 use App\Notifications\Messages\Wechat\QuestionedWechatMessage;
 use Discuz\Notifications\Messages\SimpleMessage;
@@ -39,12 +46,20 @@ class Questioned extends AbstractNotification
 
     protected $message;
 
-    public $tplId = [];
+    /**
+     * @var array
+     */
+    public $tplId;
 
     /**
      * @var Collection
      */
     protected $messageRelationship;
+
+    /**
+     * @var array
+     */
+    protected $channels;
 
     public function __construct($message, User $user, Question $question, $data = [])
     {
@@ -86,7 +101,7 @@ class Questioned extends AbstractNotification
 
     public function getTplModel($type)
     {
-        return self::$tplData->where('id', $this->tplId[$type])->first();
+        return self::$tplData->where('notice_id', $this->tplId[$type])->first();
     }
 
     /**
@@ -114,6 +129,22 @@ class Questioned extends AbstractNotification
         return (new NotificationManager)->driver('wechat')->setNotification($message)->build();
     }
 
+    public function toSms($notifiable)
+    {
+        $message = $this->getMessage('sms');
+        $message->setData($this->getTplModel('sms'), $this->user, $this->question, $this->data);
+
+        return (new NotificationManager)->driver('sms')->setNotification($message)->build();
+    }
+
+    public function toMiniProgram($notifiable)
+    {
+        $message = $this->getMessage('miniProgram');
+        $message->setData($this->getTplModel('miniProgram'), $this->user, $this->question, $this->data);
+
+        return (new NotificationManager)->driver('miniProgram')->setNotification($message)->build();
+    }
+
     protected function initNoticeMessage()
     {
         /**
@@ -125,15 +156,29 @@ class Questioned extends AbstractNotification
         $this->messageRelationship = collect();
         $this->messageRelationship['wechat'] = $this->message;
 
-        // set public database message relationship
+        // Set public database message relationship
         $this->messageRelationship['database'] = app(QuestionedMessage::class);
 
-        // set tpl id
+        // Set tpl ids
         if ($this->message instanceof QuestionedWechatMessage) {
-            $this->tplId['database'] = 39;
-        } elseif ($this->message instanceof QuestionedAnswerWechatMessage) {
-            $this->tplId['database'] = 41;
+            $this->tplId = [
+                'database'    => 'system.question.asked',
+                'wechat'      => 'wechat.question.asked',
+                'sms'         => 'sms.question.asked',
+                'miniProgram' => 'miniprogram.question.asked',
+            ];
+            $this->messageRelationship['sms'] = app(QuestionedSmsMessage::class);
+            $this->messageRelationship['miniProgram'] = app(QuestionedMiniProgramMessage::class);
+        } // Questioned Answer
+        elseif ($this->message instanceof QuestionedAnswerWechatMessage) {
+            $this->tplId = [
+                'database'    => 'system.question.answered',
+                'wechat'      => 'wechat.question.answered',
+                'sms'         => 'sms.question.answered',
+                'miniProgram' => 'miniprogram.question.answered',
+            ];
+            $this->messageRelationship['sms'] = app(QuestionedAnswerSmsMessage::class);
+            $this->messageRelationship['miniProgram'] = app(QuestionedAnswerMiniProgramMessage::class);
         }
-        $this->tplId['wechat'] = $this->messageRelationship['wechat']->tplId; // 40 、 42
     }
 }

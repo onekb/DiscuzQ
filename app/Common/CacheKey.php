@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Copyright (C) 2020 Tencent Cloud.
  *
@@ -17,13 +18,14 @@
 
 namespace App\Common;
 
-
 class CacheKey
 {
     //记录首页各个分类的数据缓存
     public const LIST_THREAD_HOME_INDEX = 'list_thread_home_index_';
+
     //记录各个缓存的key值，便于数据更新的时候删除
     public const LIST_THREAD_KEYS = 'list_thread_keys';
+
     //记录
     public const THREAD_RESOURCE_BY_ID = 'thread_resource_by_id_';
 
@@ -42,4 +44,12 @@ class CacheKey
     public const LIST_CATEGORIES = 'list_categories';
 
     public const LIST_V2_THREADS = 'list_v2_threads';
+
+    // 存储小程序通知模板数据
+    public const NOTICE_MINI_PROGRAM_TEMPLATES = 'notice_mini_program_templates';
+    public const AUTH_USER_PREFIX = 'auth_user_';
+
+    public const CHECK_PAID_GROUP = 'check_paid_group_';
+
+    public const SETTINGS = 'settings';
 }

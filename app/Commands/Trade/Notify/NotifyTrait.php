@@ -122,7 +122,6 @@ trait NotifyTrait
                     // 提问时，计算站长分成，以及作者实际获取金额
                     $this->orderInfo->calculateMasterAmount();
                     $this->orderInfo->save();
-
                     return $this->orderInfo;
 
                 case Order::ORDER_TYPE_ONLOOKER:
@@ -177,6 +176,10 @@ trait NotifyTrait
 
                     return $this->orderInfo;
 
+                case Order::ORDER_TYPE_RENEW:
+                    // 站点付费
+                    $this->orderInfo->save();
+                    return $this->orderInfo;
                 case Order::ORDER_TYPE_TEXT:
                     // 添加文字帖红包
                     $this->orderInfo->save();

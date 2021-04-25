@@ -39,7 +39,9 @@ class QuestionAnswerSerializer extends AbstractSerializer
      */
     public function getDefaultAttributes($model)
     {
-        $this->paidContent($model);
+        if ($model->onlooker_unit_price > 0) {
+            $this->paidContent($model);
+        }
 
         return [
             'id'                    => $model->id,

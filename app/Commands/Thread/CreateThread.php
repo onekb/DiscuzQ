@@ -41,6 +41,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class CreateThread
@@ -145,7 +146,7 @@ class CreateThread
         $this->assertCan($this->actor, 'createThread.' . $thread->type);
 
         //文字帖
-        $red_money = Arr::get($this->data, 'attributes.redPacket.money', null);
+        $red_money = Arr::get($attributes, 'redPacket.money', null);
         $thread->is_red_packet = Thread::NOT_HAVE_RED_PACKET;
         if ($thread->type === Thread::TYPE_OF_TEXT || $thread->type === Thread::TYPE_OF_LONG) {
 
@@ -155,9 +156,14 @@ class CreateThread
             }
         }
 
+        [$title, $content] = $this->checkTitleAndContent($censor);
+        $attributes['content'] = $content;
+        $attributes['title'] = $title;
+        $this->data['attributes'] = $attributes;
+
         // 标题，长文帖和专辑帖需要设置
         if ($thread->type === Thread::TYPE_OF_LONG) {
-            $thread->title = trim($censor->checkText(Arr::get($attributes, 'title')));
+            $thread->title = trim(Arr::get($attributes, 'title'));
 
             // 长文帖支持附件，附件可设置价格
             if ($thread->attachment_price = (float) Arr::get($attributes, 'attachment_price', 0)) {
@@ -181,7 +187,7 @@ class CreateThread
 
             // 付费长文帖可设置免费阅读字数
             if ($thread->price > 0 && $thread->type === Thread::TYPE_OF_LONG) {
-                $thread->free_words = (float) Arr::get($this->data, 'attributes.free_words', 0);
+                $thread->free_words = (float) Arr::get($attributes, 'free_words', 0);
             }
         }
 
@@ -255,5 +261,17 @@ class CreateThread
         $thread->save();
 
         return $thread;
+    }
+
+    protected function checkTitleAndContent(Censor $censor)
+    {
+        $sep = '__'.Str::random(6).'__';
+        $contentForCheck = Arr::get($this->data, 'attributes.title', '')
+            .$sep
+            .Arr::get($this->data, 'attributes.content', '');
+
+        [$title, $content] = explode($sep, $censor->checkText($contentForCheck));
+
+        return [$title, $content];
     }
 }

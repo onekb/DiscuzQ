@@ -61,8 +61,12 @@ export default {
           } else {
             this.qcloud_sms = true
           }
-          // 第三方登录公众号配置/小程序配置任意开启一项 可选无感模式
-          if(res.readdata._data.passport.offiaccount_close == true || res.readdata._data.passport.miniprogram_close == true) {
+          // 第三方登录设置：公众号配置、小程序配置、PC端微信扫码登录全部开启，才可选无感模式
+          if(
+            res.readdata._data.passport.offiaccount_close
+              && res.readdata._data.passport.miniprogram_close
+              && res.readdata._data.passport.oplatform_close
+          ) {
             this.qcloud_wx = false
           } else {
             this.qcloud_wx = true;
@@ -108,13 +112,13 @@ export default {
           }
         });
         if (res.readdata.length > 0 && arr.length > 0) {
-          this.extendsBtn = false;   
+          this.extendsBtn = false;
         } else {
           this.extensionOn = false;
           this.extendsBtn = true;
           this.extendConfing();
         }
-      }) 
+      })
     },
     extendConfing() {
       this.appFetch({

@@ -17,9 +17,9 @@ namespace App\Notifications;
 
 use App\Models\User;
 use App\Models\UserWalletLog;
-use App\Models\Order;
 use App\Notifications\Messages\Database\ThreadRewardedMessage;
 use App\Notifications\Messages\Wechat\ThreadRewardedWechatMessage;
+use App\Notifications\Messages\Sms\ThreadRewardedSmsMessage;
 use Discuz\Notifications\Messages\SimpleMessage;
 use Discuz\Notifications\NotificationManager;
 use Illuminate\Support\Collection;
@@ -31,9 +31,6 @@ use Illuminate\Support\Collection;
  */
 class ThreadRewarded extends AbstractNotification
 {
-
-    protected $message;
-
     public $user;
 
     public $order;
@@ -43,8 +40,9 @@ class ThreadRewarded extends AbstractNotification
     public $walletType;
 
     public $tplId = [
-        'database' => 47,
-        'wechat' => 48,
+        'database' => 'system.question.rewarded',
+        'wechat'   => 'wechat.question.rewarded',
+        'sms'      => 'sms.question.rewarded'
     ];
 
     /**
@@ -52,20 +50,13 @@ class ThreadRewarded extends AbstractNotification
      */
     protected $messageRelationship;
 
-    public function __construct($message, User $user, $order, $data, $walletType)
+    public function __construct(User $user, $order, $data, $walletType)
     {
-        $this->message = app($message);
+        $this->setTemplate();
         $this->user = $user;
         $this->order = $order;
         $this->data = $data;
         $this->walletType = $walletType;
-
-        /**
-         * 初始化要发送的模板中，对应的 tplId
-         */
-        $this->initNoticeMessage();
-
-        $this->setTemplate();
     }
 
     /**
@@ -91,7 +82,7 @@ class ThreadRewarded extends AbstractNotification
 
     public function getTplModel($type)
     {
-        return self::$tplData->where('id', $this->tplId[$type])->first();
+        return self::$tplData->where('notice_id', $this->tplId[$type])->first();
     }
 
     /**
@@ -105,41 +96,23 @@ class ThreadRewarded extends AbstractNotification
 
     public function toDatabase($notifiable)
     {
-        $message = $this->getMessage('database');
+        $message = app(ThreadRewardedMessage::class);
         $message->setData($this->getTplModel('database'), $this->user, $this->order, $this->data);
-
         return (new NotificationManager)->driver('database')->setNotification($message)->build();
+
     }
 
     public function toWechat($notifiable)
     {
-        $message = $this->getMessage('wechat');
+        $message = app(ThreadRewardedWechatMessage::class);
         $message->setData($this->getTplModel('wechat'), $this->user, $this->order, $this->data);
-
         return (new NotificationManager)->driver('wechat')->setNotification($message)->build();
     }
 
-    protected function initNoticeMessage()
+    public function toSms($notifiable)
     {
-        /**
-         * init database message
-         */
-        $this->messageRelationship = collect();
-        $this->messageRelationship['wechat'] = $this->message;
-
-        // set public database message relationship
-        $this->messageRelationship['database'] = app(ThreadRewardedMessage::class);
-
-        $newData = (array)$this->data;
-        if($this->walletType == UserWalletLog::TYPE_INCOME_THREAD_REWARD_RETURN){
-            $this->tplId['database'] = 49;
-            $this->data = array_merge($newData, ['notice_types_of' => 3]); // 过期通知
-        }else{
-            $this->tplId['database'] = 47;
-            $this->data = array_merge($newData, ['notice_types_of' => 1]); // 收入通知
-        }
-        app('log')->info(__LINE__ . '行：给被采纳者用户准备通知信息的模板。模板ID为'.$this->messageRelationship['wechat']->tplId);
-        $this->tplId['wechat'] = $this->messageRelationship['wechat']->tplId;
-
+        $message = app(ThreadRewardedSmsMessage::class);
+        $message->setData($this->getTplModel('sms'), $this->user, $this->order, $this->data);
+        return (new NotificationManager)->driver('sms')->setNotification($message)->build();
     }
 }

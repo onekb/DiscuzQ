@@ -69,6 +69,7 @@ class PayTrade
         // 余额是否充足
         $user = User::find($order_info['user_id']);
         if ($user->userWallet->available_amount < $order_info['amount']) {
+            app('payLog')->info("支付余额不足,用户id:{$order_info['user_id']}");
             return [
                 'wallet_pay' => [
                     'result' => 'fail',
