@@ -182,7 +182,15 @@ class ListThreadsController extends AbstractListController
         //设置列表第一页缓存
         $canCache = $this->canCache($params);
         $params['isMobile'] = Utils::isMobile();
-        $groups = $actor->toArray()['groups'];
+        $actorArray = [];
+        if ($actor) {
+            $actorArray = $actor->toArray();
+        }
+        $groups = [];
+        if (isset($actorArray['groups']) && !empty($actorArray['groups'])) {
+            $groups = $actorArray['groups'];
+        }
+
         if (!empty($groups)) {
             $group = $groups[0];
             $params['userRole'] = $group['id'];
@@ -213,8 +221,7 @@ class ListThreadsController extends AbstractListController
         $limit = $this->extractLimit($request);
         $offset = $this->extractOffset($request);
         $include = $this->extractInclude($request);
-        $page = isset($params['page']) ? $params['page'] : 1;
-        
+        $page = isset($params['page']) ? $params['page'] : array('number' => 1, 'limit' => 10);
 
         $threads = $this->search($actor, $filter, $sort, $limit, $offset, $page);
 
@@ -508,6 +515,7 @@ class ListThreadsController extends AbstractListController
 
         // 发表于（结束时间）
         if ($createdAtEnd = Arr::get($filter, 'createdAtEnd')) {
+            $createdAtEnd =  date("Y-m-d",strtotime("+1 day",strtotime($createdAtEnd)));
             $query->where('threads.created_at', '<=', $createdAtEnd);
         }
 
@@ -518,6 +526,7 @@ class ListThreadsController extends AbstractListController
 
         // 删除于（结束时间）
         if ($deletedAtEnd = Arr::get($filter, 'deletedAtEnd')) {
+            $deletedAtEnd =  date("Y-m-d",strtotime("+1 day",strtotime($deletedAtEnd)));
             $query->where('threads.deleted_at', '<=', $deletedAtEnd);
         }
 

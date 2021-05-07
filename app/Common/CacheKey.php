@@ -52,4 +52,7 @@ class CacheKey
     public const CHECK_PAID_GROUP = 'check_paid_group_';
 
     public const SETTINGS = 'settings';
+
+    public const GROUP_PERMISSIONS = 'group_permissions_';
+
 }

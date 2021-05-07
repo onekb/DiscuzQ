@@ -192,6 +192,9 @@ export default {
     * 接口请求
     * */
     getPostsList(pageNumber){
+      this.releaseTime = this.releaseTime == null?['','']:this.releaseTime;
+      this.deleteTime = this.deleteTime == null?['','']:this.deleteTime;
+      
       this.appFetch({
         url:'posts',
         method:'get',

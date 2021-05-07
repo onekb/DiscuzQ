@@ -335,7 +335,6 @@ class CreateOrder
         // 开始事务
         $db->beginTransaction();
         try {
-            app('log')->info("创建订单开启事务,用户id:{$this->actor->id}");
             if ($amount == 0 && $order_zero_amount_allowed) {
                 //用户组0付费
                 $order->status = 1;
@@ -349,7 +348,6 @@ class CreateOrder
                 );
             }
             $db->commit();          // 提交事务
-            app('log')->info("创建订单事务结束,用户id:{$this->actor->id}");
             return $order;
         } catch (Exception $e) {
             $db->rollback();        // 回滚事务

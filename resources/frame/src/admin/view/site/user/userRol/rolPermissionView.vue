@@ -115,7 +115,7 @@
           </CardRow>
         </Card>
         <Card>
-          <CardRow description="允许发布商品帖">
+          <CardRow description="允许发布商品帖（暂不支持小程序）">
             <el-checkbox
               v-model="checked"
               label="createThread.6"

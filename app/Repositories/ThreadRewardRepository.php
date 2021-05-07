@@ -62,8 +62,11 @@ class ThreadRewardRepository extends AbstractRepository
         $orderArr = empty($order) ? array() : $order->toArray();
 
         if(!empty($thread)){
-            $post = Post::query()->where(['thread_id' => $thread_id, 'is_first' => 1])->first();
-            $threadContent = $post->content;
+            $threadContent = $thread->title;
+            if (empty($thread->title)) {
+                $post = Post::query()->where(['thread_id' => $thread_id, 'is_first' => 1])->first();
+                $threadContent = $post->content;
+            }
         }else{
             $threadContent = '悬赏帖已过期且已被删除，返回冻结金额';
         }

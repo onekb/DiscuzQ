@@ -23,6 +23,7 @@ use App\Events\Post\Saved;
 use App\Models\Thread;
 use App\Models\Post;
 use App\Models\RedPacket;
+use App\Models\ThreadRedPacket;
 use App\Models\UserWalletLog;
 use Discuz\Foundation\EventsDispatchTrait;
 use Exception;
@@ -68,7 +69,12 @@ class ReplyPostMakeRedPacket
                             ',访问帖子id:' . $post->thread->id.
                             ',post_id:'   . $post->id.
                             ',msg:';
-
+        $thread = Thread::query()->where("id",$post->thread->id)->first();
+        $threadRedPacket = ThreadRedPacket::query()->where("thread_id",$post->thread->id)->first();
+        if ($thread['is_red_packet'] == 0 && empty($threadRedPacket)) {
+            $this->outDebugInfo('回复的帖子不是红包帖');
+            return;
+        }
         if ($post->user_id != $actor->id) {
             $this->outDebugInfo('回复领红包：不是回复的主人领取红包');
             return;

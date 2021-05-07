@@ -20,6 +20,7 @@ namespace App\Api\Controller;
 
 use App\Models\Setting;
 use Discuz\Http\DiscuzResponseFactory;
+use Discuz\Qcloud\QcloudStatisticsTrait;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -31,6 +32,8 @@ use TencentCloud\Ms\V20180408\MsClient;
 
 class CheckQcloudController implements RequestHandlerInterface
 {
+    use QcloudStatisticsTrait;
+
     /**
      * @param ServerRequestInterface $request
      * @return ResponseInterface
@@ -38,6 +41,7 @@ class CheckQcloudController implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        $this->uinStatis();
         $setting = Setting::query()->get()->toArray();
         $setting = array_column($setting, null, 'key');
         $qcloudSecretId = !empty($setting['qcloud_secret_id']) ? $setting['qcloud_secret_id']['value'] : '';

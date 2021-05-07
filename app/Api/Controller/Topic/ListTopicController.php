@@ -176,6 +176,7 @@ class ListTopicController extends AbstractListController
         }
 
         if ($createdAtEnd = Arr::get($filter, 'createdAtEnd')) {
+            $createdAtEnd =  date("Y-m-d",strtotime("+1 day",strtotime($createdAtEnd)));
             $query->where('topics.created_at', '<=', $createdAtEnd);
         }
 

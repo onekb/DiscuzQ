@@ -77,7 +77,7 @@ class DialogMessage extends Model
         $message_text_old = $this->attributes['message_text'] ?: '';
         $message_text = json_decode(stripslashes($message_text_old));
         if (!empty($message_text)) {
-            $messageText = $message_text->message_text->message_text;
+            $messageText = $message_text->message_text;
         } else {
             $messageText = $this->attributes['message_text'];
         }

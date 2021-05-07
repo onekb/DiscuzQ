@@ -5,7 +5,7 @@
       <CardRow description="若没勾选，则下面不显示对应的方式。若不能支持，则置灰不能勾选 。 ">
       <el-checkbox-group v-model="noticeList" @change="noticeListChange">
         <el-checkbox label=0>系统通知</el-checkbox>
-        <!-- <el-checkbox label=4>小程序通知</el-checkbox> -->
+        <el-checkbox label=4 v-if="query.typeName != '新用户注册通知' && query.typeName != '注册审核通过通知' && query.typeName != '注册审核不通过通知' && query.typeName != '问答提问通知' && query.typeName != '问答回答通知' && query.typeName != '问答过期通知'">小程序通知</el-checkbox>
         <el-checkbox label=1>微信模板通知</el-checkbox>
         <el-checkbox label=2>短信通知</el-checkbox>
       </el-checkbox-group>

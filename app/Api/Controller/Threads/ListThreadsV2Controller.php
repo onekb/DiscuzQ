@@ -47,11 +47,9 @@ class ListThreadsV2Controller extends DzqController
         $perPage = $this->inPut('perPage');
         $homeSequence = $this->inPut('homeSequence');//默认首页
         $serializer = $this->app->make(AttachmentSerializer::class);
-        $groups = $this->user->groups->toArray();
-        $groupIds = array_column($groups, 'id');
-        $permissions = Permission::categoryPermissions($groupIds);
+        $permissions = Permission::getUserPermissions($this->user);
         $threads = $this->getOriginThreads($page, $filter, $perPage, $homeSequence);
-        $threadList = $threads['pageData'];
+        $threadList = $threads['pageData'] ?? [];
         !$threads && $threadList = [];
         $userIds = array_unique(array_column($threadList, 'user_id'));
         $groups = GroupUser::instance()->getGroupInfo($userIds);
@@ -66,8 +64,8 @@ class ListThreadsV2Controller extends DzqController
         $attachments = Attachment::instance()->getAttachments($postIds, [Attachment::TYPE_OF_FILE, Attachment::TYPE_OF_IMAGE]);
         $attachmentsByPostId = Utils::pluckArray($attachments, 'type_id');
         $threadRewards = ThreadReward::instance()->getRewards($threadIds);
-        $paidThreadIds = $this->getPayArr($threadIds, Order::ORDER_TYPE_ATTACHMENT);
-        $pay = $this->getPayArr($threadIds, Order::ORDER_TYPE_THREAD);
+        $paidThreadIds = $this->getPayArr($threadIds)['payAttachment'];
+        $pay = $this->getPayArr($threadIds)['payThread'];
 
         $result = [];
         $linkString = '';
@@ -92,7 +90,7 @@ class ListThreadsV2Controller extends DzqController
                     $attachments = $attachmentsByPostId[$post['id']];
                 }
             }
-            $attachment = $this->filterAttachment($thread, $paidThreadIds, $pay, $attachments, $serializer);
+            $attachment = $this->filterAttachment($thread, $paidThreadIds, $pay, $attachments, $permissions, $serializer);
             $thread = $this->getThread($thread, $post, $likedPostIds, $permissions, $pay);
 
             $linkString .= $thread['summary'];
@@ -147,20 +145,24 @@ class ListThreadsV2Controller extends DzqController
         return $threads;
     }
 
-    private function getPayArr($threadIds, $type)
+    private function getPayArr($threadIds)
     {
-        $data = [];
         $getOrder = Order::query()->whereIn('thread_id', $threadIds)
             ->where('user_id', $this->user->id)
             ->where('status', Order::ORDER_STATUS_PAID)
             ->get()->toArray();
 
+        $payAttachment = [];
+        $payThread = [];
         foreach ($getOrder as $key => $val) {
-            if ($val['type'] == $type) {
-                $data[] = $val['thread_id'];
+            if ($val['type'] == Order::ORDER_TYPE_ATTACHMENT) {
+                $payAttachment[] = $val['thread_id'];
+            }
+            if ($val['type'] == Order::ORDER_TYPE_THREAD) {
+                $payThread[] = $val['thread_id'];
             }
         }
-        return $data;
+        return ['payAttachment' => $payAttachment, 'payThread' => $payThread];
     }
 
     private function canViewThread($thread, $paidThreadIds)
@@ -177,19 +179,25 @@ class ListThreadsV2Controller extends DzqController
      * @param $serializer
      * @return array
      */
-    private function filterAttachment($thread, $paidThreadIds, $pay, $attachments, $serializer)
+    private function filterAttachment($thread, $paidThreadIds, $pay, $attachments, $permissions, $serializer)
     {
+        $cannotViewPosts = !in_array('thread.viewPosts', $permissions);
+        $cannotFreeViewPosts = !in_array('thread.freeViewPosts.' . $thread['type'], $permissions);
+
         $attachment = [];
         if ($this->canViewThread($thread, $paidThreadIds) || $this->canViewThread($thread, $pay)) {
-            $attachment = $this->getAttachment($attachments, $thread, $serializer);
+            $cannotView = (!$thread['is_site'] && $cannotViewPosts);
+            $attachment = $this->getAttachment($attachments, $thread, $cannotView, $serializer);
         } else {
             if ($thread['price'] == 0) {
-                $attachment = $this->getAttachment($attachments, $thread, $serializer);
+                $cannotView = (!$thread['is_site'] && $cannotViewPosts);
+                $attachment = $this->getAttachment($attachments, $thread, $cannotView, $serializer);
             }
 
             //附件收费
             if ($thread['attachment_price'] > 0 || ($thread['type'] == Thread::TYPE_OF_IMAGE && $thread['price'] > 0)) {
-                $attachment = $this->getAttachment($attachments, $thread, $serializer);
+                $cannotView = (!$thread['is_site'] && $cannotViewPosts) || ($cannotFreeViewPosts);
+                $attachment = $this->getAttachment($attachments, $thread, $cannotView, $serializer);
                 $attachment = array_filter($attachment, function ($item) {
                     $fileType = strtolower($item['fileType']);
                     return strstr($fileType, 'image');
@@ -292,11 +300,18 @@ class ListThreadsV2Controller extends DzqController
         return in_array($permission, $permissions);
     }
 
-    private function getAttachment($attachments, $thread, $serializer)
+    private function getAttachment($attachments, $thread, $cannotView, $serializer)
     {
         $result = [];
         foreach ($attachments as $attachment) {
 //            $result[] = $this->camelData($serializer->getDefaultAttributes($attachment, $this->user));
+
+            if ($thread['type'] === Thread::TYPE_OF_IMAGE && $attachment->type === Attachment::TYPE_OF_IMAGE && $cannotView) {
+                $attachment->setAttribute('xblur', 1);
+            } else {
+                $attachment->setAttribute('xblur', 0);
+            }
+
             $result[] = $this->camelData($serializer->getBeautyAttachment($attachment, $thread, $this->user));
         }
         return $result;

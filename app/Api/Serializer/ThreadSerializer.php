@@ -94,7 +94,7 @@ class ThreadSerializer extends AbstractSerializer
             'canEdit'           => $gate->allows('edit', $model),
             'isRedPacket'       => $model->is_red_packet,
             'redPacket'         => $model->redPacket,
-            'postContent'           => $this->getThreadContent($model->id),
+            'postContent'           => $model->price > 0 ? ( $model->is_paid ? $this->getThreadContent($model->id) : substr($this->percentFreeWord($model), 0 , $this->percentFreeWord($model) * strlen($model->firstPost->content)) ) : $this->getThreadContent($model->id),
             'questionTypeAndMoney'  => $this->getQuestionMoney($model->id)
         ];
 

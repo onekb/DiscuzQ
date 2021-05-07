@@ -51,7 +51,40 @@ class SaveVideoToDatabase
     {
         $thread = $event->thread;
         $actor = $event->actor;
-        $data = Arr::get($this->request->getParsedBody(), 'data', []);
+
+        $ServerParamsData = $this->request->getServerParams();
+        $requestUrl = $ServerParamsData['REQUEST_URI'];
+        $data = [];
+        if(strpos($requestUrl,'v2') !== false){
+            $getJsonData = json_decode(file_get_contents("php://input"), TRUE);
+            $data = [
+                "type" => "threads",
+                "relationships" =>  [
+                    "category" =>  [
+                        "data" =>  [
+                            "type" => "categories",
+                            "id" => $getJsonData['categoriesId']
+                        ]
+                    ],
+                ]
+            ];
+            $data['attributes']['content'] =$getJsonData['content'];
+            $data['attributes']['type'] =$getJsonData['type'];
+            if(!empty($getJsonData['fileId'])){
+                $data['attributes']['file_id'] =$getJsonData['fileId'];
+            }
+            if(!empty($getJsonData['fileName'])){
+                $data['attributes']['file_name'] =$getJsonData['fileName'];
+            }
+            if(!empty($getJsonData['mediaUrl'])){
+                $data['attributes']['media_url'] =$getJsonData['mediaUrl'];
+            }
+            if(!empty($getJsonData['coverUrl'])){
+                $data['attributes']['cover_url'] =$getJsonData['coverUrl'];
+            }
+        }else{
+            $data = Arr::get($this->request->getParsedBody(), 'data', []);
+        }
 
         $fileId = Arr::get($data, 'attributes.file_id', '');
 

@@ -204,7 +204,7 @@ class Category extends DzqModel
         return static::getIdsWherePermission($user, $permission, false);
     }
 
-    public function hasThreads($id)
+    public function hasThreads($id, $status)
     {
         $category = Category::query()->findOrFail($id);
 
@@ -212,16 +212,21 @@ class Category extends DzqModel
         if ($category->parentid == 0) {
             $childCategoryIds = Category::query()->where('parentid', $category->id)->pluck('id')->toArray();
         }
+        $categoryIds = array_merge([$id], $childCategoryIds);
 
-        $threads = Thread::query()
-            ->where('category_id', $id)
-            ->orWhereIn('category_id', $childCategoryIds)
-            ->where('is_approved', Thread::APPROVED)
-            ->where('is_draft', Thread::IS_NOT_DRAFT)
-            ->whereNull('deleted_at')
-            ->whereNotNull('user_id')
-            ->get()->toArray();
-        if (!empty($threads)) {
+        $query = Thread::query();
+        $query->whereIn('category_id', $categoryIds);
+        $query->where('is_approved', Thread::APPROVED);
+        $query->where('is_draft', Thread::IS_NOT_DRAFT);
+        $query->whereNotNull('user_id');
+        if ($status == 'normal') {
+            $query->whereNull('deleted_at');
+        } else {
+            $query->whereNotNull('deleted_at');
+        }
+        $threads = $query->get()->toArray();
+
+        if ($threads) {
             return true;
         }
         return false;
@@ -233,8 +238,7 @@ class Category extends DzqModel
         if (empty($groups)) {
             return false;
         }
-        $groupIds = array_column($groups, 'id');
-        $permissions = Permission::categoryPermissions($groupIds);
+        $permissions = Permission::getUserPermissions($user);
         $cids = self::query()->pluck('id')->toArray();
         $p = [];
         if ($user->isAdmin()) {

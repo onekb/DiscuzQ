@@ -331,7 +331,7 @@ export default {
       userName: "", //用户名
 
       dialogVisible: false, // 云API配置弹框
-      secretId:'', 
+      secretId:'',
       secretKey:'',
       appId:'',
     };
@@ -831,7 +831,8 @@ export default {
         if(res.errors){
           throw new Error(res.errors[0].code);
         }
-          this.$message({ message: '提交成功', type: 'success' });
+        this.$message({ message: '提交成功', type: 'success' });
+        this.dialogVisible = false;
       })
       }
         catch(err){

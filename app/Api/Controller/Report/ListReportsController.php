@@ -178,6 +178,7 @@ class ListReportsController extends AbstractListController
         });
 
         $query->when($endTime, function ($query, $endTime) {
+            $endTime =  date("Y-m-d",strtotime("+1 day",strtotime($endTime)));
             $query->where('created_at', '<', $endTime);
         });
 

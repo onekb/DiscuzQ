@@ -170,6 +170,20 @@ trait HasPaidContent
      */
     public function blurImage(Attachment $attachment)
     {
+        if (!is_null($attachment->getAttributeValue('xblur')))
+        {
+            if ($attachment->getAttributeValue('xblur') === 1)
+            {
+                $attachment->setAttribute('blur', true);
+
+                $parts = explode('.', $attachment->attachment);
+                $parts[0] = md5($parts[0]);
+
+                $attachment->attachment = implode('_blur.', $parts);
+            }                
+            return;
+        }
+
         if (
             is_null($attachment->getAttributeValue('blur'))
             && $attachment->type === Attachment::TYPE_OF_IMAGE

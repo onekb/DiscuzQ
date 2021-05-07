@@ -198,6 +198,7 @@ export default {
     * */
     getThemeList(pageNumber){
       this.releaseTime = this.releaseTime == null?['','']:this.releaseTime;
+      this.deleteTime = this.deleteTime == null?['','']:this.deleteTime;
       this.radioList = this.radioList == null?['','']:this.radioList;
 
       this.appFetch({

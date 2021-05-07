@@ -62,10 +62,10 @@ export default {
           title: "安全设置",
           name: "security"
         },
-        {
-          title: "价格设置",
-          name: "pricesetting"
-        },
+        // {
+        //   title: "价格设置",
+        //   name: "pricesetting"
+        // },
         {
           title: "其他设置",
           name: "other"
@@ -220,12 +220,12 @@ export default {
       const data = res.data.attributes;
       this.ispad = data.isPaid;
       this.scale = data.scale;
-      this.dyedate = data.days;
-      this.purchasePrice = data.fee;
+      // this.dyedate = data.days;
+      // this.purchasePrice = data.fee;
       this.defaultuser = data.default;
       this.is_commission = data.is_commission;
       this.is_subordinate = data.is_subordinate;
-      this.value = data.isPaid;
+      // this.value = data.isPaid;
       // this.temporaryChecked = res.readdata.permission;
       const permissions = res.readdata.permission;
       console.log('permissions', permissions)
@@ -249,9 +249,9 @@ export default {
       this.isReward = data.set_site.site_can_reward === 1;
       this.canBeOnlooker = siteData.site_onlooker_price > 0;
       this.allowtobuy = siteData.site_pay_group_close;
-      if (!this.allowtobuy) {
-        this.value = false;
-      }
+      // if (!this.allowtobuy) {
+      //   this.value = false;
+      // }
       // 根据全局设置，判断帖子发布权限是否可选
       this.pubFunc['createThread.0.disabled']=siteData.site_create_thread0===0;
       this.pubFunc['createThread.1.disabled']=siteData.site_create_thread1===0;
@@ -407,9 +407,9 @@ export default {
           data: {
             attributes: {
               name: this.$route.query.name,
-              is_paid: this.value ? 1 : 0,
-              fee: this.purchasePrice,
-              days: this.dyedate,
+              // is_paid: this.value ? 1 : 0,
+              // fee: this.purchasePrice,
+              // days: this.dyedate,
               scale: this.scale,
               is_subordinate: this.is_subordinate,
               is_commission: this.is_commission

@@ -121,16 +121,39 @@ class FirstStatistics
         );
 
         $overData=[];
-        $overData['over']['activeUserNumToday']=User::query()->whereBetween('login_at', array($beginTime, $endTime))->count();
-        $overData['over']['addUserNumToday']=User::query()->whereBetween('joined_at', array($beginTime, $endTime))->count();
-        $overData['over']['addThreadNumToday']=Thread::query()->whereBetween('created_at', array($beginTime, $endTime))->count();
-        $overData['over']['addPostNumToday']=Post::query()->whereBetween('created_at', array($beginTime, $endTime))->count();
+        $overData['over']['activeUserNumToday']=User::query()
+            ->whereBetween('login_at', array($beginTime, $endTime))
+            ->where('status',0)
+            ->count();
+        $overData['over']['addUserNumToday']=User::query()
+            ->whereBetween('joined_at', array($beginTime, $endTime))
+            ->where('status',0)
+            ->count();
+        $overData['over']['addThreadNumToday']=Thread::query()
+            ->whereBetween('created_at', array($beginTime, $endTime))
+            ->whereNull('deleted_at')
+            ->where('is_draft',0)
+            ->count();
+        $overData['over']['addPostNumToday']=Post::query()
+            ->whereBetween('created_at', array($beginTime, $endTime))
+            ->where('is_first',0)
+            ->count();
 
-        $overData['over']['totalUserNum']=User::query()->count();
-        $overData['over']['totalThreadNum']=Thread::query()->count();
-        $overData['over']['totalPostNum']=Post::query()->count();
-        $overData['over']['essenceThreadNum']=Thread::query()->where('is_essence', 1)->count();
-
+        $overData['over']['totalUserNum']=User::query()
+            ->where('status',0)
+            ->count();
+        $overData['over']['totalThreadNum']=Thread::query()
+            ->whereNull('deleted_at')
+            ->where('is_draft',0)
+            ->count();
+        $overData['over']['totalPostNum']=Post::query()
+            ->where('is_first',0)
+            ->count();
+        $overData['over']['essenceThreadNum']=Thread::query()
+            ->where('is_essence', 1)
+            ->whereNull('deleted_at')
+            ->where('is_draft',0)
+            ->count();
 
         data_set(
             $statisticsData,
@@ -257,17 +280,21 @@ class FirstStatistics
 
     public function getThreadDay($type,$createdAtBegin,$createdAtEnd){
         $threadQuery = Thread::query();
-        $threadQuery->whereBetween('created_at', [$createdAtBegin, $createdAtEnd]);
+        $threadQuery->whereNull('deleted_at')
+            ->where('is_draft',0)
+            ->whereBetween('created_at', [$createdAtBegin, $createdAtEnd]);
         return $this->querysql($threadQuery,'thread',$type);
     }
     public function getPostDay($type,$createdAtBegin,$createdAtEnd){
         $postQuery = Post::query();
-        $postQuery->whereBetween('created_at', [$createdAtBegin, $createdAtEnd]);
+        $postQuery->where('is_first',0)
+            ->whereBetween('created_at', [$createdAtBegin, $createdAtEnd]);
         return $this->querysql($postQuery,'post',$type);
     }
     public function getActiveUser($type,$createdAtBegin,$createdAtEnd){
         $userQuery = User::query();
-        $userQuery->whereBetween('login_at', [$createdAtBegin, $createdAtEnd]);
+        $userQuery->whereBetween('login_at', [$createdAtBegin, $createdAtEnd])
+            ->where('status',0);
         return $this->querysql($userQuery,'ActiveUser',$type);
     }
     public function getJoinUser($type,$createdAtBegin,$createdAtEnd){

@@ -83,25 +83,33 @@ class DeleteCategory
 
         $this->assertCan($this->actor, 'delete', $category);
 
-        // 分类下有主题时不能删除
-        if ($category->threads()->first('id')) {
+        // 分类下有正常主题时不能删除
+        if ($category->hasThreads($category->id, 'normal')) {
             throw new Exception('cannot_delete_category_with_threads');
         }
 
-        if($category['parentid'] == 0){
+        // 分类下有回收站的主题时不能删除
+        if ($category->hasThreads($category->id, 'delete')) {
+            throw new Exception('cannot_delete_recycle_category_with_threads');
+        }
+
+        if ($category['parentid'] == 0) {
             $son_list = Category::query()->where('parentid',$this->categoryId)->get()->toArray();
-            if(isset($son_list) && !empty($son_list)){
+            if (isset($son_list) && !empty($son_list)) {
                 foreach ($son_list as $key => $value) {
                     $son_category = $categories->findOrFail($value['id'], $this->actor);
-                    if(!empty($son_category)){
-                        if($son_category->threads()->first('id')) {
+                    if (!empty($son_category)) {
+                        if ($son_category->hasThreads($son_category->id, 'normal')) {
                             throw new Exception('cannot_delete_category_with_threads');
+                        }
+                        if ($son_category->hasThreads($son_category->id, 'delete')) {
+                            throw new Exception('cannot_delete_recycle_category_with_threads');
                         }
                     }
                 }
             }
         }
-        
+
         $name = $category['name'];
 
         $this->events->dispatch(

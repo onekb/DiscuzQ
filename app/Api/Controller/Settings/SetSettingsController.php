@@ -139,6 +139,7 @@ class SetSettingsController implements RequestHandlerInterface
         $validator = $settings->pluck('value', 'key')->all();
         $this->validator->valid($validator);
 
+        $action_desc = "";
         $settings->each(function ($setting) {
             $key = Arr::get($setting, 'key');
             $value = Arr::get($setting, 'value');
@@ -176,26 +177,32 @@ class SetSettingsController implements RequestHandlerInterface
             if ($key == 'site_create_thread6' && $value == 0) {
                 $permission = 'createThread.6';
                 Permission::query()->where('permission', 'like', "$permission%")->delete();
-            } 
-            
+            }
+
             $this->settings->set($key, $value, $tag);
         });
-            
-        if($settings['cash_cash_interval_time']['key'] == 'cash_interval_time'){
-            $action_desc = '更改提现设置';
-        }
 
-        if($settings['wxpay_app_id']['key'] == 'app_id'){
-            $action_desc = '配置了微信支付';
-        }
-
-        if($settings['wxpay_wxpay_close']['key'] == 'wxpay_close'){
-            if($settings['wxpay_wxpay_close']['value'] == 0){
-                $action_desc = '关闭了微信支付';
-            }else{
-                $action_desc = '开启了微信支付';
+        if(!empty($settings['cash_cash_interval_time']['key'])){
+            if($settings['cash_cash_interval_time']['key'] == 'cash_interval_time'){
+                $action_desc = '更改提现设置';
             }
         }
+
+        if(!empty($settings['wxpay_app_id']['key'])){
+            if($settings['wxpay_app_id']['key'] == 'app_id'){
+                $action_desc = '配置了微信支付';
+            }
+        }
+        if(!empty($settings['wxpay_wxpay_close']['key'])){
+            if($settings['wxpay_wxpay_close']['key'] == 'wxpay_close'){
+                if($settings['wxpay_wxpay_close']['value'] == 0){
+                    $action_desc = '关闭了微信支付';
+                }else{
+                    $action_desc = '开启了微信支付';
+                }
+            }
+        }
+
 
         if($action_desc !== '' && !empty($action_desc)) {
             AdminActionLog::createAdminActionLog(

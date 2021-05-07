@@ -48,8 +48,10 @@ class ListLikesController extends ListThreadsController
         $offset = $this->extractOffset($request);
         $include = $this->extractInclude($request);
         $sort = $this->extractSort($request);
+        $params = $request->getQueryParams();
+        $page = isset($params['page']) ? $params['page'] : array('number' => 1, 'limit' => 10);
 
-        $threads = $this->search($actor, $filter, $sort, $limit, $offset);
+        $threads = $this->search($actor, $filter, $sort, $limit, $offset, $page);
 
         $document->addPaginationLinks(
             $this->url->route('threads.index'),
@@ -73,7 +75,7 @@ class ListLikesController extends ListThreadsController
         return $threads;
     }
 
-    public function search($actor, $filter, $sort, $limit = null, $offset = 0)
+    public function search($actor, $filter, $sort, $limit = null, $offset = 0, $page)
     {
         $userId = Arr::get($filter, 'user_id', '0');
 

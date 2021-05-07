@@ -101,7 +101,7 @@ class SaveQuestionToDatabase
                             throw new Exception(trans('post.post_question_order_pay_status_fail'));
                         }
 
-                        if($questionData['price'] !== $orderData->amount){
+                        if($questionData['price'] != $orderData->amount){
                             $questionData['price'] = $orderData->amount;
                             app('log')->info('用户'.$actor->username . '(ID为' . $actor->id . ')存在拦截请求、篡改数据行为，金额传参与实付金额不匹配。订单ID为：' . $orderData->order_sn . ',帖子ID为：' . $post->thread_id);
                         }
@@ -230,6 +230,10 @@ class SaveQuestionToDatabase
                          */
                         $order = Order::query()->where('order_sn', $orderSn)->firstOrFail();
                         $order->thread_id = $post->thread_id;
+                        if (isset($questionData['type']) && $questionData['type'] == 0) {
+                            $order->master_amount = 0;
+                            $order->author_amount = 0;
+                        }
                         $order->save();
 
                         /**

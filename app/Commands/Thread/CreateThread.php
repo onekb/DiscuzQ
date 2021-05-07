@@ -21,6 +21,7 @@ namespace App\Commands\Thread;
 use App\Censor\Censor;
 use App\Commands\Post\CreatePost;
 use App\Common\SettingCache;
+use App\Models\ThreadRedPacket;
 use App\Repositories\SequenceRepository;
 use App\Events\Thread\Created;
 use App\Events\Thread\Saving;
@@ -133,6 +134,21 @@ class CreateThread
             }
 
             $thread = $threads->findOrFail($thread_id, $this->actor);
+
+            if(!empty($attributes['id'])){
+                $threadRecord = Thread::query()
+                            ->where('id',$thread_id)
+                            ->where('user_id',$this->actor->id)
+                            ->first();
+                if($threadRecord['is_red_packet']==1 && $threadRecord['is_draft'] == 1){
+                    if(empty($attributes['redPacket'])){
+                        $threadRedPacket = ThreadRedPacket::query()->where("thread_id",$threadRecord['id'])->first();
+                        if(!empty($threadRedPacket)){
+                            $threadRedPacket->delete();
+                        }
+                    }
+                }
+            }
         }
 
         //是否为草稿
