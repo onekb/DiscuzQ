@@ -21,7 +21,6 @@ namespace App\Commands\Thread;
 use App\Censor\Censor;
 use App\Events\Post\Saved;
 use App\Events\Thread\Deleting;
-use App\Repositories\SequenceRepository;
 use App\Events\Thread\Saving;
 use App\Events\Thread\ThreadWasApproved;
 use App\Events\Thread\Updated;
@@ -273,9 +272,6 @@ class EditThread
         $thread->save();
         if (isset($attributes['isDeleted'])){
             $this->events->dispatch(new Deleting($thread, $this->actor, $this->data));
-        }
-        if(!isset($attributes['isFavorite']) && !isset($attributes['isSticky']) && !isset($attributes['isEssence'])){
-            app(SequenceRepository::class)->updateSequenceCache($this->threadId, 'edit');
         }
 
         if($action_desc !== '' && !empty($action_desc)){

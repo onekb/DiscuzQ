@@ -46,7 +46,7 @@ class RedPacketRepository extends AbstractRepository
     {
         $query = $this->query()->where('thread_id', $id);
 
-        return $query->firstOrFail();
+        return $query->first();
     }
 
 }

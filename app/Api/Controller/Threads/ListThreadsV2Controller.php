@@ -35,6 +35,7 @@ use App\Models\Thread;
 use App\Models\ThreadReward;
 use App\Models\ThreadVideo;
 use App\Models\User;
+use App\Models\UserFollow;
 use App\Models\Setting;
 use Discuz\Base\DzqController;
 
@@ -181,8 +182,10 @@ class ListThreadsV2Controller extends DzqController
      */
     private function filterAttachment($thread, $paidThreadIds, $pay, $attachments, $permissions, $serializer)
     {
-        $cannotViewPosts = !in_array('thread.viewPosts', $permissions);
-        $cannotFreeViewPosts = !in_array('thread.freeViewPosts.' . $thread['type'], $permissions);
+        $cannotViewPosts = !in_array('thread.viewPosts', $permissions)
+        && !in_array('category'.$thread['category_id'].'thread.viewPosts', $permissions);
+        $cannotFreeViewPosts = !in_array('thread.freeViewPosts.' . $thread['type'], $permissions)
+        && !in_array('category'.$thread['category_id'].'.thread.freeViewPosts.' . $thread['type'], $permissions);
 
         $attachment = [];
         if ($this->canViewThread($thread, $paidThreadIds) || $this->canViewThread($thread, $pay)) {
@@ -354,7 +357,9 @@ class ListThreadsV2Controller extends DzqController
     private function getDefaultHomeThreads($filter, $currentPage, $perPage)
     {
         $sequence = Sequence::query()->first();
-        if (empty($sequence)) return false;
+        if (empty($sequence)) {
+            return false;
+        }
         $categoryIds = [];
         !empty($sequence['category_ids']) && $categoryIds = explode(',', $sequence['category_ids']);
         $categoryIds = Category::instance()->getValidCategoryIds($this->user, $categoryIds);
@@ -362,7 +367,9 @@ class ListThreadsV2Controller extends DzqController
             $this->outPut(ResponseCode::INVALID_PARAMETER, '没有浏览权限');
         }
 
-        if (empty($filter)) $filter = [];
+        if (empty($filter)) {
+            $filter = [];
+        }
         isset($filter['types']) && $types = $filter['types'];
 
         !empty($sequence['group_ids']) && $groupIds = explode(',', $sequence['group_ids']);
@@ -426,7 +433,9 @@ class ListThreadsV2Controller extends DzqController
 
     private function getFilterThreads($filter, $currentPage, $perPage)
     {
-        if (empty($filter)) $filter = [];
+        if (empty($filter)) {
+            $filter = [];
+        }
         $this->dzqValidate($filter, [
             'sticky' => 'integer|in:0,1',
             'essence' => 'integer|in:0,1',
@@ -467,15 +476,15 @@ class ListThreadsV2Controller extends DzqController
 
         if ($sort == Thread::SORT_BY_THREAD) {//按照发帖时间排序
             $threads->orderByDesc('threads.created_at');
-        } else if ($sort == Thread::SORT_BY_POST) {//按照评论时间排序
+        } elseif ($sort == Thread::SORT_BY_POST) {//按照评论时间排序
             //添加评论字段posted_at
             $threads->orderByDesc('threads.posted_at');
         }
         //关注
         if ($attention == 1 && !empty($this->user)) {
-            $threads->leftJoin('user_follow', 'user_follow.to_user_id', '=', 'threads.user_id')
-                ->where('user_follow.from_user_id', $this->user->id)
-                ->where('is_anonymous', 0);
+             $UserFollowList = UserFollow::query()->where('from_user_id',  $this->user->id)->get()->toArray();
+             $UserFollowIds = array_column($UserFollowList, 'to_user_id');
+             $threads->whereIn('user_id', $UserFollowIds)->where('is_anonymous', 0);
         }
         !empty($categoryids) && $threads->whereIn('category_id', $categoryids);
         !empty($types) && $threads->whereIn('type', $types);

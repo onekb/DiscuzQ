@@ -249,7 +249,11 @@ const appFetch = function(params, options) {
             Router.init().replace({path:'/supplier-all-back',query:{url:Router.init().history.current.path}});
           })
         }else {
+          const token = localStorage.getItem('access_token');
+          const userId = localStorage.getItem('user_id');
           localStorage.clear();
+          token && localStorage.setItem('access_token', token);
+          userId && localStorage.setItem('user_id', userId);
           Router.init().push({path:'/login-user'})
         }
 

@@ -49,7 +49,7 @@ class UserRepository extends AbstractRepository
     {
         $query = User::where('id', $id);
 
-        return $this->scopeVisibleTo($query, $actor)->firstOrFail();
+        return $this->scopeVisibleTo($query, $actor)->first();
     }
 
     /**

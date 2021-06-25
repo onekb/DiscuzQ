@@ -117,7 +117,7 @@ class CreateUserWalletCash
         if ($cash_interval_time != 0) {
             $time_before = Carbon::now()->addDays(-$cash_interval_time);
             //提现间隔时间
-            $cash_record = UserWalletCash::where('created_at', '>=', $time_before)->first();
+            $cash_record = UserWalletCash::where('created_at', '>=', $time_before)->where('user_id', $this->actor->id)->first();
             if (!empty($cash_record)) {
                 throw new WalletException('cash_interval_time');
             }

@@ -77,5 +77,7 @@ return [
     'thread_id_not_null' => '帖子id不可为空',
     'audio_video_not_null'  => '音视频不可为空',
     'audio_video_is_being_transcoded' => '音视频正在转码中，请稍后重试。',
-    'audio_video_transcoding_failed'  => '音视频转码失败，请重新上传。'
+    'audio_video_transcoding_failed'  => '音视频转码失败，请重新上传。',
+
+    'thread_content_checktext_fail' => '您的主题内容或含敏感词，主题发送失败'
 ];

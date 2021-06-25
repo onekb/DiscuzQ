@@ -20,6 +20,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Closure;
+use Exception;
 use Discuz\Contracts\Setting\SettingsRepository;
 use Discuz\Database\ScopeVisibilityTrait;
 use Illuminate\Database\Eloquent\Model;

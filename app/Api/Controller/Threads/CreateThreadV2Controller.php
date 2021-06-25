@@ -24,32 +24,33 @@ class CreateThreadV2Controller extends DzqController
     public function main(){
         $actor = $this->user;
         $data = [];
+        $categoryId = (int) $this->inPut('categoriesId');
 
         //参数校验
-        if(empty($this->inPut('categoriesId'))){
+        if(empty($categoryId) || $categoryId < 0){
             $this->outPut(ResponseCode::INVALID_PARAMETER,'分类不能为空');
         }
-        $type = $this->inPut('type');
+        $type = (int) $this->inPut('type');
         $denyContent = [0,1,5];
         if(in_array($type,$denyContent) && empty($this->inPut('content'))){
             $this->outPut(ResponseCode::INVALID_PARAMETER,'内容不能为空');
         }
 
-        if($this->inPut('type') !==0 && empty($this->inPut('type'))){
+        if($type !==0 && empty($type)){
             $this->outPut(ResponseCode::INVALID_PARAMETER,'类型不能为空');
         }
 
         $validateData = [
-            'categories'=>$this->inPut('categoriesId'),
-            'content'=>$this->inPut('content'),
-            'type'=>$this->inPut('type'),
+            'categories'=> $categoryId,
+            'content'=> $this->inPut('content'),
+            'type'=> $type,
         ];
 
         try {
             $validate = app('validator');
             $validate->validate($validateData, [
-                'categories'          => 'required|int',
-                'type'   => 'required|int',
+                'categories'          => 'required|int|min:1',
+                'type'   => 'required|int|min:0',
             ]);
         } catch (\Exception $e) {
             $this->outPut(ResponseCode::INVALID_PARAMETER, '', $e->getMessage());
@@ -61,7 +62,7 @@ class CreateThreadV2Controller extends DzqController
                 "category" =>  [
                     "data" =>  [
                         "type" => "categories",
-                        "id" => $this->inPut('categoriesId')
+                        "id" => $categoryId
                     ]
                 ],
             ]
@@ -105,8 +106,8 @@ class CreateThreadV2Controller extends DzqController
                 'rule'=>$redPacketData['rule'],
             ];
             $data['redPacket'] = $redPacket;
-            $requestData['relationships']['redpacket']['data']['order_id'] = $redPacketData['orderId'];
-            $requestData['relationships']['redpacket']['data']['price'] = $redPacketData['orderPrice'];
+            $requestData['relationships']['redpacket']['data']['order_id'] = $redPacketData['orderId'] ?? "";
+            $requestData['relationships']['redpacket']['data']['price'] = $redPacketData['orderPrice'] ?? $redPacketData['price'];
         }
 
         //附件处理(包括图片)

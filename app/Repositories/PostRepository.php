@@ -47,6 +47,6 @@ class PostRepository extends AbstractRepository
     {
         $query = Post::where('id', $id);
 
-        return $this->scopeVisibleTo($query, $actor)->firstOrFail();
+        return $this->scopeVisibleTo($query, $actor)->first();
     }
 }

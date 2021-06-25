@@ -85,6 +85,21 @@ export default {
         case 1:
           return "已付款";
           break;
+        case 2:
+          return "取消订单";
+          break;
+        case 3:
+          return "支付失败";
+          break;
+        case 4:
+          return "过期未支付";
+          break;
+        case 10:
+          return "已退款";
+          break;
+        case 11:
+          return "异常未处理";
+          break;
         default:
           return "未知状态";
       }

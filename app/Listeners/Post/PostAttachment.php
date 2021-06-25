@@ -137,7 +137,10 @@ class PostAttachment
                 ->get();
         } else {
             // 是否有权编辑
-            $this->assertCan($actor, 'edit', $post);
+            if (Arr::get($event->data, 'attributes.is_draft') == 0 && 
+                Arr::get($event->data, 'attributes.is_old_draft') == 0) {
+                 $this->assertCan($actor, 'edit', $post);
+             }
 
             // 已绑定的附件和未绑定的的附件
             $attachments = Attachment::query()

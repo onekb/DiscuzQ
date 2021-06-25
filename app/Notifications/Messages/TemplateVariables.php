@@ -102,6 +102,7 @@ trait TemplateVariables
         'red_packet.gotten'            => '得到红包通知',                  //得到红包通知
         'question.rewarded'            => '悬赏问答通知',                  //悬赏问答通知
         'question.rewarded.expired'    => '悬赏过期通知',                  //悬赏过期通知
+        'system.abnormal.order.refund' => '异常订单退款通知'              //异常订单退款通知
     ];
 
     protected $configTypeName = [
@@ -127,6 +128,7 @@ trait TemplateVariables
         'system.question.asked'        => '问答提问通知', 'wechat.question.asked' => '问答提问通知',
         'system.question.answered'     => '问答回答通知', 'wechat.question.answered' => '问答回答通知',
         'system.question.expired'      => '问答过期通知', 'wechat.question.expired' => '问答过期通知',
+        'system.abnormal.order.refund' => '异常订单退款通知'
     ];
 
     /**
@@ -200,6 +202,7 @@ trait TemplateVariables
         'red_packet.gotten'         => '得到红包通知',
         'question.rewarded'         => '悬赏问答通知',
         'question.rewarded.expired' => '悬赏过期通知',
+        'abnormal.order.refund'     => '异常订单退款通知'
     ];
 
     /**

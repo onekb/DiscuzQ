@@ -555,6 +555,15 @@ class NotificationTplSeeder extends Seeder
                 'content'   => '',
                 'vars'      => '',
             ],
+            [
+                'status'    => 1,
+                'type'      => 0,
+                'notice_id' => $this->comparisonUnique('异常订单退款通知', 0),
+                'type_name' => '异常订单退款通知',
+                'title'     => '异常订单退款通知',
+                'content'   => '',
+                'vars'      => '',
+            ]
         ];
     }
 

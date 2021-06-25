@@ -760,7 +760,11 @@ export default {
     },
 
     quitClick() {
+      const token = localStorage.getItem('access_token');
+      const userId = localStorage.getItem('user_id');
       localStorage.clear();
+      token && localStorage.setItem('access_token', token);
+      userId && localStorage.setItem('user_id', userId);
       this.$router.push({ path: "/admin/login" });
     },
 

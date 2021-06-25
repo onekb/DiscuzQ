@@ -21,7 +21,6 @@ namespace App\Commands\Thread;
 use App\Events\Thread\Deleted;
 use App\Events\Thread\Deleting;
 use App\Models\User;
-use App\Repositories\SequenceRepository;
 use App\Repositories\ThreadRepository;
 use Discuz\Foundation\EventsDispatchTrait;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
@@ -96,7 +95,6 @@ class BatchDeleteThreads
 
                 $thread->raise(new Deleted($thread));
                 $thread->delete();
-                app(SequenceRepository::class)->updateSequenceCache($id, 'delete');
 
                 //删除视频、视频文件
                 $bus->dispatch(

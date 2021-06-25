@@ -6,4 +6,6 @@ return [
     'wallet_pay_success'            => '支付成功。',
     'missing_wechat_openid'         => '未绑定微信，缺少openid',
     'reward_success'                => '采纳成功。',
+    'uninitialized_pay_password'    => '未设置支付密码',
+    'pay_password_failures_times_toplimit'  => '您输入的密码错误次数已超限，请点击忘记密码找回或次日后重试',
 ];

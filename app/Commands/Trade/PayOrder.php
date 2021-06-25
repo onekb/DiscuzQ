@@ -129,7 +129,7 @@ class PayOrder
             && empty($this->actor->pay_password)
         ) {
             app('payLog')->info("钱包没有设置密码,订单号:{$this->order_sn},用户id:{$this->actor->id}");
-            throw new Exception('uninitialized_pay_password');
+            throw new Exception(trans('trade.uninitialized_pay_password'));
         }
 
         // 验证错误次数
@@ -139,7 +139,7 @@ class PayOrder
             && $failCount > UserWalletFailLogs::TOPLIMIT
         ) {
             app('payLog')->info("密码错误达到上线,订单号:{$this->order_sn},用户id:{$this->actor->id}");
-            throw new Exception('pay_password_failures_times_toplimit');
+            throw new Exception(trans('trade.pay_password_failures_times_toplimit'));
         }
 
         $validator_info = $validator->make($this->data->toArray(), [
@@ -159,7 +159,7 @@ class PayOrder
 
                         if (UserWalletFailLogs::TOPLIMIT == $failCount) {
                             app('payLog')->info("密码错误达到上线,订单号:{$this->order_sn},用户id:{$this->actor->id}");
-                            throw new Exception('pay_password_failures_times_toplimit');
+                            throw new Exception(trans('trade.pay_password_failures_times_toplimit'));
                         } else {
                             $fail(trans('trade.wallet_pay_password_error', ['value'=>UserWalletFailLogs::TOPLIMIT - $failCount]));
                         }
@@ -211,7 +211,7 @@ class PayOrder
                 $site_price = $this->setting->get('site_price');
                 if(empty($site_expire) || empty($site_price)){
                     app('payLog')->info("站点续费settings表字段site_expire和site_price必须大于0");
-                    throw new TradeErrorException('not_find_site_expire_site_price', 500);
+                    throw new Exception(trans('order.not_find_site_expire_site_price'));
                 }
                 $order_info->body = trans('order.order_type_renew');
                 break;
@@ -277,7 +277,7 @@ class PayOrder
                         $pay_gateway          = GatewayConfig::WECAHT_PAY_JS;
                         if (empty($this->actor->wechat->mp_openid)) {
                             app('payLog')->info("微信网页、公众号没有openid,订单号:{$this->order_sn},用户id:{$this->actor->id}");
-                            throw new TradeErrorException('missing_wechat_openid', 500);
+                            throw new Exception(trans('trade.missing_wechat_openid'));
                         }
                         //获取用户openid
                         $extra                = [
@@ -289,7 +289,7 @@ class PayOrder
                         $pay_gateway          = GatewayConfig::WECAHT_PAY_JS;
                         if (empty($this->actor->wechat->min_openid)) {
                             app('payLog')->info("小程序没有openid,订单号:{$this->order_sn},用户id:{$this->actor->id}");
-                            throw new TradeErrorException('missing_wechat_openid', 500);
+                            throw new Exception(trans('trade.missing_wechat_openid'));
                         }
                         //获取用户openid： min_openid
                         $extra                = [
@@ -306,7 +306,7 @@ class PayOrder
                 break;
             default:
                 app('payLog')->info("支付参数payment_type枚举错误,传参payment_type:{$this->payment_type},订单号:{$this->order_sn},用户id:{$this->actor->id}");
-                throw new TradeErrorException('payment_method_invalid', 500);
+                throw new Exception(trans('trade.payment_method_invalid'));
         }
 
         return PayTrade::pay($order_info, $pay_gateway, $config, $extra); //生成支付参数

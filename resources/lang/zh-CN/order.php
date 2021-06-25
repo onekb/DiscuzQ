@@ -2,7 +2,7 @@
 
 return [
     'order_status_fail'             => '订单状态异常',
-    'order_not_found'                => '订单不存在',
+    'order_not_found'               => '订单不存在',
 
     'order_amount_error'            => '订单金额有误',
     'order_create_failure'          => '订单创建失败',
@@ -19,8 +19,8 @@ return [
     'order_type_renew'              => '站点付费',
     'order_thread_attachment_error' => '付费附件',
 
-    'order_type_text'               =>'文字帖红包',
-    'order_type_long'               =>'长文帖红包',
+    'order_type_text'               => '文字帖红包',
+    'order_type_long'               => '长文帖红包',
 
     'payee_not_found'               => '收款人不存在',
     'order_group_error'             => '用户组不存在或配置有误',
@@ -32,7 +32,9 @@ return [
 
     'order_pay_group_closed' => '权限购买未开启',
 
-    'abnormal_text_order_return_money'      =>'文字帖订单异常返现',
-    'abnormal_long_order_return_money'      =>'长文帖订单异常返现',
-    'abnormal_question_order_return_money'  =>'问答帖订单异常返现',
+    'not_find_site_expire_site_price' => '未设置站点价格或站点过期时间',
+
+    'abnormal_text_order_return_money'      => '文字帖订单异常返现',
+    'abnormal_long_order_return_money'      => '长文帖订单异常返现',
+    'abnormal_question_order_return_money'  => '问答帖订单异常返现',
 ];

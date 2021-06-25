@@ -24,7 +24,6 @@ use App\Models\Thread;
 use App\Models\User;
 use App\Models\Category;
 use App\Models\AdminActionLog;
-use App\Repositories\SequenceRepository;
 use App\Repositories\ThreadRepository;
 use App\Traits\ThreadNoticesTrait;
 use Discuz\Foundation\EventsDispatchTrait;
@@ -178,10 +177,6 @@ class BatchEditThreads
             }
 
             $thread->save();
-
-            if($attributes['isFavorite'] == false){
-                app(SequenceRepository::class)->updateSequenceCache($id, 'edit');
-            }
 
             $result['data'][] = $thread;
 

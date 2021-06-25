@@ -22,7 +22,6 @@ use App\Events\Thread\Deleted;
 use App\Events\Thread\Deleting;
 use App\Models\Thread;
 use App\Models\User;
-use App\Repositories\SequenceRepository;
 use App\Repositories\ThreadRepository;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
@@ -94,7 +93,6 @@ class DeleteThread
 
         $thread->raise(new Deleted($thread));
         $thread->delete();
-        app(SequenceRepository::class)->updateSequenceCache($this->threadId, 'delete');
 
         //删除视频、视频文件
         $bus->dispatch(
