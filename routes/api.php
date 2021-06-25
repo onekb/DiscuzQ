@@ -179,7 +179,7 @@ $route->post('/threads', 'threads.create', ApiController\Threads\CreateThreadCon
 $route->patch('/threads/batch', 'threads.batchUpdate', ApiController\Threads\BatchUpdateThreadsController::class);
 $route->patch('/threads/{id}', 'threads.update', ApiController\Threads\UpdateThreadController::class);
 $route->delete('/threads/batch/{ids}', 'threads.batchDelete', ApiController\Threads\BatchDeleteThreadsController::class);
-$route->delete('/threads/{id}', 'threads.delete', ApiController\Threads\DeleteThreadController::class);
+//$route->delete('/threads/{id}', 'threads.delete', ApiController\Threads\DeleteThreadController::class);
 $route->post('/threads/notify/video', 'threads.notify.video', ApiController\Threads\Notify\ThreadVideoNotifyController::class);
 $route->post('/thread/video', 'threads.video', ApiController\Threads\CreateThreadVideoController::class);
 $route->get('/thread/draft', 'threads.draft', ApiController\Threads\ListDraftThreadController::class);

@@ -2,7 +2,7 @@
 	1、node，自行安装
 	2、切换npm为淘宝镜像 npm install -g cnpm --registry=https://registry.npm.taobao.org
 	3、本地调试和打包
-		第一次本地开发：npm run install 安装node包
+		第一次本地开发：npm install 安装node包
 		本地开发：npm run dev
 		打包上线：npm run build
 
