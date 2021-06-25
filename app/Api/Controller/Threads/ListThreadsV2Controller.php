@@ -183,7 +183,7 @@ class ListThreadsV2Controller extends DzqController
     private function filterAttachment($thread, $paidThreadIds, $pay, $attachments, $permissions, $serializer)
     {
         $cannotViewPosts = !in_array('thread.viewPosts', $permissions)
-        && !in_array('category'.$thread['category_id'].'thread.viewPosts', $permissions);
+        && !in_array('category'.$thread['category_id'].'.thread.viewPosts', $permissions);
         $cannotFreeViewPosts = !in_array('thread.freeViewPosts.' . $thread['type'], $permissions)
         && !in_array('category'.$thread['category_id'].'.thread.freeViewPosts.' . $thread['type'], $permissions);
 
@@ -482,9 +482,9 @@ class ListThreadsV2Controller extends DzqController
         }
         //关注
         if ($attention == 1 && !empty($this->user)) {
-             $UserFollowList = UserFollow::query()->where('from_user_id',  $this->user->id)->get()->toArray();
-             $UserFollowIds = array_column($UserFollowList, 'to_user_id');
-             $threads->whereIn('user_id', $UserFollowIds)->where('is_anonymous', 0);
+            $UserFollowList = UserFollow::query()->where('from_user_id', $this->user->id)->get()->toArray();
+            $UserFollowIds = array_column($UserFollowList, 'to_user_id');
+            $threads->whereIn('user_id', $UserFollowIds)->where('is_anonymous', 0);
         }
         !empty($categoryids) && $threads->whereIn('category_id', $categoryids);
         !empty($types) && $threads->whereIn('type', $types);
