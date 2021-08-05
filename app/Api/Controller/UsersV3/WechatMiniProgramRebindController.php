@@ -94,9 +94,7 @@ class WechatMiniProgramRebindController extends AuthBaseController
         // 绑定小程序
         $this->db->beginTransaction();
         try {
-            $app = $this->miniProgram();
             $wechatUser = $this->getMiniWechatUser(
-                $app,
                 $param['jsCode'],
                 $param['iv'],
                 $param['encryptedData']

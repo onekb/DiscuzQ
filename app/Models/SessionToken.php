@@ -122,7 +122,7 @@ class SessionToken extends Model
      * @param string $token
      * @param string|null $scope
      * @param int|null $userId
-     * @return SessionToken
+     * @return SessionToken|Model|\Illuminate\Database\Query\Builder|object
      */
     public static function get(string $token, string $scope = null, int $userId = null)
     {
@@ -135,6 +135,7 @@ class SessionToken extends Model
                 $query->where('user_id', $userId);
             })
             ->where('expired_at', '>', Carbon::now())
+            ->lockForUpdate()
             ->first();
     }
 

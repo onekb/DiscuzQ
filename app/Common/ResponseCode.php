@@ -125,6 +125,7 @@ class ResponseCode
     const TRY_LOGIN_AGAIN = -7074;
     const NOT_ALLOW_CENSOR_IMAGE = -7075;
     const CATEGORY_NOT_FOUNF = -7076;
+    const CURRENT_IS_PAY_SITE = -7077;
 
 
     const NEED_BIND_WECHAT = -8000;
@@ -234,7 +235,8 @@ class ResponseCode
         self::RESOURCE_EXPIRED => '资源已过期',
         self::NOT_ALLOW_CENSOR_IMAGE => '不允许上传敏感图',
         self::CATEGORY_NOT_FOUNF =>"分类不存在",
-        self::INVALID_TOKEN => '无效token'
+        self::INVALID_TOKEN => '无效token',
+        self::CURRENT_IS_PAY_SITE =>'当前站点是付费模式'
 
     ];
 }

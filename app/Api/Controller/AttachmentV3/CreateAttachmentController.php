@@ -201,6 +201,11 @@ class CreateAttachmentController extends DzqController
             $attachment->save();
 
             $this->dispatchEventsFor($attachment);
+        } catch (\Exception $e) {
+            DzqLog::error('create_attachment_api_error',[
+                'user'  => $this->user
+            ], $e->getMessage());
+            $this->outPut(ResponseCode::INTERNAL_ERROR, $e->getMessage());
         } finally {
             @unlink($tmpFile);
             @unlink($tmpFileWithExt);

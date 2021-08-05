@@ -53,10 +53,6 @@ class SmsBindController extends AuthBaseController
     public function main()
     {
         $this->info('begin_sms_bind_process');
-        $sms = (bool)$this->settings->get('qcloud_sms', 'qcloud');
-        if (!$sms) {
-            $this->outPut(ResponseCode::NONSUPPORT_MOBILE_REBIND);
-        }
         $this->connection->beginTransaction();
         try {
             $paramData = [

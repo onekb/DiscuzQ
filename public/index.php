@@ -17,7 +17,7 @@
  */
 
 define('DISCUZ_START', microtime(true));
-
+$mysql_time = 0;
 require __DIR__ . '/../vendor/autoload.php';
 
 $app = new Discuz\Foundation\Application(dirname(__DIR__));
@@ -25,5 +25,3 @@ $app = new Discuz\Foundation\Application(dirname(__DIR__));
 $app->singleton(Discuz\Http\Server::class, Discuz\Http\Server::class);
 
 $app->make(Discuz\Http\Server::class)->listen();
-
-

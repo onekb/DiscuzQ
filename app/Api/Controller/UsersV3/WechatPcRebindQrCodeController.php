@@ -82,6 +82,7 @@ class WechatPcRebindQrCodeController extends AuthBaseController
                     'sessionToken' => $sessionToken,
                     'base64Img' => 'data:image/png;base64,' . base64_encode($wxqrcodeResponse->getBody()->getContents())
                 ];
+                $this->outPut(ResponseCode::SUCCESS, '', $data);
             }
 
             if ($wechat) {

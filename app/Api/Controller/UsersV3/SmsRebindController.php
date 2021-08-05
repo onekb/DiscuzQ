@@ -54,11 +54,6 @@ class SmsRebindController extends AuthBaseController
     {
         $this->connection->beginTransaction();
         try {
-            $sms = (bool)$this->settings->get('qcloud_sms', 'qcloud');
-            if (!$sms) {
-                $this->outPut(ResponseCode::NONSUPPORT_MOBILE_REBIND);
-            }
-
             $mobileCode = $this->getMobileCode('rebind');
 
             $actor = User::query()->where('mobile', $mobileCode->mobile)->lockForUpdate()->first();

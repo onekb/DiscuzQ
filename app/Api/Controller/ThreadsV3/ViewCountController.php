@@ -17,9 +17,11 @@
 
 namespace App\Api\Controller\ThreadsV3;
 
+use App\Common\CacheKey;
 use App\Common\ResponseCode;
 use App\Models\Thread;
 use App\Repositories\UserRepository;
+use Discuz\Base\DzqCache;
 use Discuz\Base\DzqController;
 
 class ViewCountController extends DzqController
@@ -37,7 +39,7 @@ class ViewCountController extends DzqController
         if (!$thread) {
             $this->outPut(ResponseCode::RESOURCE_NOT_FOUND);
         }
-
+        DzqCache::delHashKey(CacheKey::LIST_THREADS_V3_THREADS,$threadId);
         $viewCount = intval($thread->view_count+1);
         $thread->view_count = $viewCount;
         $thread->save();

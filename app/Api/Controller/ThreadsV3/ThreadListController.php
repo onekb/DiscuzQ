@@ -71,9 +71,15 @@ class ThreadListController extends DzqController
             if (!$this->categoryIds) {
                 if (empty($complex) ||
                     $complex == Thread::MY_LIKE_THREAD ||
-                    $complex == Thread::MY_COLLECT_THREAD ||
-                    ($complex == Thread::MY_OR_HIS_THREAD && $user->id !== $filter['toUserId'])) {
+                    $complex == Thread::MY_COLLECT_THREAD) {
                     throw new PermissionDeniedException('没有浏览权限');
+                }
+                //自己的主题去除分类权限控制
+                if ($complex == Thread::MY_OR_HIS_THREAD) {
+                    if ($user->id !== $filter['toUserId'] && !empty($filter['toUserId'])){
+                        throw new PermissionDeniedException('没有浏览权限');
+                    }
+                    $this->categoryIds = array();
                 }
             }
             //去除购买帖子的分类控制

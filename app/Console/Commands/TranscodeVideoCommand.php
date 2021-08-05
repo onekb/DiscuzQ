@@ -65,9 +65,17 @@ class TranscodeVideoCommand extends AbstractCommand
 
         //获取超过5分钟还没成功回调的视频
         $threadVideos = ThreadVideo::query()
-            ->where('status', ThreadVideo::VIDEO_STATUS_TRANSCODING)
-            ->where('type', ThreadVideo::TYPE_OF_VIDEO)
-            ->where('updated_at', '<', Carbon::now()->subMinute(5)->toDateTimeString())
+            ->select('tv.*')
+            ->from('thread_video as tv')
+            ->join('threads as th', 'th.id', '=', 'tv.thread_id')
+            ->whereNull('th.deleted_at')
+            ->whereNotNull('th.user_id')
+            ->where('th.is_draft', Thread::IS_NOT_DRAFT)
+            ->where('th.is_display', Thread::BOOL_YES)
+            ->where('tv.status', ThreadVideo::VIDEO_STATUS_TRANSCODING)
+            ->where('tv.type', ThreadVideo::TYPE_OF_VIDEO)
+            ->where('tv.thread_id','!=',0)
+            ->where('tv.updated_at', '<', Carbon::now()->subMinute(5)->toDateTimeString())
             ->get();
 
         $threadVideosArr = $threadVideos->toArray();
@@ -83,7 +91,7 @@ class TranscodeVideoCommand extends AbstractCommand
             $settingRepo = app(SettingsRepository::class);
             $threadVideos->map(function ($item) use ($settingRepo,$newThreadVideos) {
                 try {
-                    if (!empty($newThreadVideos[$item->id])  && empty($newThreadVideos[$item->id]['is_draft'])) {
+                    if (!empty($newThreadVideos[$item->id])) {
                         //转码
                         $resTranscode = $this->transcodeVideo($item->file_id, 'TranscodeTaskSet');
 

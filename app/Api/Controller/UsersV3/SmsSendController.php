@@ -68,6 +68,7 @@ class SmsSendController extends AuthBaseController
     public function main()
     {
         try {
+            $this->isOpenThirdLogin('sms');
             $actor              = $this->user;
             $mobile             = $this->inPut('mobile');
             $type               = $this->inPut('type');

@@ -46,7 +46,7 @@ class Censor
 
     /**
      * 是否合法（放入待审核）
-     *
+     * true：非法，false：合法
      * @var bool
      */
     public $isMod = false;
@@ -117,11 +117,6 @@ class Censor
          * 腾讯云敏感词校验
          * 小程序敏感词校验
          */
-        $siteManage = json_decode($this->setting->get('site_manage', 'default'), true);
-        $siteManage = array_column($siteManage, null, 'key');
-        $miniProgram = Platform::MinProgram;
-        $isSiteMiniProgramOn = $siteManage[$miniProgram]['value'] ?? false;
-
         if ($this->setting->get('qcloud_cms_text', 'qcloud', false)) {
             // 判断是否大于 5000 字
             if (($length = Str::of($content)->length()) > 5000) {
@@ -129,11 +124,11 @@ class Censor
             } else {
                 $content = $this->tencentCloudCheck($content);
             }
-        } elseif ($isSiteMiniProgramOn) {
+        } elseif ((bool) $this->setting->get('miniprogram_close', 'wx_miniprogram', false)) {
             $content = $this->miniProgramCheck($content);
         }
 
-        if ($this->isMod && ($type == 'signature' || $type == 'dialog')) {
+        if ($this->isMod && in_array($type, ['username','signature','dialog','nickname'])) {
             $msg = app('translator')->has('validation.attributes.'.$type) ? trans('validation.attributes.'.$type).'内容含敏感词' : '内容含敏感词';
             DzqLog::error('content_has_stop_word', [
                 'content'   => $content,
@@ -246,18 +241,17 @@ class Censor
          * @property QcloudManage
          * @see 文本内容安全文档 https://cloud.tencent.com/document/product/1124/46976
          */
-        $result = $qcloud->service('cms')->TextModeration($content);
-
+        $result = $qcloud->service('tms')->TextModeration($content);
         $keyWords = Arr::get($result, 'Data.Keywords', []);
 
-        if (isset($result['Data']['DetailResult'])) {
+        if (isset($result['DetailResults'])) {
             /**
              * filter 筛选腾讯云敏感词类型范围
              * Normal：正常，Polity：涉政，Porn：色情，Illegal：违法，Abuse：谩骂，Terror：暴恐，Ad：广告，Custom：自定义关键词
              */
             $filter = ['Normal', 'Ad']; // Tag Setting 可以放入配置
-            $filtered = collect($result['Data']['DetailResult'])->filter(function ($item) use ($filter) {
-                if (in_array($item['EvilLabel'], $filter)) {
+            $filtered = collect($result['DetailResults'])->filter(function ($item) use ($filter) {
+                if (in_array($item['Label'], $filter)) {
                     $item = [];
                 }
                 return $item;
@@ -328,10 +322,17 @@ class Censor
                 $params['FileContent'] = base64_encode(file_get_contents($path));
             }
 
-            /** @see QcloudManage */
-            $result = $this->app->make('qcloud')->service('cms')->ImageModeration($params);
+            /**
+             * @property QcloudManage
+             * @see 图片内容安全文档 https://cloud.tencent.com/document/product/1125/53273
+             */
+            $result = $this->app->make('qcloud')->service('ims')->ImageModeration($params);
 
-            if (Arr::get($result, 'Data.EvilType') != 100) {
+            /**
+             * Suggestion 腾讯云系统推荐的后续操作
+             * 返回值：Block：建议屏蔽，Review ：建议人工复审，Pass：建议通过
+             */
+            if (Arr::get($result, 'Suggestion') != 'Pass') {
                 $this->isMod = true;
             }
         } elseif ((bool) $this->setting->get('miniprogram_close', 'wx_miniprogram', false)) {
@@ -358,6 +359,10 @@ class Censor
             if (Arr::get($result, 'errcode', 0) !== 0) {
                 $this->isMod = true;
             }
+        }
+
+        if ($this->isMod == true) {
+            Utils::outPut(ResponseCode::NOT_ALLOW_CENSOR_IMAGE);
         }
     }
 

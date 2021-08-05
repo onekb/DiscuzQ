@@ -131,13 +131,14 @@ class CreateThreadController extends DzqController
         $content = $this->saveTopic($thread, $content);
         //插入post数据
         $post = $this->savePost($thread, $content);
+        $parsedContent = $post->content;
         //发帖@用户
         $this->sendNews($thread, $post);
         //插入tom数据
         $tomJsons = $this->saveTom($thread, $content, $post);
         //更新帖子条数
         !$this->isDraft && Category::refreshThreadCountV3($thread['category_id']);
-
+        $post->content = $parsedContent;
         return $this->getResult($thread, $post, $tomJsons);
     }
 

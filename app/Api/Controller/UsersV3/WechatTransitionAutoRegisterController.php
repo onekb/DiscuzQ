@@ -68,6 +68,10 @@ class WechatTransitionAutoRegisterController extends AuthBaseController
     public function main()
     {
         $this->info('begin_wechat_transition_auto_register_process');
+        // 站点关闭注册
+        if (!(bool)$this->settings->get('register_close')) {
+            $this->outPut(ResponseCode::REGISTER_CLOSE);
+        }
         if(!(bool)$this->settings->get('is_need_transition')) {
             $this->outPut(ResponseCode::TRANSITION_NOT_OPEN);
         }
@@ -77,27 +81,19 @@ class WechatTransitionAutoRegisterController extends AuthBaseController
         if(! $sessionToken) {
             $this->outPut(ResponseCode::INVALID_PARAMETER,'sessionToken不能为空');
         }
-        $token = SessionToken::get($sessionToken);
-        $this->info('get_token_with_session_token', [
-            'input'      => [
-                'sessionToken' => $sessionToken
-            ],
-            'output'      => [
-                'token'    => $token
-            ]
-        ]);
-        if(! $token) {
-            //授权信息过期，重新授权
-            $this->outPut(ResponseCode::AUTH_INFO_HAD_EXPIRED);
-        }
-
-        // 站点关闭注册
-        if (!(bool)$this->settings->get('register_close')) {
-            $this->outPut(ResponseCode::REGISTER_CLOSE);
-        }
 
         $this->db->beginTransaction();
         try {
+            $token = SessionToken::get($sessionToken);
+            $this->info('get_token_with_session_token', [
+                'input'  => ['sessionToken' => $sessionToken],
+                'output' => ['token' => $token]
+            ]);
+            if(! $token) {
+                //授权信息过期，重新授权
+                $this->outPut(ResponseCode::AUTH_INFO_HAD_EXPIRED);
+            }
+
             //获取授权后微信用户信息
             $wxuser         = $token->payload;
             $inviteCode     = $this->inPut('inviteCode');//邀请码非必须存在
@@ -131,7 +127,6 @@ class WechatTransitionAutoRegisterController extends AuthBaseController
             $wechatUser->setRelation('user', $user);
 
             $wechatUser->save();
-            $this->db->commit();
             $this->info('updated_wechat_user_and_user', [
                 'wechatUser'    =>  $wechatUser,
                 'user'          =>  $user
@@ -162,6 +157,7 @@ class WechatTransitionAutoRegisterController extends AuthBaseController
             ]);
             //删除sessionToken
             $token->delete();
+            $this->db->commit();
             $result = $this->camelData(collect($accessToken));
             $result = $this->addUserInfo($wechatUser->user, $result);
 
