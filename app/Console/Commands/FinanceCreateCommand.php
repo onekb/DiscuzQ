@@ -52,19 +52,22 @@ class FinanceCreateCommand extends AbstractCommand
         $date = Carbon::parse('-1 day')->toDateString();
         $dateTimeBegin = $date . ' 00:00:00';
         $dateTimeEnd = $date . ' 23:59:59';
+        $orderType = [$this->order::ORDER_STATUS_PAID, $this->order::ORDER_STATUS_PART_OF_RETURN, 
+                      $this->order::ORDER_STATUS_RETURN, $this->order::ORDER_STATUS_UNTREATED];
 
         $register_profit = $this->order::WhereBetween('created_at', [$dateTimeBegin, $dateTimeEnd])->where('type', 1)->where('status', $this->order::ORDER_STATUS_PAID)->sum('amount');
         $master_portion = $this->order::WhereBetween('created_at', [$dateTimeBegin, $dateTimeEnd])->where('status', $this->order::ORDER_STATUS_PAID)->sum('master_amount');
         $withdrawal_profit = $this->userWalletCash::WhereBetween('created_at', [$dateTimeBegin, $dateTimeEnd])->where('cash_status', $this->userWalletCash::STATUS_PAID)->sum('cash_charge');
-        $order_amount = $this->order::WhereBetween('created_at', [$dateTimeBegin, $dateTimeEnd])->where('status', $this->order::ORDER_STATUS_PAID)->sum('amount');
+        $amount = $this->order::WhereBetween('created_at', [$dateTimeBegin, $dateTimeEnd])->whereIn('status', $orderType)->sum('amount');
+        $refund_amount = $this->order::WhereBetween('created_at', [$dateTimeBegin, $dateTimeEnd])->whereIn('status', $orderType)->sum('refund');
+        $order_amount = $amount - $refund_amount; // 总收入-总退款 = 实际收入
         $order_count = $this->order::WhereBetween('created_at', [$dateTimeBegin, $dateTimeEnd])->count();
         $withdrawal = $this->userWalletCash::WhereBetween('created_at', [$dateTimeBegin, $dateTimeEnd])->where('cash_status', $this->userWalletCash::STATUS_PAID)->sum('cash_apply_amount');
-        $income = $this->order::WhereBetween('created_at', [$dateTimeBegin, $dateTimeEnd])->where('status', $this->order::ORDER_STATUS_PAID)->sum('amount');
 
         $this->finance->updateOrCreate(
             ['created_at' => $date],
             [
-                'income' => $income,
+                'income' => $order_amount,
                 'withdrawal' => $withdrawal,
                 'order_count' => $order_count,
                 'order_amount' => $order_amount,
@@ -75,6 +78,5 @@ class FinanceCreateCommand extends AbstractCommand
             ]
         );
         $this->info($date . ' ' . $this->signature);
-        $this->uinStatis();
     }
 }

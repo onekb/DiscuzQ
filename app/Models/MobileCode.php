@@ -34,6 +34,9 @@ class MobileCode extends Model
 {
     const USED_STATE = 1;
 
+    const CODE_EXCEPTION = 5; //单位：分钟
+    const CODE_INTERVAL = 60; //单位：秒
+
     protected $fillable = ['mobile', 'code', 'type', 'expired_at'];
 
     /**

@@ -18,13 +18,13 @@
 
 namespace App\Models;
 
-use App\Models\Thread;
+use App\Common\CacheKey;
 use App\Events\Category\Created;
 use Carbon\Carbon;
+use Discuz\Base\DzqCache;
 use Discuz\Base\DzqModel;
 use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -74,6 +74,17 @@ class Category extends DzqModel
         'thread.freeViewPosts.3',      // 免费查看付费图片
         'thread.freeViewPosts.4',      // 免费查看付费语音
         'thread.freeViewPosts.5',      // 免费查看付费问答
+
+        'createThread',               // 发布帖子
+        'insertImage',              // 插入图片
+        'insertVideo',             // 插入视频
+        'insertAudio',             // 插入语音
+        'insertDoc',             // 插入附件
+        'insertGoods',             // 插入商品
+        'insertPay',             // 插入付费
+        'insertReward',             // 插入悬赏
+        'insertRedPacket',             // 插入红包
+        'insertPosition',             // 插入位置
     ];
 
     /**
@@ -133,6 +144,7 @@ class Category extends DzqModel
             ->whereIn('category_id', $category_ids)
             ->whereNull('deleted_at')
             ->whereNotNull('user_id')
+            ->where('is_display', Thread::BOOL_YES)
             ->count();
 
         $categoryDetail = Category::query()->where('id', $this->id)->first();
@@ -145,11 +157,44 @@ class Category extends DzqModel
                 ->whereIn('category_id', $father_category_ids)
                 ->whereNull('deleted_at')
                 ->whereNotNull('user_id')
+                ->where('is_display', Thread::BOOL_YES)
                 ->count();
             $categoryFatherDetail->save();
         }
 
         return $this;
+    }
+
+    public static function refreshThreadCountV3($categoryId)
+    {
+        $categoryDetail = Category::query()->where('id', $categoryId)->first();
+        if (empty($categoryDetail)) {
+            return false;
+        }
+        $category_ids = Category::query()->where('id', $categoryId)->orWhere('parentid', $categoryId)->pluck('id')->toArray();
+        $categoryDetail->thread_count = Thread::query()
+            ->where('is_approved', Thread::APPROVED)
+            ->where('is_draft', 0)
+            ->whereIn('category_id', $category_ids)
+            ->whereNull('deleted_at')
+            ->whereNotNull('user_id')
+            ->where('is_display', Thread::BOOL_YES)
+            ->count();
+        $categoryDetail->save();
+        if ($categoryDetail->parentid !== 0) {
+            $father_category_ids = Category::query()->where('id', $categoryDetail->parentid)->orWhere('parentid', $categoryDetail->parentid)->pluck('id')->toArray();
+            $categoryFatherDetail = Category::query()->where('id', $categoryDetail->parentid)->first();
+            $categoryFatherDetail->thread_count = Thread::query()
+                ->where('is_approved', Thread::APPROVED)
+                ->where('is_draft', 0)
+                ->whereIn('category_id', $father_category_ids)
+                ->whereNull('deleted_at')
+                ->whereNotNull('user_id')
+                ->where('is_display', Thread::BOOL_YES)
+                ->count();
+            $categoryFatherDetail->save();
+        }
+        return true;
     }
 
     /**
@@ -239,7 +284,8 @@ class Category extends DzqModel
             return false;
         }
         $permissions = Permission::getUserPermissions($user);
-        $cids = self::query()->pluck('id')->toArray();
+        $categories = self::getCategories();
+        $cids = array_column($categories, 'id');
         $p = [];
         if ($user->isAdmin()) {
             $p = $cids;
@@ -258,5 +304,31 @@ class Category extends DzqModel
             $categoryids = array_intersect($categoryids, $p);
         }
         return $categoryids;
+    }
+
+
+    /**
+     * @desc 获取所有分类
+     */
+    public static function getCategories()
+    {
+        if (app()->has(CacheKey::CATEGORIES)) {
+            return app()->get(CacheKey::CATEGORIES);
+        }
+        $cache = app('cache');
+        $categories = $cache->get(CacheKey::CATEGORIES);
+        if ($categories) {
+            app()->instance(CacheKey::CATEGORIES, $categories);
+            return $categories;
+        }
+        $categories = self::query()->get()->toArray();
+        app()->instance(CacheKey::CATEGORIES, $categories);
+        $cache->put(CacheKey::CATEGORIES, $categories, 60 * 60);
+        return $categories;
+    }
+
+    protected function clearCache()
+    {
+        DzqCache::delKey(CacheKey::CATEGORIES);
     }
 }

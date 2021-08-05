@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+use App\Common\PermissionKey;
 use App\Models\Permission;
 use App\Models\Thread;
 use Illuminate\Database\Seeder;
@@ -28,107 +29,44 @@ class PermissionTableSeeder extends Seeder
      * @var array
      */
     protected $permissions = [
-        // 用户
-        'user.view' => [7, 10],                 // 查看某个用户信息权限
-        'user.view.mobile' => [],               // 是否能查看用户真实手机号
-        'user.edit' => [],                      // 编辑某个用户信息权限，除自己以外
-        'user.delete' => [],                    // 删除某个用户信息权限
+        //通用权限：
+        PermissionKey::CASH_CREATE                  => [10],    // 申请提现
+        PermissionKey::ORDER_CREATE                 => [10,6],  // 创建订单
+        PermissionKey::THREAD_FAVORITE              => [10],    // 帖子收藏
+        PermissionKey::THREAD_LIKE_POSTS            => [10],    // 帖子点赞
+        PermissionKey::TRADE_PAY_ORDER              => [10,6],  // 订单支付
+        PermissionKey::USER_VIEW                    => [10],    // 查看某个用户信息权限
+        PermissionKey::USER_FOLLOW_CREATE           => [10],    // 关注/取关用户
 
-        // 用户组
-        'group.create' => [],                   // 添加用户组权限
-        'group.delete' => [],                   // 删除用户组权限
+        // 内容发布权限
+        PermissionKey::CREATE_THREAD                => [10],    // 发布帖子
+        'switch.'.PermissionKey::CREATE_THREAD      => [10],    // 发布帖子-全局
+        PermissionKey::THREAD_INSERT_IMAGE          => [10,6],  // 插入图片
+//        PermissionKey::THREAD_INSERT_VIDEO          => [],    // 插入视频
+//        PermissionKey::THREAD_INSERT_AUDIO          => [],    // 插入语音
+        PermissionKey::THREAD_INSERT_ATTACHMENT     => [10,6],  // 插入附件
+        PermissionKey::THREAD_INSERT_GOODS          => [10],    // 插入商品
+        PermissionKey::THREAD_INSERT_PAY            => [10],    // 插入付费
+        PermissionKey::THREAD_INSERT_REWARD         => [10],    // 插入悬赏
+        PermissionKey::THREAD_INSERT_RED_PACKET     => [10],    // 插入红包
+        PermissionKey::THREAD_INSERT_POSITION       => [10],    // 插入位置
+        PermissionKey::THREAD_ALLOW_ANONYMOUS       => [10],    // 允许匿名
+        PermissionKey::DIALOG_CREATE                => [10],    // 发布私信
+        'switch.'.PermissionKey::THREAD_REPLY       => [10],    // 回复主题
+        PermissionKey::THREAD_REPLY                 => [10],    // 回复主题-全局
 
-        // 分类
-        'createCategory' => [],                 // 创建分类
-        'category.delete' => [],                // 删除分类
-        'category.edit' => [],                  // 修改分类
+        //查看权限
+        'switch.'.PermissionKey::VIEW_THREADS       => [10,7],  // 查看主题列表
+        PermissionKey::VIEW_THREADS                 => [10,7],  // 查看主题列表-全局
+        'switch.'.PermissionKey::THREAD_VIEW_POSTS  => [10,7],  // 查看主题详情
+        PermissionKey::THREAD_VIEW_POSTS            => [10,7],  // 查看主题详情-全局
 
-        // 默认分类下的权限
-        'switch.viewThreads' => [7, 10],        // 查看主题列表
-        'category1.viewThreads' => [7, 10],     // 查看主题列表
-        'switch.createThread' => [10],          // 发布主题
-        'category1.createThread' => [10],       // 发布主题
-        'switch.thread.reply' => [10],          // 发布回复
-        'category1.thread.reply' => [10],       // 发布回复
-        'switch.thread.viewPosts' => [7, 10],   // 查看主题详情
-        'category1.thread.viewPosts' => [7, 10],// 查看主题详情
-        'category1.thread.editPosts' => [],     // 编辑回复
-        'category1.thread.hidePosts' => [],     // 删除回复
-        'category1.thread.canBeReward' => [],   // 帖子允许被打赏
+        //管理权限
+        PermissionKey::THREAD_EDIT_OWN              => [10],    // 编辑自己的主题
+        'switch.'.PermissionKey::THREAD_EDIT_OWN    => [10],    // 编辑自己的主题-全局
+        PermissionKey::THREAD_HIDE_OWN              => [10],    // 删除自己的主题或回复
+        'switch.'.PermissionKey::THREAD_HIDE_OWN    => [10],    // 删除自己的主题或回复-全局
 
-        // 主题
-        'createThread.' . Thread::TYPE_OF_TEXT => [10],             // 发布文字
-        'createThread.' . Thread::TYPE_OF_LONG => [10],             // 发布帖子
-        'createThread.' . Thread::TYPE_OF_VIDEO => [],              // 发布图片
-        'createThread.' . Thread::TYPE_OF_IMAGE => [10],            // 发布视频
-        'createThread.' . Thread::TYPE_OF_AUDIO => [],              // 发布语音
-        'createThread.' . Thread::TYPE_OF_QUESTION => [10],         // 发布问答
-        'createThread.' . Thread::TYPE_OF_GOODS => [10],            // 发布商品
-        'createThread.' . Thread::TYPE_OF_TEXT . '.position' => [10],       // 发布文字位置
-        'createThread.' . Thread::TYPE_OF_LONG . '.position' => [10],       // 发布长文位置
-        'createThread.' . Thread::TYPE_OF_VIDEO . '.position' => [10],      // 发布视频位置
-        'createThread.' . Thread::TYPE_OF_IMAGE . '.position' => [10],      // 发布图片位置
-        'createThread.' . Thread::TYPE_OF_AUDIO . '.position' => [10],      // 发布语音位置
-        'createThread.' . Thread::TYPE_OF_QUESTION . '.position' => [10],   // 发布问答位置
-        'createThread.' . Thread::TYPE_OF_GOODS . '.position' => [10],      // 发布商品位置
-        'thread.rename' => [],                  // 修改主题标题
-        'thread.favorite' => [10],              // 收藏主题
-        'createThreadWithCaptcha' => [],        // 发布主题验证验证码
-        'publishNeedRealName' => [],            // 发布内容需先实名认证
-        'publishNeedBindPhone' => [],           // 发布内容需先绑定手机
-
-        // 回复
-        'thread.likePosts' => [10],             // 点赞回复
-
-        // 内容审核
-        'thread.approvePosts' => [],            // 审核主题或回复
-
-        // 回收站
-        'viewTrashed' => [],                    // 查看回收站
-
-        // 附件
-        'attachment.create.0' => [10],          // 上传附件
-        'attachment.create.1' => [10],          // 上传图片
-        'attachment.create.0' => [6],          // 待付费用户支持上传附件
-        'attachment.create.1' => [6],          // 待付费用户支持上传图片
-        'attachment.delete' => [],              // 删除附件
-
-        // 敏感词
-        'stopWord.create' => [],                // 创建敏感词
-        'stopWord.delete' => [],                // 删除敏感词
-
-        // 站点
-        'viewSiteInfo' => [],                   // 查看站点信息权限
-        'checkVersion' => [],                   // 检查是否有新版权限
-        'setting.site' => [],                   // 上传站点logo
-
-        // 订单
-        'order.create' => [6, 10],              // 创建订单
-        'order.viewList' => [],                 // 订单总列表
-
-        // 钱包
-        'wallet.update' => [],                  // 更新钱包
-        'wallet.viewList' => [],                // 总钱包信息列表
-        'wallet.logs.viewList' => [],           // 钱包动账记录总列表
-        'trade.pay.order' => [6, 10],           // 支付订单
-
-        // 提现
-        'cash.create' => [10],                  // 申请提现
-        'cash.review' => [],                    // 提现审核
-        'cash.viewList' => [],                  // 提现总列表
-
-        // 邀请
-        'createInvite' => [],                   // 发起邀请
-
-        // 财务
-        'statistic.financeProfile' => [],       // 财务概况
-        'statistic.financeChart' => [],         // 财务图表
-
-        // 短消息
-        'dialog.create' => [10],                // 创建会话、会话消息
-
-        // 关注
-        'userFollow.create' => [10],            // 创建关注
     ];
 
     /**

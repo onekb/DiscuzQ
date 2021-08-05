@@ -24,6 +24,7 @@ use App\Models\Thread;
 use App\Models\Post;
 use App\Models\RedPacket;
 use App\Models\ThreadRedPacket;
+use App\Models\ThreadTom;
 use App\Models\UserWalletLog;
 use Discuz\Foundation\EventsDispatchTrait;
 use Exception;
@@ -60,7 +61,6 @@ class ReplyPostMakeRedPacket
      */
     public function handle(Saved $event)
     {
-
         $post = $event->post;
         $actor = $event->actor;
         $data = $event->data;
@@ -69,19 +69,14 @@ class ReplyPostMakeRedPacket
                             ',访问帖子id:' . $post->thread->id.
                             ',post_id:'   . $post->id.
                             ',msg:';
-        $thread = Thread::query()->where("id",$post->thread->id)->first();
-        $threadRedPacket = ThreadRedPacket::query()->where("thread_id",$post->thread->id)->first();
+        $thread = Thread::query()->where("id", $post->thread->id)->first();
+        $threadRedPacket = ThreadRedPacket::query()->where("thread_id", $post->thread->id)->first();
         if ($thread['is_red_packet'] == 0 && empty($threadRedPacket)) {
             $this->outDebugInfo('回复的帖子不是红包帖');
             return;
         }
         if ($post->user_id != $actor->id) {
             $this->outDebugInfo('回复领红包：不是回复的主人领取红包');
-            return;
-        }
-
-        if (!($type == Thread::TYPE_OF_TEXT || $type == Thread::TYPE_OF_LONG)) {
-            $this->outDebugInfo('回复领红包：该帖不为文字帖和长文贴');
             return;
         }
 
@@ -115,11 +110,21 @@ class ReplyPostMakeRedPacket
             $this->outDebugInfo('回复领红包：thread_id为空');
             return;
         }
-        if ($thread['type'] == Thread::TYPE_OF_TEXT) {
-            $change_type = UserWalletLog::TYPE_INCOME_TEXT;
+//        if ($thread['type'] == Thread::TYPE_OF_TEXT) {
+//            $change_type = UserWalletLog::TYPE_INCOME_TEXT;
+//        } else {
+//            $change_type = UserWalletLog::TYPE_INCOME_LONG;
+//        }
+
+        $redPacketTom = ThreadTom::query()->where('thread_id', $thread['id'])
+            ->where('tom_type', 106)
+            ->first();
+        if ($redPacketTom) {
+            $change_type = UserWalletLog::TYPE_REDPACKET_INCOME;
         } else {
-            $change_type = UserWalletLog::TYPE_INCOME_LONG;
+            $change_type = 0;
         }
+
         $isReceive = UserWalletLog::query()->where([
             'user_id' => $actor['id'],
             'change_type' => $change_type,
@@ -130,8 +135,7 @@ class ReplyPostMakeRedPacket
             return;
         }
 
-        $this->bus->dispatch(new ReceiveRedPacket($thread,$post,$redPacket,$event->post->thread->user,$actor));
-
+        $this->bus->dispatch(new ReceiveRedPacket($thread, $post, $redPacket, $event->post->thread->user, $actor));
     }
 
     public function outDebugInfo($info)

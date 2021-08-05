@@ -67,18 +67,31 @@ class RegisterPhoneUser
         $this->data['password'] = '';
         $this->data['username'] = User::getNewUsername();
 
-        // 审核模式，设置注册为审核状态
-        if ($settings->get('register_validate')) {
-            $this->data['register_reason'] = '手机号注册';
-            $this->data['status'] = 2;
-        }
-
         // 付费模式，默认注册时即到期
         if ($settings->get('site_mode') == 'pay') {
             $this->data['expired_at'] = Carbon::now();
         }
 
-        $user = User::register(Arr::only($this->data, ['username', 'mobile', 'password', 'register_ip', 'register_port', 'register_reason', 'status']));
+        // 审核模式，设置注册为审核状态
+        if ($settings->get('register_validate')) {
+            $this->data['register_reason'] = '手机号注册';
+            $this->data['status'] = User::STATUS_MOD;
+        }
+
+        //扩展字段
+        if ($settings->get('open_ext_fields')) {
+            $this->data['status'] = User::STATUS_NEED_FIELDS;
+        }
+
+        $user = User::register(Arr::only($this->data, [
+            'username',
+            'mobile',
+            'password',
+            'register_ip',
+            'register_port',
+            'register_reason',
+            'status'
+        ]));
 
         $this->events->dispatch(
             new Saving($user, $this->actor, $this->data)

@@ -18,12 +18,13 @@
 
 namespace App\Models;
 
+use App\Common\CacheKey;
 use Carbon\Carbon;
 use Closure;
-use Exception;
+use Discuz\Base\DzqCache;
+use Discuz\Base\DzqModel;
 use Discuz\Contracts\Setting\SettingsRepository;
 use Discuz\Database\ScopeVisibilityTrait;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -57,7 +58,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property User $thirdParty
  * @package App\Models
  */
-class Order extends Model
+class Order extends DzqModel
 {
     use ScopeVisibilityTrait;
 
@@ -66,11 +67,11 @@ class Order extends Model
      */
     const ORDER_TYPE_REGISTER = 1; //注册
 
-    const ORDER_TYPE_REWARD   = 2; //打赏
+    const ORDER_TYPE_REWARD = 2; //打赏
 
-    const ORDER_TYPE_THREAD   = 3; //付费主题
+    const ORDER_TYPE_THREAD = 3; //付费主题
 
-    const ORDER_TYPE_GROUP    = 4; //付费用户组
+    const ORDER_TYPE_GROUP = 4; //付费用户组
 
     const ORDER_TYPE_QUESTION = 5; // 问答提问支付
 
@@ -79,6 +80,12 @@ class Order extends Model
     const ORDER_TYPE_ATTACHMENT = 7; //付费附件
 
     const ORDER_TYPE_RENEW = 8; //站点付费
+
+    const ORDER_TYPE_REDPACKET = 9; //红包
+
+    const ORDER_TYPE_QUESTION_REWARD = 10; //悬赏
+
+    const ORDER_TYPE_MERGE = 11; // 合并订单
 
     const ORDER_TYPE_TEXT = 20; //文字帖红包
 
@@ -89,15 +96,17 @@ class Order extends Model
      */
     const ORDER_STATUS_PENDING = 0; //待付款
 
-    const ORDER_STATUS_PAID    = 1; //已付款
+    const ORDER_STATUS_PAID = 1; //已付款
 
-    const ORDER_STATUS_CANCEL  = 2; //取消订单
+    const ORDER_STATUS_CANCEL = 2; //取消订单
 
-    const ORDER_STATUS_FAILED  = 3; //支付失败
+    const ORDER_STATUS_FAILED = 3; //支付失败
 
     const ORDER_STATUS_EXPIRED = 4; //订单已过期
 
-    const ORDER_STATUS_RETURN = 10; //已退款订单
+    const ORDER_STATUS_PART_OF_RETURN = 5; //部分退款
+
+    const ORDER_STATUS_RETURN = 10; //全额退款
 
     const ORDER_STATUS_UNTREATED = 11; //在异常订单处理中不进行处理的订单
 
@@ -111,18 +120,18 @@ class Order extends Model
      */
     const PAYMENT_TYPE_WECHAT_NATIVE = 10; //微信扫码支付
 
-    const PAYMENT_TYPE_WECHAT_WAP    = 11; //微信h5支付
+    const PAYMENT_TYPE_WECHAT_WAP = 11; //微信h5支付
 
-    const PAYMENT_TYPE_WECHAT_JS     = 12; //微信网页、公众号
+    const PAYMENT_TYPE_WECHAT_JS = 12; //微信网页、公众号
 
-    const PAYMENT_TYPE_WECHAT_MINI   = 13; //微信小程序支付
+    const PAYMENT_TYPE_WECHAT_MINI = 13; //微信小程序支付
 
-    const PAYMENT_TYPE_WALLET        = 20;//钱包支付
+    const PAYMENT_TYPE_WALLET = 20;//钱包支付
 
     /**
      * 订单过期时间，单位分钟，订单过期后无法支付
      */
-    const ORDER_EXPIRE_TIME          = 10;
+    const ORDER_EXPIRE_TIME = 15;
 
     /**
      * {@inheritdoc}
@@ -149,6 +158,10 @@ class Order extends Model
         5 => '问答回答收入',
         6 => '问答围观收入',
         7 => '付费附件',
+        8 => '站点付费',
+        9 => '红包',
+        10 => '悬赏',
+        11 => '合并订单',
         20 => '文字帖红包',
         21 => '长文帖红包',
     ];
@@ -230,7 +243,7 @@ class Order extends Model
 
         $this->author_amount = $actualAmount;
 
-        return $getAuthorAmount ?  $this->author_amount : $bossAmount ;
+        return $getAuthorAmount ? $this->author_amount : $bossAmount;
     }
 
     /**
@@ -337,5 +350,13 @@ class Order extends Model
     public function group()
     {
         return $this->belongsTo(Group::class);
+    }
+
+    protected function clearCache()
+    {
+        DzqCache::delHashKey(CacheKey::LIST_THREADS_V3_POST_USERS, $this->thread_id);
+        DzqCache::delKey(CacheKey::LIST_THREADS_V3_USER_PAY_ORDERS . $this->user_id);
+        DzqCache::delKey(CacheKey::LIST_THREADS_V3_USER_REWARD_ORDERS . $this->user_id);
+        DzqCache::delHashKey(CacheKey::LIST_THREADS_V3_THREADS, $this->thread_id);
     }
 }

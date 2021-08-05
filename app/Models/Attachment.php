@@ -19,6 +19,7 @@
 namespace App\Models;
 
 use App\Events\Attachment\Created;
+use App\Modules\ThreadTom\PreQuery;
 use Carbon\Carbon;
 use Discuz\Base\DzqModel;
 use Discuz\Contracts\Setting\SettingsRepository;
@@ -77,6 +78,14 @@ class Attachment extends DzqModel
 
     const YES_REMOTE = 1;
     const NO_REMOTE = 0;
+
+
+    const ORIENTATION_THREE = 3;
+
+    const ORIENTATION_SIX = 6;
+
+    const ORIENTATION_EIGHT = 8;
+
     /**
      * {@inheritdoc}
      */
@@ -125,7 +134,9 @@ class Attachment extends DzqModel
         $isRemote,
         $isApproved,
         $ip,
-        $order = 0
+        $order = 0,
+        $width,
+        $height
     )
     {
         $attachment = new static;
@@ -142,6 +153,9 @@ class Attachment extends DzqModel
         $attachment->file_size = $size;
         $attachment->file_type = $mime;
         $attachment->ip = $ip;
+        $attachment->file_width = $width;
+        $attachment->file_height = $height;
+
 
         $attachment->raise(new Created($attachment));
 
@@ -222,7 +236,12 @@ class Attachment extends DzqModel
      */
     public function post()
     {
-        return $this->belongsTo(Post::class, 'type_id');
+        $post = null;
+        if($post){
+            return $this->belongsTo(self::class)->withDefault($post);
+        }else{
+            return $this->belongsTo(Post::class, 'type_id');
+        }
     }
 
     /**
@@ -232,7 +251,13 @@ class Attachment extends DzqModel
      */
     public function thread()
     {
-        return $this->belongsTo(Thread::class, 'type_id');
+        $thread = null;
+        if($thread){
+            return $this->belongsTo(self::class)->withDefault($thread);
+        }else{
+            return $this->belongsTo(Thread::class, 'type_id');
+        }
+
     }
 
 

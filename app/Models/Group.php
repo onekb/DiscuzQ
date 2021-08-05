@@ -18,11 +18,13 @@
 
 namespace App\Models;
 
+use App\Common\CacheKey;
 use App\Events\Group\Deleted;
+use Discuz\Base\DzqCache;
+use Discuz\Base\DzqModel;
 use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -43,7 +45,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property Collection $users
  * @property Collection $permissions
  */
-class Group extends Model
+class Group extends DzqModel
 {
     use EventGeneratorTrait;
     use ScopeVisibilityTrait;
@@ -166,5 +168,29 @@ class Group extends Model
         }
 
         return $this->permissions->contains('permission', $permission);
+    }
+
+    public static function getGroup($userId)
+    {
+        $groups = GroupUser::instance()->getGroupInfo([$userId]);
+        $groups = array_column($groups, null, 'user_id');
+        return empty($groups[$userId]) ? false : $groups[$userId];
+    }
+
+    public static function getGroups()
+    {
+        $cache = app('cache');
+        $groups = $cache->get(CacheKey::LIST_GROUPS);
+        if ($groups) {
+            return $groups;
+        }
+        $groups = Group::query()->get()->toArray();
+        $cache->put(CacheKey::LIST_GROUPS, $groups, 60 * 60);
+        return $groups;
+    }
+
+    protected function clearCache()
+    {
+        DzqCache::delKey(CacheKey::LIST_GROUPS);
     }
 }

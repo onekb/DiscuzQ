@@ -19,6 +19,7 @@
 namespace App\Console\Commands;
 
 use App\Events\Order\Updated;
+use App\Models\OrderChildren;
 use App\Settings\SettingsRepository;
 use App\Trade\Config\GatewayConfig;
 use App\Trade\QueryTrade;
@@ -41,6 +42,10 @@ class QueryWechatOrderConmmand extends AbstractCommand
     protected $connection;
 
     protected $events;
+
+    protected $expireEndTime = 24;           //订单过期开始时间
+    protected $expireStartTime = 48;         //订单过期结束时间
+
 
     public function __construct(Application $app, SettingsRepository $setting, ConnectionInterface $connection, Dispatcher $events)
     {
@@ -72,7 +77,8 @@ class QueryWechatOrderConmmand extends AbstractCommand
     {
         //查询已经过期的订单
         $query_orders = Order::where('status', Order::ORDER_STATUS_PENDING)
-            ->where('created_at', '<', Carbon::now()->subMinute(Order::ORDER_EXPIRE_TIME + 1))
+            ->where('created_at', '<', Carbon::now()->subHours($this->expireEndTime))
+            ->where('created_at', '>', Carbon::now()->subHours($this->expireStartTime))
             ->limit(500)
             ->get();
         if ($query_orders->count()) {
@@ -110,7 +116,7 @@ class QueryWechatOrderConmmand extends AbstractCommand
                             );
                         }
                         $this->connection->commit();
-                    } catch (Exception $e) {
+                    } catch (\Exception $e) {
                         //回滚事务
                         $this->connection->rollback();
                         $log = app('payLog');
@@ -121,6 +127,12 @@ class QueryWechatOrderConmmand extends AbstractCommand
                     //设置订单已过期
                     $order->status = Order::ORDER_STATUS_EXPIRED;
                     $order->save();
+                    //查询、修改该订单对应的子订单状态
+                    $res = OrderChildren::query()->where('order_sn', $order->order_sn)->update(['status' => Order::ORDER_STATUS_EXPIRED]);
+                    if($res === false){
+                        $log = app('log');
+                        $log->info("订单order_sn：{$order->order_sn} ，更新子订单出错");
+                    }
                 }
             }
         }

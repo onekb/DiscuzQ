@@ -76,7 +76,7 @@ class CreateUserFollow
 
         //在黑名单中，不能创建会话
         if (in_array($this->actor->id, array_column($toUser->deny->toArray(), 'id'))) {
-            throw new PermissionDeniedException('user_deny');
+            throw new PermissionDeniedException('已被屏蔽，不能发起私信对话');
         }
 
         //判断是否需要设置互相关注

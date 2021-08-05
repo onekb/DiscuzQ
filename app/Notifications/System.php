@@ -24,7 +24,6 @@ use App\Notifications\Messages\Database\GroupMessage;
 use App\Notifications\Messages\Database\PostMessage;
 use App\Notifications\Messages\Database\RegisterMessage;
 use App\Notifications\Messages\Database\StatusMessage;
-use App\Notifications\Messages\Database\AbnormalOrderRefundMessage;
 use App\Notifications\Messages\MiniProgram\GroupMiniProgramMessage;
 use App\Notifications\Messages\MiniProgram\PostMiniProgramMessage;
 use App\Notifications\Messages\MiniProgram\RegisterMiniProgramMessage;
@@ -192,24 +191,16 @@ class System extends AbstractNotification
                 return;
             }
             // set other message relationship
-            if ($this->message instanceof RegisterWechatMessage) {
-                $this->messageRelationship['database'] = app(RegisterMessage::class);
-                $this->messageRelationship['wechat'] = app(RegisterWechatMessage::class);
-            }
-            $this->messageRelationship['sms'] = app(RegisterSmsMessage::class);
-            $this->messageRelationship['miniProgram'] = app(RegisterMiniProgramMessage::class);
+            $this->messageRelationship['database']      = app(RegisterMessage::class);
+            $this->messageRelationship['wechat']        = app(RegisterWechatMessage::class);
+            $this->messageRelationship['sms']           = app(RegisterSmsMessage::class);
+            $this->messageRelationship['miniProgram']   = app(RegisterMiniProgramMessage::class);
             // set tpl id
             $this->tplId = [
                 'database'    => 'system.registered.passed',
                 'wechat'      => 'wechat.registered.passed',
                 'sms'         => 'sms.registered.passed',
                 'miniProgram' => 'miniprogram.registered.passed',
-            ];
-        }
-        elseif($this->message instanceof AbnormalOrderRefundMessage ) {
-            $this->messageRelationship['database'] = app(AbnormalOrderRefundMessage::class);
-            $this->tplId = [
-                'database'    => 'system.abnormal.order.refund'
             ];
         }
     }

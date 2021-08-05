@@ -20,6 +20,7 @@ namespace App\Listeners\Attachment;
 
 use App\Events\Attachment\Uploaded;
 use App\Models\Attachment;
+use App\Common\Image;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
@@ -41,10 +42,11 @@ class LocalImageHandler
      * @param ServerRequestInterface $request
      * @param ImageManager $image
      */
-    public function __construct(ServerRequestInterface $request, ImageManager $image)
+    public function __construct(ServerRequestInterface $request, ImageManager $image,Image $images)
     {
         $this->data = $request->getParsedBody();
         $this->image = $image;
+        $this->images = $images;
     }
 
     /**
@@ -67,14 +69,21 @@ class LocalImageHandler
         // 缩略图及高斯模糊图存储路径
         $thumbPath = Str::replaceLast($image->filename, $image->filename . '_thumb', $image->basePath());
         $blurPath = Str::replaceLast($image->filename, md5($image->filename) . '_blur', $image->basePath());
-
+        $blurFilename = md5($image->filename);
         // 生成缩略图
         $image->resize(Attachment::FIX_WIDTH, Attachment::FIX_WIDTH, function ($constraint) {
             $constraint->aspectRatio();     // 保持纵横比
             $constraint->upsize();          // 避免文件变大
         })->save($thumbPath);
 
-        // 生成模糊图
-        $image->blur(80)->save($blurPath);
+        $ext = $image->extension;
+        if(in_array($ext,['jpeg','jpg','png','gif'])){
+            $saveBlurPath = storage_path('app/' . $uploader->getPath());
+            $saveBlurName = $blurFilename. '_blur.'.$image->extension;
+            $this->images->gaussianBlur($image->basePath(),$saveBlurPath,$saveBlurName,3);
+        }else{
+            // 生成模糊图
+            $image->blur(80)->save($blurPath);
+        }
     }
 }

@@ -113,10 +113,10 @@ class ReceiveRedPacketMessage extends SimpleMessage
         $this->initData['user_id'] = $this->actor->id; // 付款人ID
         $this->initData['order_id'] = $this->order->id;
         $this->initData['order_type'] = $this->order->type; // 1：注册，2：打赏，3：付费主题，4：付费用户组
-        $this->initData['thread_id'] = $this->order->thread->id; // 必传
-        $this->initData['thread_username'] = $this->order->thread->user->username; // 必传主题用户名
-        $this->initData['thread_title'] = $this->order->thread->title;
-        $this->initData['thread_created_at'] = $this->order->thread->formatDate('created_at');
+        $this->initData['thread_id'] = $this->order->thread->id ?? $this->order->id; // 必传
+        $this->initData['thread_username'] = $this->order->thread->user->username ?? $this->data['raw']['actor_username']; // 必传主题用户名
+        $this->initData['thread_title'] = $this->order->thread->title ?? $this->data['message'];
+        $this->initData['thread_created_at'] = (string) $this->order->created_at;
         $this->initData['amount'] = $this->data['raw']['actual_amount']; // 支付金额 - 分成金额 (string精度问题)
         $this->build();
 
@@ -132,8 +132,10 @@ class ReceiveRedPacketMessage extends SimpleMessage
     {
         $content = '';
 
-        if (! is_null($this->order)) {
-            $content = $this->order->thread->getContentByType(Thread::CONTENT_LENGTH);
+        if (! is_null($this->order->thread)) {
+            $content = $this->order->thread->getRewardedContent(Thread::CONTENT_WITHOUT_LENGTH);
+        } else {
+            $content = $this->data['message'];
         }
 
         $this->initData['content'] = $content;

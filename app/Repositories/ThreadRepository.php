@@ -47,6 +47,6 @@ class ThreadRepository extends AbstractRepository
     {
         $query = Thread::where('id', $id);
 
-        return $this->scopeVisibleTo($query, $actor)->first();
+        return $this->scopeVisibleTo($query, $actor)->firstOrFail();
     }
 }

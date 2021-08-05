@@ -27,12 +27,19 @@ class MobileCodeRepository
         return MobileCode::query();
     }
 
+    /**
+     * 取最新的一次验证码
+     * @param $mobile
+     * @param $type
+     * @param int $state
+     * @return \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Model|object|null
+     */
     public function getSmsCode($mobile, $type, $state = 0)
     {
         return $this->query()->where([
             [compact('mobile')],
             [compact('type')],
             [compact('state')]
-        ])->first();
+        ])->orderBy('id', 'desc')->first();
     }
 }

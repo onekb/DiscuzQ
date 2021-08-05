@@ -42,7 +42,6 @@ class Bound
     public function pcLogin($sessionToken, $accessToken, $data)
     {
         $token = SessionToken::query()->where('token', $sessionToken)->first();
-
         if (!empty($token)) {
             /** @var SessionToken $token */
             $token->payload = $accessToken;
@@ -51,5 +50,37 @@ class Bound
         }
 
         return $accessToken;
+    }
+
+    /**
+     *
+     * @param $sessionToken
+     */
+    public function bindVoid($sessionToken, $wxuser, $accessToken)
+    {
+        $token = SessionToken::query()->where('token', $sessionToken)->first();
+        $paylod['bind'] = true;
+        $paylod['wxuser'] = $wxuser;
+        $paylod = array_merge($paylod,$accessToken);
+        if(! empty($token)) {
+            /** @var SessionToken $token */
+            $token->payload = $paylod;
+            $token->save();
+        }
+    }
+
+    /**
+     * @param $sessionToken
+     */
+    public function rebindVoid($sessionToken, $wxuser)
+    {
+        $token = SessionToken::query()->where('token', $sessionToken)->first();
+        $paylod['rebind'] = true;
+        $paylod['wxuser'] = $wxuser;
+        if(! empty($token)) {
+            /** @var SessionToken $token */
+            $token->payload = $paylod;
+            $token->save();
+        }
     }
 }

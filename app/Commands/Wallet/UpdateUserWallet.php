@@ -18,6 +18,7 @@
 
 namespace App\Commands\Wallet;
 
+use App\Common\ResponseCode;
 use App\Exceptions\WalletException;
 use App\Models\User;
 use App\Models\UserWallet;
@@ -26,19 +27,10 @@ use App\Models\AdminActionLog;
 use Exception;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Illuminate\Validation\Factory as Validator;
-use Illuminate\Validation\ValidationException;
-use Discuz\Auth\AssertPermissionTrait;
 
 class UpdateUserWallet
 {
-    use AssertPermissionTrait;
 
-    /**
-     * 钱包用户ID
-     * @var int
-     */
     public $user_id;
 
     /**
@@ -60,11 +52,12 @@ class UpdateUserWallet
      * @param User   $actor        执行操作的用户.
      * @param array  $data         请求的数据.
      */
-    public function __construct($user_id, $actor, Collection $data)
+    public function __construct($user_id, $actor, $data)
     {
         $this->user_id = $user_id;
         $this->actor   = $actor;
-        $this->data    = $data->toArray();
+        $this->data    = $data;
+
     }
 
     /**
@@ -72,32 +65,21 @@ class UpdateUserWallet
      * @return model UserWallet
      * @throws Exception
      */
-    public function handle(Validator $validator, ConnectionInterface $db)
+    public function handle(ConnectionInterface $db)
     {
-        $this->assertCan($this->actor, 'wallet.update');
-        // 验证参数
-        $validator_info = $validator->make($this->data, [
-            'operate_type'   => 'sometimes|required|integer', //操作类型，1：增加；2：增加
-            'operate_amount' => 'sometimes|required|numeric|min:0.01', //操作金额
-            'wallet_status'  => 'sometimes|required|integer', //钱包状态
-        ]);
-
-        if ($validator_info->fails()) {
-            throw new ValidationException($validator_info);
-        }
-        $operate_type   = Arr::get($this->data, 'operate_type');
-        $operate_amount = Arr::get($this->data, 'operate_amount');
-        $operate_reason = Arr::get($this->data, 'operate_reason', '');
+        $operate_type   = Arr::get($this->data, 'operateType');
+        $operate_amount = Arr::get($this->data, 'operateAmount');
+        $operate_reason = Arr::get($this->data, 'operateReason', '');
         $operate_reason = trim($operate_reason);
-        $wallet_status  = Arr::get($this->data, 'wallet_status');
+        $wallet_status  = Arr::get($this->data, 'walletStatus');
         if (!is_null($operate_type)) {
             if (!in_array($operate_type, [UserWallet::OPERATE_INCREASE, UserWallet::OPERATE_DECREASE])) {
-                throw new WalletException('operate_type_error');
+                throw new WalletException(trans('wallet.operate_type_error'));
             }
         }
 
         if (!is_null($wallet_status) && !in_array($wallet_status, [UserWallet::WALLET_STATUS_NORMAL, UserWallet::WALLET_STATUS_FROZEN])) {
-            throw new WalletException('wallet_status_error');
+            throw new WalletException(trans('wallet.wallet_status_error'));
         }
         //操作金额
         $change_available_amount = sprintf('%.2f', floatval($operate_amount));
@@ -117,7 +99,7 @@ class UpdateUserWallet
                     break;
                 case UserWallet::OPERATE_DECREASE: //减少
                     if ($user_wallet->available_amount - $operate_amount < 0) {
-                        throw new Exception('available_amount_error');
+                        throw new Exception(trans('wallet.available_amount_error'));
                     }
                     if (!strlen($operate_reason)) {
                         $operate_reason = app('translator')->get('wallet.expend_artificial');
@@ -183,7 +165,7 @@ class UpdateUserWallet
         } catch (Exception $e) {
             //回滚事务
             $db->rollback();
-            throw new WalletException($e->getMessage(), 500);
+            \Discuz\Common\Utils::outPut(ResponseCode::INTERNAL_ERROR, $e->getMessage());
         }
     }
 }

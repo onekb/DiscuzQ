@@ -21,7 +21,7 @@ namespace App\Commands\Thread;
 use App\Censor\Censor;
 use App\Commands\Post\CreatePost;
 use App\Common\SettingCache;
-use App\Models\ThreadRedPacket;
+use App\Repositories\SequenceRepository;
 use App\Events\Thread\Created;
 use App\Events\Thread\Saving;
 use App\Models\Category;
@@ -133,21 +133,6 @@ class CreateThread
             }
 
             $thread = $threads->findOrFail($thread_id, $this->actor);
-
-            if(!empty($attributes['id'])){
-                $threadRecord = Thread::query()
-                            ->where('id',$thread_id)
-                            ->where('user_id',$this->actor->id)
-                            ->first();
-                if($threadRecord['is_red_packet']==1 && $threadRecord['is_draft'] == 1){
-                    if(empty($attributes['redPacket'])){
-                        $threadRedPacket = ThreadRedPacket::query()->where("thread_id",$threadRecord['id'])->first();
-                        if(!empty($threadRedPacket)){
-                            $threadRedPacket->delete();
-                        }
-                    }
-                }
-            }
         }
 
         //是否为草稿
@@ -172,12 +157,6 @@ class CreateThread
         }
 
         [$title, $content] = $this->checkTitleAndContent($censor);
-
-        if (!empty($attributes['content']) && empty($content)) {
-           app('log')->info('用户:' . $this->actor->id . '，红包帖标题+内容结束文本检查失败，conten被清空，无法发帖');
-           throw new Exception(trans('post.thread_content_checktext_fail'));
-        }
-
         $attributes['content'] = $content;
         $attributes['title'] = $title;
         $this->data['attributes'] = $attributes;
@@ -261,6 +240,8 @@ class CreateThread
 
         $thread->save();
 
+        app(SequenceRepository::class)->updateSequenceCache($thread->id, 'add');
+
         try {
             $post = $bus->dispatch(
                 new CreatePost($thread->id, $this->actor, $this->data, $this->ip, $this->port, true)
@@ -268,7 +249,6 @@ class CreateThread
         } catch (Exception $e) {
             Post::query()->where('thread_id', $thread->id)->delete();
             RedPacket::query()->where('thread_id', $thread->id)->delete();
-            app('log')->info('用户:' . $this->actor->id . '，帖子内容保存发生错误，数据回滚中，帖子ID为：' . $thread->id . '，详细报错：' .  $e->getMessage());
             $thread->delete();
             throw $e;
         }
@@ -285,7 +265,7 @@ class CreateThread
 
     protected function checkTitleAndContent(Censor $censor)
     {
-        $sep = '__' . mt_rand(111111, 999999) . '__';
+        $sep = '__'.Str::random(6).'__';
         $contentForCheck = Arr::get($this->data, 'attributes.title', '')
             .$sep
             .Arr::get($this->data, 'attributes.content', '');

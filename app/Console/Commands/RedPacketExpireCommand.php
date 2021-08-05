@@ -18,24 +18,27 @@
 
 namespace App\Console\Commands;
 
-use App\Commands\Wallet\ChangeUserWallet;
 use App\Models\Order;
+use App\Models\OrderChildren;
 use App\Models\RedPacket;
 use App\Models\Thread;
 use App\Models\User;
 use App\Models\UserWallet;
 use App\Models\UserWalletLog;
+use App\Notifications\ReceiveRedPacket;
+use Discuz\Base\DzqLog;
 use Discuz\Console\AbstractCommand;
 use Discuz\Foundation\Application;
+use Carbon\Carbon;
 use Exception;
-use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Support\Arr;
 use Illuminate\Database\ConnectionInterface;
 
 class RedPacketExpireCommand extends AbstractCommand
 {
     protected $signature = 'redPacket:expire';
 
-    protected $description = '返还过期未回答的红包金额';
+    protected $description = '返还过期未领取完的红包金额';
 
     protected $expireTime = 24 * 60 * 60; //红包过期时间24小时
 
@@ -46,13 +49,6 @@ class RedPacketExpireCommand extends AbstractCommand
      */
     protected $connection;
 
-    /**
-     * @var Dispatcher
-     */
-    protected $bus;
-
-    protected $debugInfo = false;
-
     protected $info = '';
 
     /**
@@ -60,20 +56,18 @@ class RedPacketExpireCommand extends AbstractCommand
      * @param string|null $name
      * @param Application $app
      * @param ConnectionInterface $connection
-     * @param Dispatcher $bus
      */
-    public function __construct(string $name = null, Application $app, ConnectionInterface $connection, Dispatcher $bus)
+    public function __construct(string $name = null, Application $app, ConnectionInterface $connection)
     {
         parent::__construct($name);
 
         $this->app = $app;
         $this->connection = $connection;
-        $this->bus = $bus;
     }
 
     public function handle()
     {
-        $this->info('脚本执行 [开始]');
+        $this->info('红包过期脚本执行 [开始]');
         $this->info('');
 
         // 定时任务处理此条记录的时间，与用户最后参与领红包的时间增加 10 秒，以防时间临界点并发引起问题
@@ -84,155 +78,172 @@ class RedPacketExpireCommand extends AbstractCommand
         $query->where('remain_number', '>', 0);
         $query->where('status', '=', RedPacket::RED_PACKET_STATUS_VALID); // 1:红包未过期
         $redPacket = $query->get();
+        $orderType = [Order::ORDER_TYPE_MERGE, Order::ORDER_TYPE_TEXT, Order::ORDER_TYPE_LONG, Order::ORDER_TYPE_REDPACKET];
+        $orderStatus = [Order::ORDER_STATUS_PAID, Order::ORDER_STATUS_PART_OF_RETURN];
 
         $bar = $this->createProgressBar(count($redPacket));
         $bar->start();
-        $this->info('');
 
-        $redPacket->map(function ($item) use ($bar) {
+        $redPacket->map(function ($item) use ($bar, $orderType, $orderStatus) {
             // Start Transaction
             $this->connection->beginTransaction();
             try {
-                $thread_id = $item->thread_id ? $item->thread_id : '';
-                $this->info = '红包ID：'.$item->id
-                .', 帖子ID:' . $thread_id
-                    .',';
-                if (empty($item->thread_id)) {
-                    // 4:不作处理的异常红包
-                    $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_UNTREATED);
-                    $this->outDebugInfo('处理失败,帖子ID不存在');
-                    $this->connection->commit();
-                    return;
-                }
-
-                $order = Order::query()->where('thread_id', $item->thread_id)->first();
+                $order = Order::query()
+                    ->where('thread_id', $item->thread_id)
+                    ->whereIn('status', $orderStatus)
+                    ->whereIn('type', $orderType)
+                    ->first();
                 if (empty($order)) {
-                    $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_UNTREATED);
-                    $this->outDebugInfo('处理失败,订单不存在');
+                    app('log')->info('获取不到该红包帖订单信息，无法处理剩余红包金额！;红包帖ID为：' . $item->thread_id . '，红包附属信息ID为：' . $item->id);
+                    $item->remain_money = 0;
+                    $item->remain_number = 0;
+                    $item->status = RedPacket::RED_PACKET_STATUS_UNTREATED;
+                    $item->save();
                     $this->connection->commit();
                     return;
                 }
 
-                $thread = Thread::query()->where('id', $item->thread_id)->first();
-                if (empty($thread)) {
-                    $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_UNTREATED);
-                    $this->outDebugInfo('处理失败,帖子id不存在于帖子表');
+                $userWallet = UserWallet::query()->where('user_id', $order->user_id)->first();
+                if ($order->payment_type == Order::PAYMENT_TYPE_WALLET && ($userWallet->freeze_amount < $item->remain_money)) {
+                    app('log')->info('过期红包返回错误：红包帖(ID为' . $item->thread_id . ')，作者(ID为' . $item->user_id . ')。异常错误记录：冻结金额 - 剩余金额 <= 0，无法返回');
+                    $item->status = RedPacket::RED_PACKET_STATUS_UNTREATED;
+                    $item->remain_money = 0;
+                    $item->remain_number = 0;
+                    $item->save;
+
+                    $order->status = Order::ORDER_STATUS_UNTREATED;
+                    $order->save();
                     $this->connection->commit();
                     return;
                 }
-                if ($thread['type'] == Thread::TYPE_OF_TEXT) {
-                    $return_change_type = UserWalletLog::TYPE_TEXT_RETURN_THAW;// 103 文字帖冻结返还
-                    $return_change_desc = trans('wallet.return_text');//文字帖红包支出
+
+                // $postRedLog-已发放的红包流水记录
+                if ($order->type == Order::ORDER_TYPE_TEXT) {
+                    $postRedLog = UserWalletLog::query()
+                        ->where(['thread_id' => $item->thread_id, 'change_type' => UserWalletLog::TYPE_INCOME_TEXT])
+                        ->get()->toArray();
+                    $changeType = UserWalletLog::TYPE_TEXT_RETURN_THAW;// 103 文字帖冻结返还
+                    $changeDesc = trans('wallet.return_text');
+                } elseif ($order->type == Order::ORDER_TYPE_LONG) {
+                    $postRedLog = UserWalletLog::query()
+                        ->where(['thread_id' => $item->thread_id, 'change_type' => UserWalletLog::TYPE_INCOME_LONG])
+                        ->get()->toArray();
+                    $changeType = UserWalletLog::TYPE_LONG_RETURN_THAW;// 113 长文帖冻结返还
+                    $changeDesc = trans('wallet.return_long');
                 } else {
-                    $return_change_type = UserWalletLog::TYPE_LONG_RETURN_THAW;// 113 长文帖冻结返还
-                    $return_change_desc = trans('wallet.return_long');//长文帖红包支出
-                }
-                $data = [
-                    'order_id' => $order['id'],
-                    'thread_id' => $item->thread_id,
-                    'post_id' => $item->post_id,
-                    'change_type' => $return_change_type,
-                    'change_desc' => $return_change_desc
-                ];
-
-                $userWallet = UserWallet::query()->where('user_id', $order['user_id'])->first();
-                if (!empty($userWallet)) {
-                    $userWallet = $userWallet->toArray();
-                } else {
-                    $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_UNTREATED);
-                    $this->outDebugInfo('红包过期处理失败, 用户钱包异常');
-                    $this->connection->commit();
-                    return;
+                    $postRedLog = UserWalletLog::query()
+                       ->where(['thread_id' => $item->thread_id, 'change_type' => UserWalletLog::TYPE_REDPACKET_INCOME])
+                        ->get()->toArray();
+                    $changeType = UserWalletLog::TYPE_REDPACKET_REFUND;// 170 合并订单退款
+                    $changeDesc = trans('wallet.redpacket_refund');
                 }
 
-                if ($item->payment_type == Order::PAYMENT_TYPE_WALLET) {
-                    if ($userWallet['freeze_amount'] < $item->remain_money) {
-                        // 改变订单状态 11:在异常订单处理中不进行处理的订单
-                        $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_UNTREATED);
-                        $this->outDebugInfo('红包过期处理失败, ' . '用户冻结金额:' . $userWallet['freeze_amount'] . ' < '.'退回金额:' . $item->remain_money);
-                        $this->connection->commit();
-                        return;
+                $remainMoney = floatval(sprintf('%.2f', $item->remain_money));
+                // 已发放的红包金额(红包表数值对比)
+                $rewardTotal = $item->money - $item->remain_money;
+                if (!empty($postRedLog)) {
+                    $rewardTotal = array_sum(array_column($postRedLog, 'change_available_amount'));
+                    // 已发放的红包金额(钱包流水数值对比)
+                    if ($item->money > ($order->amount - $rewardTotal)) {
+                        $remainMoney = $order->amount - $rewardTotal;
+                        app('log')->info('过期红包返回异常记录：红包帖(ID为' . $item->thread_id . ')，作者(ID为' . $item->user_id . ')。异常记录：应返回的剩余金额与流水统计比较后的数值不一致，以较小的数值' . $remainMoney . '返回');
                     }
                 }
 
-                $debugInfo =    '返还用户id：' . $order['user_id']
-                            . ', 退回金额：' . $item->remain_money
-                            . ', 原可用金额：' . $userWallet['available_amount']
-                            . ', 原冻结金额：' . $userWallet['freeze_amount']
-                ;
+                if ($order->refund + $remainMoney == $order->amount) {
+                    $orderChangeStatus = Order::ORDER_STATUS_RETURN;
+                } else {
+                    $orderChangeStatus = Order::ORDER_STATUS_PART_OF_RETURN;
+                }
 
-                $user = User::query()->where('id', $thread['user_id'])->first();
+                if ($remainMoney == $item->money) {
+                    $orderChildrenChangeStatus = Order::ORDER_STATUS_RETURN;
+                } else {
+                    $orderChildrenChangeStatus = Order::ORDER_STATUS_PART_OF_RETURN;
+                }
+
+                if ($order->payment_type == Order::PAYMENT_TYPE_WALLET) {
+                    $userWalletUpdateResult = UserWallet::query()->where('user_id', $order->user_id)
+                        ->update(['available_amount' => $userWallet->available_amount + $remainMoney, 
+                                  'freeze_amount' => $userWallet->freeze_amount - $remainMoney]);
+                    $changeFreezeAmount = $remainMoney;
+                } else {
+                    $userWalletUpdateResult = UserWallet::query()->where('user_id', $order->user_id)
+                        ->update(['available_amount' => $userWallet->available_amount + $remainMoney]);
+                }
+
+                $trueChangeFreezeAmount = $changeFreezeAmount ? -$changeFreezeAmount : 0;
+                UserWalletLog::createWalletLog(
+                    $order->user_id,
+                    $remainMoney,
+                    $trueChangeFreezeAmount,
+                    $changeType,
+                    $changeDesc,
+                    null,
+                    null,
+                    $order->user_id,
+                    0,
+                    0,
+                    $item->thread_id
+                );
+
+                if ($order->type == Order::ORDER_TYPE_MERGE) {
+                    $orderChildrenInfo = OrderChildren::query()
+                        ->where('type', Order::ORDER_TYPE_REDPACKET)
+                        ->where('status', Order::ORDER_STATUS_PAID)
+                        ->where('order_sn', $order->order_sn)
+                        ->where('thread_id', $order->thread_id)
+                        ->first();
+                    if (!empty($orderChildrenInfo)) {
+                        $orderChildrenInfo->refund = $remainMoney;
+                        $orderChildrenInfo->status = $orderChildrenChangeStatus;
+                        $orderChildrenInfo->return_at = Carbon::now();
+                        $orderChildrenInfo->save();
+                    }
+                }
+
+                $order->refund = $order->refund + $remainMoney;
+                $order->status = $orderChangeStatus;
+                $order->return_at = Carbon::now();
+                $order->save();
+
+                // 发送通知
+                $user = User::query()->where('id', $order->user_id)->first();
                 if (empty($user)) {
-                    $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_UNTREATED);
-                    $this->outDebugInfo('处理失败,用户不存在');
-                    $this->connection->commit();
-                    return;
-                }
-
-                if ($order['payment_type'] == Order::PAYMENT_TYPE_WALLET) {
-                    $this->bus->dispatch(new ChangeUserWallet($user,
-                                                              UserWallet::OPERATE_UNFREEZE,
-                                                              $item->remain_money,
-                                                              $data
-                                         ));
-                } elseif (
-                    $order['payment_type']     == Order::PAYMENT_TYPE_WECHAT_NATIVE
-                    || $order['payment_type']  == Order::PAYMENT_TYPE_WECHAT_WAP
-                    || $order['payment_type']  == Order::PAYMENT_TYPE_WECHAT_JS
-                    || $order['payment_type']  == Order::PAYMENT_TYPE_WECHAT_MINI
-                ) {
-                    // 其余支付类型 增加可用金额
-                    $this->bus->dispatch(new ChangeUserWallet($user,
-                                                              UserWallet::OPERATE_INCREASE,
-                                                              $item->remain_money,
-                                                              $data
-                                         ));
+                    app('log')->info('发送红包过期通知失败：红包帖(ID为' . $item->thread_id . ')，作者(ID为' . $item->user_id . ')。异常错误记录：作者信息不存在，无法发送通知');
                 } else {
-                    $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_UNTREATED);
-                    $this->outDebugInfo('订单金额退还失败, 订单支付类型: ' . $item->payment_type . ', 不在处理范围内');
-                    $this->connection->commit();
-                    return;
+                    if (empty($order->thread)) {
+                        $message = '红包帖已过期且已被删除，返回剩余冻结金额';
+                    } else {
+                        $message = $order->thread->getContentByType(Thread::CONTENT_LENGTH, true);
+                    }
+                    $build = [
+                        'message' => $message,
+                        'raw' => array_merge(Arr::only($order->toArray(), ['id', 'thread_id', 'type']), [
+                            'actor_username' => $user->username,   // 发送人姓名
+                            'actual_amount' => $remainMoney,     // 获取作者实际金额
+                        ]),
+                    ];
+                    // Tag 发送得到红包通知
+                    $user->notify(new ReceiveRedPacket($user, $order, $build));
                 }
 
-                $userWallet = UserWallet::query()->where('user_id', $order['user_id'])->first();
-                if (!empty($userWallet)) {
-                    $userWallet = $userWallet->toArray();
-                } else {
-                    $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_UNTREATED);
-                    $this->outDebugInfo('红包过期处理失败, 用户钱包异常');
-                    $this->connection->commit();
-                    return;
-                }
-
-                $this->changeRedPacketStatus($item->id, RedPacket::RED_PACKET_STATUS_RETURN);
-                $this->outDebugInfo($debugInfo
-                                    . ', 现可用金额：' . $userWallet['available_amount']
-                                    . ', 现冻结金额：' . $userWallet['freeze_amount']
-                                    . ', 处理成功');
+                $item->remain_number = 0;
+                $item->remain_money = 0;
+                $item->status = RedPacket::RED_PACKET_STATUS_RETURN;
+                $item->save();
                 $this->connection->commit();
             } catch (Exception $e) {
-                $this->outDebugInfo($this->info .'处理失败' . $e->getMessage());
+                DzqLog::error('redPacket_expire_refund_failure', [], $e->getMessage());
                 $this->connection->rollback();
             }
 
             $bar->advance();
-            $this->info('');
         });
 
         $bar->finish();
 
         $this->info('');
-        $this->info('脚本执行 [完成]');
-    }
-
-    public function changeRedPacketStatus($id, $status){
-        $redPacket = RedPacket::query()->lockForUpdate()->find($id);
-        $redPacket->status = $status;
-        $redPacket->save();
-    }
-
-    public function outDebugInfo($info){
-        $this->info($this->info . $info);
-        app('log')->info($this->info . $info);
+        $this->info('红包过期脚本执行 [结束]');
     }
 }

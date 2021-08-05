@@ -20,6 +20,7 @@ namespace App\Api\Serializer;
 
 use App\Models\Post;
 use App\Models\Thread;
+use App\Models\ThreadTom;
 use App\Models\UserWalletLog;
 use Exception;
 use Tobscure\JsonApi\Relationship;
@@ -32,7 +33,7 @@ class PostSerializer extends BasicPostSerializer
      * @param Post $model
      * @throws Exception
      */
-    public function getDefaultAttributes($model)
+    public function getDefaultAttributes($model, $user = null)
     {
         $attributes = parent::getDefaultAttributes($model);
 
@@ -71,21 +72,19 @@ class PostSerializer extends BasicPostSerializer
         if (empty($thread)) {
             throw new Exception(trans('post.thread_id_not_null'));
         }
-        if ($thread->type == Thread::TYPE_OF_TEXT) {
-            $change_type = UserWalletLog::TYPE_INCOME_TEXT;
-        } elseif ($thread->type == Thread::TYPE_OF_LONG) {
-            $change_type = UserWalletLog::TYPE_INCOME_LONG;
-        } else {
-            $change_type = 0;
-        }
-        $redPacketAmount = UserWalletLog::query()
-                            ->where([   'thread_id'     => $thread_id,
-                                        'post_id'       => $post_id,
-                                        'change_type'   => $change_type,
-                                        'user_id'       => $user_id
-                                    ])
-                            ->sum('change_available_amount');
 
-        return empty($redPacketAmount) ? 0 : $redPacketAmount;
+        $redPacketTom = ThreadTom::query()->where('thread_id',$thread_id)
+                          ->where('tom_type',106)
+                            ->first();
+
+        $redPacketAmount = 0;
+        if ($redPacketTom) {
+            $redPacketAmount = UserWalletLog::query()
+                ->whereIn('change_type', [UserWalletLog::TYPE_INCOME_TEXT, UserWalletLog::TYPE_INCOME_LONG, UserWalletLog::TYPE_REDPACKET_INCOME])
+                ->where(['thread_id' => $thread_id, 'post_id'=> $post_id, 'user_id' => $user_id])
+                ->sum('change_available_amount');
+        }
+
+        return $redPacketAmount;
     }
 }

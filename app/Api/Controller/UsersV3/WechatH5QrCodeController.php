@@ -20,13 +20,16 @@ namespace App\Api\Controller\UsersV3;
 
 use App\Common\ResponseCode;
 use App\Models\SessionToken;
+use App\Models\User;
+use App\Repositories\UserRepository;
 use Discuz\Base\DzqController;
+use Discuz\Base\DzqLog;
 use Endroid\QrCode\QrCode;
 use Illuminate\Contracts\Routing\UrlGenerator;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Wechat\EasyWechatTrait;
 
-class WechatH5QrCodeController extends DzqController
+class WechatH5QrCodeController extends AuthBaseController
 {
 
     use EasyWechatTrait;
@@ -40,6 +43,8 @@ class WechatH5QrCodeController extends DzqController
      */
     protected $url;
 
+    public $paramData = [];
+
     /**
      * 二维码生成类型
      * @var string[]
@@ -49,18 +54,6 @@ class WechatH5QrCodeController extends DzqController
         'pc_bind',
         'mobile_browser_login',
         'mobile_browser_bind'
-    ];
-
-    /**
-     * 二维码生成类型与跳转路由的映射
-     * @var string[]
-     */
-    //todo 对接前端时更换路由
-    static $qrcodeTypeAndRouteMap = [
-        'pc_login'              => '/pages/user/pc-login',
-        'pc_bind'               => '/pages/user/pc-relation',
-        'mobile_browser_login'  => '/pages/user/pc-login',
-        'mobile_browser_bind'   => '/pages/user/pc-relation'
     ];
 
     /**
@@ -82,38 +75,106 @@ class WechatH5QrCodeController extends DzqController
         $this->url = $url;
     }
 
+    protected function checkRequestPermissions(UserRepository $userRepo)
+    {
+        return true;
+    }
+
     public function main()
     {
-        $type = $this->inPut('type');
-        if(! in_array($type, self::$qrcodeType)) {
-            $this->outPut(ResponseCode::GEN_QRCODE_TYPE_ERROR, ResponseCode::$codeMap[ResponseCode::GEN_QRCODE_TYPE_ERROR]);
+        try {
+            $this->paramData = [
+                'type'          =>  $this->inPut('type'),
+                'redirectUri'   =>  urldecode($this->inPut('redirectUri')),
+                'sessionToken'  =>  $this->inPut('sessionToken'),
+                'userId'        =>  $this->user->id
+            ];
+
+            if(! in_array($this->paramData['type'], self::$qrcodeType)) {
+                $this->outPut(ResponseCode::GEN_QRCODE_TYPE_ERROR);
+            }
+            //分离出参数
+            $conData = $this->parseUrlQuery($this->paramData['redirectUri']);
+            //回调页面url
+            $redirectUri = $conData['url'];
+            //参数
+            $query = $conData['params'];
+            //手机浏览器绑定则由前端传session_token
+            $sessionToken = $this->paramData['sessionToken'];
+            if($this->paramData['type'] == 'mobile_browser_bind' && ! $sessionToken) {
+                $this->outPut(ResponseCode::GEN_QRCODE_TYPE_ERROR);
+            }
+            if($this->paramData['type'] != 'mobile_browser_bind') {
+                //跳转路由选择
+                $actor = $this->user;
+                if ($this->paramData['type'] == 'pc_bind') {
+                    $userId = $this->getCookie('dzq_user_id');
+                    $actor = User::query()->where('id', (int)$userId)->first();
+                    if (empty($actor)) {
+                        $this->outPut(ResponseCode::JUMP_TO_LOGIN);
+                    }
+                }
+
+                if($actor && $actor->id) {
+                    $token = SessionToken::generate(self::$qrcodeTypeAndIdentifierMap[$this->paramData['type']], null, $actor->id);
+                } else {
+                    $token = SessionToken::generate(self::$qrcodeTypeAndIdentifierMap[$this->paramData['type']]);
+                }
+                // create token
+                $token->save();
+
+                $sessionToken = $token->token;
+            }
+            $query = array_merge($query, ['sessionToken' => $sessionToken]);
+            $locationUrl = $this->url->action('/apiv3/users/wechat/h5.oauth?redirect='.$redirectUri, $query);
+            $locationUrlArr = explode('redirect=', $locationUrl);
+            $locationUrl = $locationUrlArr[0].'redirect='.urlencode($locationUrlArr[1]);
+            //去掉无参数时最后一个是 ? 的字符
+            $locationUrl = rtrim($locationUrl, "?");
+
+            $qrCode = new QrCode($locationUrl);
+
+            $binary = $qrCode->writeString();
+
+            $baseImg = 'data:image/png;base64,' . base64_encode($binary);
+
+            $data = [
+                'sessionToken' => $sessionToken,
+                'base64Img' => $baseImg,
+            ];
+            if($this->paramData['type']=='mobile_browser_login') {
+                unset($data['sessionToken']);
+            }
+
+            $this->outPut(ResponseCode::SUCCESS, '', $data);
+        } catch (\Exception $e) {
+            DzqLog::error('h5二维码生成接口异常', $this->paramData, $e->getMessage());
+            return $this->outPut(ResponseCode::INTERNAL_ERROR, 'h5二维码生成接口异常');
         }
 
-        //跳转路由选择
-        $route = self::$qrcodeTypeAndRouteMap[$type];
-        $actor = $this->user;
-        if($actor && $actor->id) {
-            $token = SessionToken::generate(self::$qrcodeTypeAndIdentifierMap[$type], null, $actor->id);
-        } else {
-            $token = SessionToken::generate(self::$qrcodeTypeAndIdentifierMap[$type]);
+    }
+
+    /**
+     *
+     * 从url 中分离出uri与参数
+     * @param $url
+     * @return mixed
+     */
+    protected function parseUrlQuery($url)
+    {
+        $urlParse = explode('?', $url);
+        $data['url'] = $urlParse[0];
+        $data['params'] = [];
+        if(isset($urlParse[1]) && !empty($urlParse[1])) {
+            $queryParts = explode('&', $urlParse[1]);
+            $params = array();
+            foreach ($queryParts as $param) {
+                $item = explode('=', $param);
+                $params[$item[0]] = $item[1];
+            }
+            $data['params'] = $params;
         }
-        // create token
-        $token->save();
-
-        $locationUrl = $this->url->action($route, ['session_token' => $token->token]);
-
-        $qrCode = new QrCode($locationUrl);
-
-        $binary = $qrCode->writeString();
-
-        $baseImg = 'data:image/png;base64,' . base64_encode($binary);
-
-        $data = [
-            'session_token' => $token->token,
-            'base64_img' => $baseImg,
-        ];
-
-        $this->outPut(ResponseCode::SUCCESS, '', $data);
+        return $data;
     }
 
 }

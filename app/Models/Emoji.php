@@ -18,7 +18,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Common\CacheKey;
+use Discuz\Base\DzqCache;
+use Discuz\Base\DzqModel;
 
 /**
  * @property string $category
@@ -29,6 +31,23 @@ use Illuminate\Database\Eloquent\Model;
  * @method create(array $array)
  * @package App\Models
  */
-class Emoji extends Model
+class Emoji extends DzqModel
 {
+
+    public static function getEmojis()
+    {
+        $cache = app('cache');
+        $emojis = $cache->get(CacheKey::LIST_EMOJI);
+        if ($emojis) {
+            return $emojis;
+        }
+        $emojis = Emoji::all()->toArray();
+        $cache->put(CacheKey::LIST_EMOJI, $emojis, 60 * 60);
+        return $emojis;
+    }
+
+    protected function clearCache()
+    {
+        DzqCache::delKey(CacheKey::LIST_EMOJI);
+    }
 }

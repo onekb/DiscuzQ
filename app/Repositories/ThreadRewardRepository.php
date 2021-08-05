@@ -57,7 +57,7 @@ class ThreadRewardRepository extends AbstractRepository
         // 查悬赏过期信息
         $threadReward = ThreadReward::query()->where('thread_id', $thread_id)->first();
         $order = Order::query()->where(['thread_id' => $thread_id])->first();
-        $actorUser = User::query()->where(['id' => $thread->user_id])->first();
+        $actorUser = User::query()->where(['id' => $order->user_id])->first();
         $user = User::query()->where(['id' => $user_id])->first();
         $orderArr = empty($order) ? array() : $order->toArray();
 
@@ -68,7 +68,7 @@ class ThreadRewardRepository extends AbstractRepository
                 $threadContent = $post->content;
             }
         }else{
-            $threadContent = '悬赏帖已过期且已被删除，返回冻结金额';
+            $threadContent = '悬赏帖已过期且已被删除，返回剩余冻结金额';
         }
 
         if(!empty($actorUser) && !empty($user)){
@@ -78,7 +78,7 @@ class ThreadRewardRepository extends AbstractRepository
                     'actor_username' => $actorUser->username,   // 发送人姓名
                     'actual_amount' => $rewards,     // 获取作者实际金额
                     'content' => $threadContent,
-                    'created_at' => (string)$thread->created_at
+                    'created_at' => (string) $order->created_at
                 ]),
             ];
 

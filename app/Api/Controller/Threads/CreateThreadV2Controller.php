@@ -24,33 +24,30 @@ class CreateThreadV2Controller extends DzqController
     public function main(){
         $actor = $this->user;
         $data = [];
-        $categoryId = (int) $this->inPut('categoriesId');
 
         //参数校验
-        if(empty($categoryId) || $categoryId < 0){
+        if(empty($this->inPut('categoriesId'))){
             $this->outPut(ResponseCode::INVALID_PARAMETER,'分类不能为空');
         }
-        $type = (int) $this->inPut('type');
-        $denyContent = [0,1,5];
-        if(in_array($type,$denyContent) && empty($this->inPut('content'))){
+        if(empty($this->inPut('content'))){
             $this->outPut(ResponseCode::INVALID_PARAMETER,'内容不能为空');
         }
 
-        if($type !==0 && empty($type)){
+        if($this->inPut('type') !==0 && empty($this->inPut('type'))){
             $this->outPut(ResponseCode::INVALID_PARAMETER,'类型不能为空');
         }
 
         $validateData = [
-            'categories'=> $categoryId,
-            'content'=> $this->inPut('content'),
-            'type'=> $type,
+            'categories'=>$this->inPut('categoriesId'),
+            'content'=>$this->inPut('content'),
+            'type'=>$this->inPut('type'),
         ];
 
         try {
             $validate = app('validator');
             $validate->validate($validateData, [
-                'categories'          => 'required|int|min:1',
-                'type'   => 'required|int|min:0',
+                'categories'          => 'required|int',
+                'type'   => 'required|int',
             ]);
         } catch (\Exception $e) {
             $this->outPut(ResponseCode::INVALID_PARAMETER, '', $e->getMessage());
@@ -62,7 +59,7 @@ class CreateThreadV2Controller extends DzqController
                 "category" =>  [
                     "data" =>  [
                         "type" => "categories",
-                        "id" => $categoryId
+                        "id" => $this->inPut('categoriesId')
                     ]
                 ],
             ]
@@ -106,8 +103,8 @@ class CreateThreadV2Controller extends DzqController
                 'rule'=>$redPacketData['rule'],
             ];
             $data['redPacket'] = $redPacket;
-            $requestData['relationships']['redpacket']['data']['order_id'] = $redPacketData['orderId'] ?? "";
-            $requestData['relationships']['redpacket']['data']['price'] = $redPacketData['orderPrice'] ?? $redPacketData['price'];
+            $requestData['relationships']['redpacket']['data']['order_id'] = $redPacketData['orderId'];
+            $requestData['relationships']['redpacket']['data']['price'] = $redPacketData['orderPrice'];
         }
 
         //附件处理(包括图片)
@@ -147,10 +144,10 @@ class CreateThreadV2Controller extends DzqController
             $data['address'] = $this->inPut('address');
         }
 
-        if(!empty($this->inPut('captchaTicket'))){
+        if(!empty($this->inPut('captcha_ticket'))){
             $data['captcha_ticket'] = $this->inPut('captchaTicket');
         }
-        if(!empty($this->inPut('captchaRandStr'))){
+        if(!empty($this->inPut('captcha_rand_str'))){
             $data['captcha_rand_str'] = $this->inPut('captchaRandStr');
         }
 

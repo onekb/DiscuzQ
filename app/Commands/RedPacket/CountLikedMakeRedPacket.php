@@ -20,6 +20,7 @@ namespace App\Commands\RedPacket;
 
 use App\Models\Post;
 use App\Models\Thread;
+use App\Models\ThreadTom;
 use App\Models\User;
 use App\Models\RedPacket;
 use App\Models\UserWalletLog;
@@ -115,12 +116,15 @@ class CountLikedMakeRedPacket
                             ',post_id:'        . $this->post->id.
                             ',msg:';
 
-        if (!($type == Thread::TYPE_OF_TEXT || $type == Thread::TYPE_OF_LONG)) {
-            $this->outDebugInfo('点赞领红包：该帖不为文字帖和长文贴');
+        $redPacketTom = ThreadTom::query()->where('thread_id',$thread['id'])
+            ->where('tom_type',106)
+            ->first();
+        if (!$redPacketTom) {
+            $this->outDebugInfo('点赞领红包：该帖不为红包贴');
             return;
         }
 
-        if ($thread['is_red_packet'] != Thread::HAVE_RED_PACKET
+        if (!$redPacketTom
             || $post['is_first'] == 1
             || $post['is_comment'] == 1
         ) {
@@ -141,11 +145,12 @@ class CountLikedMakeRedPacket
         }
 
         //领取过红包的用户不再领取
-        if ($thread['type'] == Thread::TYPE_OF_TEXT) {
-            $change_type = UserWalletLog::TYPE_INCOME_TEXT;
+        if ($redPacketTom) {
+            $change_type = UserWalletLog::TYPE_REDPACKET_INCOME;
         } else {
-            $change_type = UserWalletLog::TYPE_INCOME_LONG;
+            $change_type = 0;
         }
+
         $isReceive = UserWalletLog::query()->where([
             'user_id'       => $this->beLikeUser['id'],
             'change_type'   => $change_type,

@@ -21,6 +21,7 @@ namespace App\Commands\Thread;
 use App\Censor\Censor;
 use App\Events\Post\Saved;
 use App\Events\Thread\Deleting;
+use App\Repositories\SequenceRepository;
 use App\Events\Thread\Saving;
 use App\Events\Thread\ThreadWasApproved;
 use App\Events\Thread\Updated;
@@ -32,6 +33,7 @@ use App\Repositories\ThreadRepository;
 use App\Repositories\ThreadVideoRepository;
 use App\Traits\ThreadNoticesTrait;
 use App\Validators\ThreadValidator;
+use Carbon\Carbon;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Foundation\EventsDispatchTrait;
@@ -98,25 +100,8 @@ class EditThread
 
         $attributes = Arr::get($this->data, 'attributes', []);
 
-        $thread = $threads->findOrFail($this->threadId, $this->actor);
+        $thread = Thread::query()->where('id',$this->threadId)->first();
         $action_desc = '';
-
-        if (isset($attributes['title'])) {
-            $this->assertCan($this->actor, 'edit', $thread);
-
-            // 敏感词校验
-            $title = $censor->checkText($attributes['title']);
-
-            // 存在审核敏感词时，将主题放入待审核
-            if ($censor->isMod) {
-                $thread->is_approved = Thread::UNAPPROVED;
-            }
-
-            $thread->title = $title;
-        } else {
-            // 不修改标题时，不更新修改时间
-            $thread->timestamps = false;
-        }
 
         if($thread->title == '' || empty($thread->title)) {
             $threadTitle = '，其ID为'. $thread->id;
@@ -124,90 +109,17 @@ class EditThread
             $threadTitle = '【'. $thread->title .'】';
         }
 
-        // 长文可以设置、编辑 附件价格
-        if (isset($attributes['attachment_price']) && $thread->type == Thread::TYPE_OF_LONG) {
-            $this->assertCan($this->actor, 'edit', $thread);
-
-            if ($thread->attachment_price =  (float) $attributes['attachment_price']) {
-                $this->assertCan($this->actor, 'createThreadPaid');
-            }
-        }
-
-        // 文字贴与问答帖不能修改价格
-        if (
-            isset($attributes['price'])
-            && $thread->type !== Thread::TYPE_OF_TEXT
-            && $thread->type !== Thread::TYPE_OF_QUESTION
-        ) {
-            $this->assertCan($this->actor, 'edit', $thread);
-
-            // 是否有权发布付费贴
-            if ($thread->price = (float) $attributes['price']) {
-                $this->assertCan($this->actor, 'createThreadPaid');
-            }
-        }
-
-        if ($thread->price > 0 && isset($attributes['free_words'])) {
-            $this->assertCan($this->actor, 'edit', $thread);
-            $thread->free_words = (float)Arr::get($this->data, 'attributes.free_words', 0);
-        }
-
-        if (isset($attributes['longitude']) && isset($attributes['latitude'])) {
-            $this->assertCan($this->actor, 'edit', $thread);
-
-            $thread->longitude = (float) Arr::get($this->data, 'attributes.longitude', 0);
-            $thread->latitude = (float) Arr::get($this->data, 'attributes.latitude', 0);
-            $thread->address = Arr::get($this->data, 'attributes.address', '');
-            $thread->location = Arr::get($this->data, 'attributes.location', '');
-        }
-
-        if (isset($attributes['isApproved']) && $attributes['isApproved'] < 3) {
-            $this->assertCan($this->actor, 'approve', $thread);
-
-            if ($thread->is_approved != $attributes['isApproved']) {
-                $thread->is_approved = $attributes['isApproved'];
-
-                if($attributes['isApproved'] == Thread::APPROVED){
-                    $action_desc = '用户主题帖'. $threadTitle .'，通过审核';
-                }
-                if($attributes['isApproved'] == Thread::UNAPPROVED){
-                    $action_desc = '用户主题帖'. $threadTitle .'，暂被设为非法';
-                }
-                if($attributes['isApproved'] == Thread::IGNORED){
-                    $action_desc = '用户主题帖'. $threadTitle .'，被忽略';
-                }
-
-                $thread->raise(
-                    new ThreadWasApproved($thread, $this->actor, ['message' => $attributes['message'] ?? ''])
-                );
-            }
-        }
-
         if (isset($attributes['isSticky'])) {
-            // $this->assertCan($this->actor, 'isSticky', $thread);
-
-            if($this->actor->can('sticky', $thread)){
-                if ($thread->is_sticky != $attributes['isSticky']) {
-                    $thread->is_sticky = $attributes['isSticky'];
-
-                    if ($thread->is_sticky) {
-                        $this->threadNotices($thread, $this->actor, 'isSticky', $attributes['message'] ?? '');
-                    }
+            if ($thread->is_sticky != $attributes['isSticky']) {
+                $thread->is_sticky = $attributes['isSticky'];
+                $thread->updated_at = Carbon::now();
+                if ($thread->is_sticky) {
+                    $this->threadNotices($thread, $this->actor, 'isSticky', $attributes['message'] ?? '');
                 }
-            }
-        }
-
-        if (isset($attributes['isSite'])) {
-            $this->assertCan($this->actor, 'isSite', $thread);
-
-            if ($thread->is_site != $attributes['isSite']) {
-                $thread->is_site = $attributes['isSite'];
             }
         }
 
         if (isset($attributes['isEssence'])) {
-            $this->assertCan($this->actor, 'essence', $thread);
-
             if ($thread->is_essence != $attributes['isEssence']) {
                 $thread->is_essence = $attributes['isEssence'];
 
@@ -218,8 +130,6 @@ class EditThread
         }
 
         if (isset($attributes['isDeleted'])) {
-            $this->assertCan($this->actor, 'hide', $thread);
-
             if ($attributes['isDeleted']) {
                 $thread->hide($this->actor, ['message' => $attributes['message'] ?? '']);
                 $action_desc = '删除用户主题帖'. $threadTitle;
@@ -272,6 +182,9 @@ class EditThread
         $thread->save();
         if (isset($attributes['isDeleted'])){
             $this->events->dispatch(new Deleting($thread, $this->actor, $this->data));
+        }
+        if(!isset($attributes['isFavorite']) && !isset($attributes['isSticky']) && !isset($attributes['isEssence'])){
+            app(SequenceRepository::class)->updateSequenceCache($this->threadId, 'edit');
         }
 
         if($action_desc !== '' && !empty($action_desc)){

@@ -118,6 +118,9 @@ class CreateThreadVideo
 
         $threadVideo->save();
 
+        //添加防盗链
+        $threadVideo->media_url = (new ThreadVideo())->getMediaUrl(['media_url' => $threadVideo->media_url]);
+
         if ($threadVideo->type === ThreadVideo::TYPE_OF_VIDEO && $this->thread->exists  && empty($this->thread->is_draft)) {
             // 发布文章时，转码
             $this->transcodeVideo($threadVideo->file_id, 'TranscodeTaskSet');

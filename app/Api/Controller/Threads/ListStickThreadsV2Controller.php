@@ -42,6 +42,7 @@ class ListStickThreadsV2Controller extends DzqController
         if (!$isMiniProgramVideoOn) {
             $threads = $threads->where('type', '<>', Thread::TYPE_OF_VIDEO);
         }
+
         $permissions = Permission::getUserPermissions($this->user);
         $categoryIds = Category::instance()->getValidCategoryIds($this->user, $categoryIds);
         if (!$categoryIds) {

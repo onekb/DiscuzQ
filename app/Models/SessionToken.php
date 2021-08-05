@@ -38,11 +38,15 @@ class SessionToken extends Model
 
     const WECHAT_PC_BIND = 'wechat_pc_bind'; // 微信 PC 绑定
 
+    const WECHAT_PC_REBIND = 'wechat_pc_rebind'; // 微信 PC 换绑
+
     const WECHAT_NOTICE_ERROR = 'wechat_notice_error'; // 微信通知错误
 
     const WECHAT_MOBILE_LOGIN = 'wechat_mobile_login'; // 手机浏览器微信登录
 
     const WECHAT_MOBILE_BIND = 'wechat_mobile_bind'; // 手机浏览器微信绑定
+
+    const WECHAT_TRANSITION_LOGIN = 'wechat_transition_login';//过渡阶段微信登录
     /**
      * {@inheritdoc}
      */
@@ -86,7 +90,7 @@ class SessionToken extends Model
 
         $now = Carbon::now();
 
-        $token->token = Str::random(40);
+        $token->token = Str::random(32);
         $token->scope = $scope;
         $token->payload = $payload;
         $token->user_id = $userId;

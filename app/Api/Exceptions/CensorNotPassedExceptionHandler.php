@@ -19,9 +19,12 @@
 namespace App\Api\Exceptions;
 
 use App\Censor\CensorNotPassedException;
+use App\Common\ResponseCode;
 use Exception;
+use Illuminate\Http\Request;
 use Tobscure\JsonApi\Exception\Handler\ExceptionHandlerInterface;
 use Tobscure\JsonApi\Exception\Handler\ResponseBag;
+use Discuz\Common\Utils;
 
 class CensorNotPassedExceptionHandler implements ExceptionHandlerInterface
 {
@@ -38,6 +41,11 @@ class CensorNotPassedExceptionHandler implements ExceptionHandlerInterface
      */
     public function handle(Exception $e)
     {
+        $path = Request::capture()->getPathInfo();
+        if (strstr($path, 'v2')||strstr($path, 'v3')) {
+            Utils::outPut(ResponseCode::CENSOR_NOT_PASSED, ResponseCode::$codeMap[ResponseCode::CENSOR_NOT_PASSED]);
+            return null;
+        }
         $status = $e->getCode();
         $error = [
             'status' => $status,

@@ -18,6 +18,8 @@
 namespace App\Models;
 
 
+use App\Common\CacheKey;
+use Discuz\Base\DzqCache;
 use Discuz\Base\DzqModel;
 
 class GroupUser extends DzqModel
@@ -35,5 +37,9 @@ class GroupUser extends DzqModel
     public function getGroupInfo($userIds){
         return  GroupUser::query()->whereIn('user_id',$userIds)
             ->with(GroupUser::$relationGroups)->get()->toArray();
+    }
+    protected function clearCache()
+    {
+        DzqCache::delHashKey(CacheKey::LIST_THREADS_V3_GROUP_USER,$this->user_id);
     }
 }

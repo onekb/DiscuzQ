@@ -19,6 +19,7 @@
 namespace App\Commands\Dialog;
 
 use App\Models\Attachment;
+use App\Models\DialogMessage;
 use App\Models\User;
 use App\Repositories\DialogMessageRepository;
 use App\Repositories\DialogRepository;
@@ -66,6 +67,17 @@ class DeleteDialog
         } else {
             $actorType = 'recipient';
             $otherType = 'sender';
+        }
+
+        //增加修改状态
+        $dialogList = DialogMessage::query()
+            ->where('dialog_id',$this->id)
+            ->where('user_id','!=', $this->actor->id)
+            ->get(['id','read_status']);
+
+        foreach ($dialogList as $value) {
+            $value->read_status = 1;
+            $value->save();
         }
 
         //增加删除时间，供获取接口筛选

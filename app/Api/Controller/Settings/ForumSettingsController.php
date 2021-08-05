@@ -19,7 +19,6 @@
 namespace App\Api\Controller\Settings;
 
 use App\Api\Serializer\ForumSettingSerializer;
-use App\Models\User;
 use Discuz\Api\Controller\AbstractResourceController;
 use Discuz\Contracts\Setting\SettingsRepository;
 use Illuminate\Support\Arr;

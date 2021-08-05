@@ -18,14 +18,17 @@
 
 namespace App\Listeners\Post;
 
+use App\Common\ResponseCode;
 use App\Commands\RedPacket\CountLikedMakeRedPacket;
 use App\Events\Post\Deleted;
 use App\Events\Post\Saving;
 use App\Notifications\Liked;
+use App\Repositories\UserRepository;
 use Carbon\Carbon;
 use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\NotAuthenticatedException;
 use Discuz\Auth\Exception\PermissionDeniedException;
+use Discuz\Common\Utils;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Support\Arr;
@@ -42,9 +45,10 @@ class SaveLikesToDatabase
 
     use AssertPermissionTrait;
 
-    public function __construct(BusDispatcher $bus)
+    public function __construct(BusDispatcher $bus, UserRepository $userRepo)
     {
         $this->bus = $bus;
+        $this->userRepo = $userRepo;
     }
 
     /**
@@ -69,10 +73,14 @@ class SaveLikesToDatabase
         $actor = $event->actor;
         $data = $event->data;
 
-        $this->assertRegistered($actor);
+        if (empty($actor) || $actor->isGuest()) {
+            Utils::outPut(ResponseCode::JUMP_TO_LOGIN);
+        }
 
         if ($post->exists && isset($data['attributes']['isLiked'])) {
-            $this->assertCan($actor, 'like', $post);
+            if (!$this->userRepo->canLikePosts($actor)) {
+                throw new PermissionDeniedException('您没有点赞权限喔！');
+            }
 
             $isLiked = $actor->likedPosts()->where('post_id', $post->id)->exists();
 

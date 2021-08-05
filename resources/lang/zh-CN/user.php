@@ -19,17 +19,22 @@ return [
     'identity_error' => '身份证为 15 位或 18 位。',
 
     'user_username_bout_limit_error' => '用户名修改次数超限',
+    'user_username_change_limit_error' => '用户名一年只能修改一次',
     'user_username_censor_error' => '用户名内容敏感',
+    'user_nickname_censor_error' => '昵称内容敏感',
     'user_signature_censor_error' => '签名内容敏感',
     'user_signature_limit_error' => '签名内容过长',
     'user_delete_group_error' => '管理组用户不允许删除',
 
     'register_by_wechat_miniprogram' => '微信小程序注册',
     'register_by_wechat_h5' => '公众号网页注册',
+    'register_by_username' => '账号密码注册',
+    'register_by_sms' => '手机号注册',
     'register_by_auto' => '自动注册',
 
     'register_decrypt_code_failed' => '解密邀请码失败',
     'invite_decrypt_code_failed' => '邀请码格式不正确', // The payload is invalid.
 
-    'do_frequent'   =>  '操作太频繁了，请稍后再试'
+    'do_frequent'   =>  '操作太频繁了，请稍后再试',
+    'attachment_not_exist'   =>  '附件记录不存在'
 ];

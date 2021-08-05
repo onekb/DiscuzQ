@@ -17,10 +17,8 @@
 
 namespace App\Api\Controller\Posts;
 
-use App\Api\Serializer\PostSerializer;
 use App\Commands\Post\EditPost;
 use App\Common\ResponseCode;
-use App\Models\ThreadUser;
 use Discuz\Base\DzqController;
 use Illuminate\Contracts\Bus\Dispatcher;
 
@@ -28,13 +26,8 @@ class UpdatePostV2Controller extends DzqController
 {
     protected $bus;
 
-    protected $postSerializer;
-
-    public function __construct(
-        PostSerializer $postSerializer,
-        Dispatcher $bus
-    ) {
-        $this->postSerializer = $postSerializer;
+    public function __construct(Dispatcher $bus)
+    {
         $this->bus = $bus;
     }
 
@@ -47,33 +40,27 @@ class UpdatePostV2Controller extends DzqController
         $data = $this->inPut('data',[]);
 
         if (empty($data)) return $this->outPut(ResponseCode::NET_ERROR);
-        
+
+        $data['type'] = 'posts';
         $post = $this->bus->dispatch(
             new EditPost($postId, $actor, $data)
         );
-        $threadId = $post['thread_id'];
-
-        $isFavorite = ThreadUser::query()->where('thread_id', $threadId)->where('user_id', $actor->id)->exists();
 
         $build = [
             'pid' => $postId,
-            'threadId'=>$threadId,
-            'content' => $data['attributes']['content'] ?? $post['content'],
+            'content' => $data['attributes']['content'],
             'likeCount' => $post['like_count'],
             'replyCount' => $post['reply_count'],
             'isFirst' => $post['is_first'],
             'isApproved' => $post['is_approved'],
             'updatedAt' => optional($post['updated_at'])->format('Y-m-d H:i:s'),
-            'isLiked' => $data['attributes']['isLiked'] ?? false,
-            'canLike' => $this->user->can('like', $post),
-            'canFavorite' => (bool) $this->user->can('favorite',$post),
-            'isFavorite' =>  $isFavorite,
-            'rewards' => floatval(sprintf('%.2f', $post->getPostReward())),
-            'redPacketAmount' => $this->postSerializer->getPostRedPacketAmount($post['id'], $post['thread_id'], $post['user_id']),
+            'isLiked' => $data['attributes']['isLiked'],
         ];
 
+        $data = $this->camelData($build);
+
         if ($post->id == $postId) {
-            return $this->outPut(ResponseCode::SUCCESS, '',$build);
+            return $this->outPut(ResponseCode::SUCCESS, '',$data);
         }
 
         return $this->outPut(ResponseCode::NET_ERROR, '', []);

@@ -18,7 +18,10 @@
 
 namespace App\Models;
 
+use App\Common\AuthUtils;
 use App\Common\CacheKey;
+use App\Common\Utils;
+use App\Common\ResponseCode;
 use App\Traits\Notifiable;
 use Carbon\Carbon;
 use Discuz\Auth\Guest;
@@ -116,6 +119,7 @@ class User extends DzqModel
         'id',
         'username',
         'password',
+        'nickname',
         'mobile',
         'bind_type',
         'updated_at'
@@ -124,7 +128,7 @@ class User extends DzqModel
     const STATUS_NORMAL = 0;//正常
     const STATUS_BAN = 1;//禁用
     const STATUS_MOD = 2;//审核中
-    const STATUS_REFUSE = 3;//审核拒绝
+    const STATUS_REFUSE = 3;//审核不通过
     const STATUS_IGNORE = 4;//审核忽略
     const STATUS_NEED_FIELDS = 10;//待填写扩展审核字段
 
@@ -137,7 +141,7 @@ class User extends DzqModel
         self::STATUS_NORMAL => '正常',
         self::STATUS_BAN => '禁用',
         self::STATUS_MOD => '审核中',
-        self::STATUS_REFUSE => '审核拒绝',
+        self::STATUS_REFUSE => '审核不通过',
         self::STATUS_IGNORE => '审核忽略',
         self::STATUS_NEED_FIELDS => '待填写注册扩展信息'
     ];
@@ -281,11 +285,43 @@ class User extends DzqModel
         return $this;
     }
 
+    /**
+     * @param string $path
+     * @param bool $isRemote
+     * @return $this
+     */
+    public function changeBackground($path, $isRemote = false)
+    {
+        $this->background = ($isRemote ? 'cos://' : '') . $path;
+        return $this;
+    }
+
     public function changeMobile($mobile)
     {
         $this->mobile = $mobile;
 
+        $this->changeUserBindType();
+
         return $this;
+    }
+
+    public function changeUserBindType()
+    {
+        //更新用户绑定类型
+        $userBindType   = empty($this->bind_type) ? 0 :$this->bind_type;
+        $existBindType  = AuthUtils::getBindTypeArrByCombinationBindType($userBindType);
+
+        if (!empty($this->mobile) && !in_array(AuthUtils::PHONE, $existBindType)) {
+            //添加手机号绑定类型
+            array_push($existBindType, AuthUtils::PHONE);
+            $newBindType        = AuthUtils::getBindType($existBindType);
+            $this->bind_type    = $newBindType;
+        } elseif (empty($this->mobile) && in_array(AuthUtils::PHONE, $existBindType)) {
+            //删除手机号绑定类型
+            $existBindType      = array_diff($existBindType, [AuthUtils::PHONE]);
+            $newBindType        = AuthUtils::getBindType($existBindType);
+            $this->bind_type    = $newBindType;
+        }
     }
 
     public function changeStatus($status)
@@ -335,6 +371,13 @@ class User extends DzqModel
         return $this;
     }
 
+    public function changeNickname($nickname)
+    {
+        $this->nickname = $nickname;
+
+        return $this;
+    }
+
     /**
      * @return $this
      */
@@ -367,6 +410,14 @@ class User extends DzqModel
     public function checkWalletPayPassword($password)
     {
         return static::$hasher->check($password, $this->pay_password);
+    }
+
+    public function checkWalletPay(){
+        if($this->pay_password){
+            return true;
+        }else{
+            return false;
+        }
     }
 
     /*
@@ -416,6 +467,33 @@ class User extends DzqModel
         } else {
             return app(Filesystem::class)->disk('avatar_cos')->url($path)
                 . '?' . Carbon::parse($this->avatar_at)->timestamp;
+        }
+    }
+
+    /**
+     * @param $value
+     * @return string
+     * @throws \Exception
+     */
+    public function getBackgroundAttribute($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+
+        if (strpos($value, '://') === false) {
+            return app(UrlGenerator::class)->to('/storage/background/' . $value);
+        }
+
+        /** @var SettingsRepository $settings */
+        $settings = app(SettingsRepository::class);
+
+        $path = 'public/background/' . Str::after($value, '://');
+
+        if ($settings->get('qcloud_cos_sign_url', 'qcloud', true)) {
+            return app(Filesystem::class)->disk('background_cos')->temporaryUrl($path, Carbon::now()->addDay());
+        } else {
+            return app(Filesystem::class)->disk('background_cos')->url($path);
         }
     }
 
@@ -530,7 +608,7 @@ class User extends DzqModel
      */
     public function refreshUserFollow()
     {
-        $this->follow_count = $this->userFollow()->count();
+        $this->follow_count = UserFollow::query()->where('from_user_id',$this->id)->groupBy("to_user_id")->get("to_user_id")->count();
         return $this;
     }
 
@@ -540,7 +618,7 @@ class User extends DzqModel
      */
     public function refreshUserFans()
     {
-        $this->fans_count = $this->userFans()->count();
+        $this->fans_count = UserFollow::query()->where('to_user_id',$this->id)->groupBy("from_user_id")->get("from_user_id")->count();
         return $this;
     }
 
@@ -552,9 +630,14 @@ class User extends DzqModel
     {
         $this->liked_count = $this->postUser()
             ->join('posts', 'post_user.post_id', '=', 'posts.id')
+            ->join('threads','posts.thread_id','=','threads.id')
             ->where('posts.is_first', true)
             ->where('posts.is_approved', Post::APPROVED)
             ->whereNull('posts.deleted_at')
+            ->whereNotNull('threads.user_id')
+            ->where('threads.is_display',Thread::BOOL_YES)
+            ->where('threads.is_sticky', Thread::BOOL_NO)
+            ->where('threads.is_draft', Thread::IS_NOT_DRAFT)
             ->count();
 
         return $this;
@@ -776,28 +859,11 @@ class User extends DzqModel
     public function hasPermission($permission, bool $condition = true)
     {
         if ($this->isAdmin()) {
-            if(!is_array($permission))  $permission = [$permission];
-            $global_permissions = [];
-            $setting_global_permission = Setting::$global_permission;
-            foreach ($setting_global_permission as $val){
-                $global_permissions = array_merge($global_permissions, $val);
-            }
-            $judge_permissions = array_intersect($permission, $global_permissions);
-            $settings = app(SettingsRepository::class);
-            if(!empty($judge_permissions)){
-                foreach ($setting_global_permission as $key => $val){
-                    if(!empty(array_intersect($val, $judge_permissions))){          //如果在对应的全局中，则判断这个全局功能权限是否开启
-                        if($settings->get($key, 'default') == 0){
-                            return false;
-                        }
-                    }
-                }
-            }
             return true;
         }
 
         if (is_null($this->permissions)) {
-            $this->permissions = $this->getPermissions();
+            $this->permissions = Permission::getUserPermissions($this);
         }
 
         if (is_array($permission)) {
@@ -953,5 +1019,10 @@ class User extends DzqModel
             return null;
         }
         return $user->username;
+    }
+
+    protected function clearCache()
+    {
+        \Discuz\Base\DzqCache::delHashKey(CacheKey::LIST_THREADS_V3_USERS, $this->id);
     }
 }

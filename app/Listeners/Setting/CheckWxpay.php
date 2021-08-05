@@ -18,8 +18,10 @@
 
 namespace App\Listeners\Setting;
 
+use App\Common\ResponseCode;
 use App\Events\Setting\Saving;
 use Discuz\Contracts\Setting\SettingsRepository;
+use Discuz\Common\Utils;
 use Discuz\Wechat\EasyWechatTrait;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Factory as Validator;
@@ -72,17 +74,21 @@ class CheckWxpay
                 $this->settings->get('offiaccount_app_id', 'wx_offiaccount')
             ];
 
-            $this->validator->make($settings, [
-                'wxpay_close' => 'nullable|boolean',
-                'app_id' => ['required_if:wxpay_close,1', Rule::in($appIds)],
-                'mch_id' => 'required_if:wxpay_close,1',
-                'api_key' => 'required_if:wxpay_close,1',
-            ], [
-                'app_id.in' => trans('setting.wxpay_appid_error'),
-                'app_id.required_if' => trans('setting.app_id_cannot_be_empty'),
-                'mch_id.required_if' => trans('setting.mch_id_cannot_be_empty'),
-                'api_key.required_if' => trans('setting.api_key_cannot_be_empty'),
-            ])->validate();
+            try {
+                $this->validator->make($settings, [
+                    'wxpay_close' => 'nullable|boolean',
+                    'app_id' => ['required_if:wxpay_close,1', Rule::in($appIds)],
+                    'mch_id' => 'required_if:wxpay_close,1',
+                    'api_key' => 'required_if:wxpay_close,1',
+                ], [
+                    'app_id.in' => trans('setting.wxpay_appid_error'),
+                    'app_id.required_if' => trans('setting.app_id_cannot_be_empty'),
+                    'mch_id.required_if' => trans('setting.mch_id_cannot_be_empty'),
+                    'api_key.required_if' => trans('setting.api_key_cannot_be_empty'),
+                ])->validate();
+            } catch (ValidationException $e) {
+                Utils::outPut(ResponseCode::INVALID_PARAMETER, $e->validator->getMessageBag()->first());
+            }
         }
     }
 }

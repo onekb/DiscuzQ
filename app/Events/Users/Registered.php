@@ -38,8 +38,8 @@ class Registered
     public $data;
 
     /**
-     * @param User $user
-     * @param User|null $actor
+     * @param User $user //当前注册用户
+     * @param User|null $actor //从request中获取的actor
      * @param array $data
      */
     public function __construct(User $user, User $actor = null, array $data = [])

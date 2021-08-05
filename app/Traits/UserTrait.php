@@ -35,7 +35,7 @@ trait UserTrait
      * @param array $filter
      * @param User|null $actor
      */
-    private function applyFilters(Builder $query, array $filter, User $actor = null)
+    private function applyFilters(Builder $query, $filter, User $actor = null)
     {
         // 多个/单个 用户id
         if ($ids = Arr::get($filter, 'id')) {
@@ -70,9 +70,9 @@ trait UserTrait
         }
 
         // 状态
-        if ($status = Arr::get($filter, 'status')) {
-            $statusNum = User::enumStatus($status);
-            $query->where('status', $statusNum);
+        if (Arr::has($filter, 'status') && Arr::get($filter, 'status') !== '') {
+            $status = $filter['status'];
+            $query->where('users.status', $status);
         }
 
         // 用户组

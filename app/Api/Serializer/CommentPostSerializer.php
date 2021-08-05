@@ -33,13 +33,18 @@ class CommentPostSerializer extends BasicPostSerializer
      *
      * @param Post $model
      */
-    public function getDefaultAttributes($model)
+    public function getDefaultAttributes($model, $user = null)
     {
-        $attributes = parent::getDefaultAttributes($model);
+        $attributes = parent::getDefaultAttributes($model, $user);
 
         $attributes['isFirst'] = false;
         $attributes['isComment'] = (bool) $model->is_comment;
-
+        if ($likeState = $model->likeState) {
+            $attributes['isLiked'] = true;
+            $attributes['likedAt'] = $likeState->created_at->format('Y-m-d H:i:s');
+        } else {
+            $attributes['isLiked'] = false;
+        }
         return $attributes;
     }
 

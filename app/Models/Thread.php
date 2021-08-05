@@ -22,16 +22,13 @@ use App\Common\CacheKey;
 use App\Common\Utils;
 use App\Events\Thread\Hidden;
 use App\Events\Thread\Restored;
-use App\Models\ThreadReward;
 use Carbon\Carbon;
 use DateTime;
 use Discuz\Auth\Anonymous;
 use Discuz\Base\DzqModel;
-use Discuz\Common\PubEnum;
 use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
 use Discuz\SpecialChar\SpecialCharServer;
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -111,6 +108,8 @@ class Thread extends DzqModel
 
     const TYPE_OF_GOODS = 6;
 
+    const TYPE_OF_ALL = 99;
+
     const UNAPPROVED = 0;
 
     const APPROVED = 1;
@@ -131,16 +130,43 @@ class Thread extends DzqModel
      * 通知内容展示长度(字)
      */
     const CONTENT_LENGTH = 80;
+    const CONTENT_WITHOUT_LENGTH = 0;
+    const TITLE_LENGTH = 100;
+    const NOTICE_CONTENT_LENGTH = 100;
 
-    const  SORT_BY_THREAD = 1;
-    const  SORT_BY_POST = 2;
 
+    const  SORT_BY_THREAD = 1;//帖子创建时间排序
+    const  SORT_BY_POST = 2;//评论创建时间排序
+    const SORT_BY_HOT = 3;//热度排序
+
+    const MY_DRAFT_THREAD = 1;//我的草稿
+    const MY_LIKE_THREAD = 2;//我的点赞
+    const MY_COLLECT_THREAD = 3;//我的收藏
+    const MY_BUY_THREAD = 4;//我的购买
+    const MY_OR_HIS_THREAD = 5;//我or他的主题页
     /**
      * 草稿
      */
     const IS_NOT_DRAFT = 0;
 
     const IS_DRAFT = 1;
+
+    const IS_ANONYMOUS = 1;
+    const IS_NOT_ANONYMOUS = 0;
+
+    const BOOL_YES = 1;
+    const BOOL_NO = 0;
+
+    const PAY_FREE = 0;
+    const PAY_THREAD = 1;
+    const PAY_ATTACH = 2;
+
+    /**
+     * 订单标题展示长度
+     */
+    const ORDER_TITLE_LENGTH = 20;
+    const ORDER_TITLE_END_WITH = '...';
+
 
     /**
      * {@inheritdoc}
@@ -219,7 +245,7 @@ class Thread extends DzqModel
      */
     public function hide(User $actor, $options = [])
     {
-        if (! $this->deleted_at) {
+        if (!$this->deleted_at) {
             $this->deleted_at = Carbon::now();
             $this->deleted_user_id = $actor->id;
 
@@ -259,9 +285,11 @@ class Thread extends DzqModel
     {
         $special = app(SpecialCharServer::class);
 
-        if ($this->type == 1) {
+        if ($this->type == Thread::TYPE_OF_ALL && $this->title) {
             $firstPost = $substr ? Str::of($this->title)->substr(0, $substr) : $this->title;
             $firstPost = $special->purify($firstPost);
+        }elseif ($this->type == Thread::TYPE_OF_ALL && !($this->title)) {
+            $firstPost = "";
         } else {
             // 不是长文没有标题则使用首帖内容
             $this->firstPost->content = $substr ? Str::of($this->firstPost->content)->substr(0, $substr) : $this->firstPost->content;
@@ -272,7 +300,20 @@ class Thread extends DzqModel
                 $firstPost = $this->firstPost->formatContent();
             }
         }
+        if(is_object($firstPost)){
+            $firstPost = (string)$firstPost;
+        }
+        return $firstPost;
+    }
 
+    public function getRewardedContent($substr, $parse = false){
+        $this->firstPost->content = $substr ? Str::of($this->firstPost->content)->substr(0, $substr) : $this->firstPost->content;
+        if ($parse) {
+            // 原文
+            $firstPost = $this->firstPost->content;
+        } else {
+            $firstPost = $this->firstPost->formatContent();
+        }
         return $firstPost;
     }
 
@@ -326,12 +367,12 @@ class Thread extends DzqModel
     public function refreshPostCount()
     {
         $this->post_count = $this->posts()
-            ->where('is_first', false)
-            ->where('is_comment', false)
-            ->where('is_approved', Post::APPROVED)
-            ->whereNull('deleted_at')
-            ->whereNotNull('user_id')
-            ->count() + 1;  // include first post
+                ->where('is_first', false)
+                ->where('is_comment', false)
+                ->where('is_approved', Post::APPROVED)
+                ->whereNull('deleted_at')
+                ->whereNotNull('user_id')
+                ->count() + 1;  // include first post
 
         return $this;
     }
@@ -516,9 +557,9 @@ class Thread extends DzqModel
     public function question()
     {
         $questionType = ThreadReward::query()->where('thread_id', $this->id)->first();
-        if(isset($questionType['type']) && $questionType['type'] == 0) {
+        if (isset($questionType['type']) && $questionType['type'] == 0) {
             return $this->hasOne(ThreadReward::class);
-        } else{
+        } else {
             return $this->hasOne(Question::class);
         }
     }
@@ -613,7 +654,7 @@ class Thread extends DzqModel
         $user = static::$stateUser;
 
         // 必须有用户
-        if (! $user) {
+        if (!$user) {
             throw new \RuntimeException('You must set the user with setStateUser()');
         }
 
@@ -628,7 +669,7 @@ class Thread extends DzqModel
         }
 
         // 用户不存在返回 false
-        if (! $user->exists) {
+        if (!$user->exists) {
             return false;
         }
 
@@ -663,7 +704,7 @@ class Thread extends DzqModel
         $user = static::$stateUser;
 
         // 必须有用户
-        if (! $user) {
+        if (!$user) {
             throw new \RuntimeException('You must set the user with setStateUser()');
         }
 
@@ -678,7 +719,7 @@ class Thread extends DzqModel
         }
 
         // 用户不存在返回 false
-        if (! $user->exists) {
+        if (!$user->exists) {
             return false;
         }
 
@@ -701,41 +742,6 @@ class Thread extends DzqModel
         static::$userHasPaidThreadAttachments[$user->id][$this->id] = $isPaidAttachment;
 
         return $isPaidAttachment;
-    }
-
-    public function save(array $options = [])
-    {
-        $this->deleteCacheKey();
-        return parent::save($options); // TODO: Change the autogenerated stub
-    }
-    public function update(array $attributes = [], array $options = [])
-    {
-        $this->deleteCacheKey();
-        return parent::update($attributes, $options); // TODO: Change the autogenerated stub
-    }
-    public function delete()
-    {
-        $this->deleteCacheKey();
-        return parent::delete(); // TODO: Change the autogenerated stub
-    }
-
-    private function deleteCacheKey()
-    {
-        $cache = app('cache');
-        $cache->forget(CacheKey::LIST_V2_THREADS);
-        //删除帖子缓存
-        $cache->forget(CacheKey::THREAD_RESOURCE_BY_ID . $this->id);
-        $keys = $cache->get(CacheKey::LIST_THREAD_KEYS);
-        if (empty($keys)) {
-            return false;
-        }
-        $keys = json_decode($keys, true);
-
-        foreach ($keys as $key) {
-            $cache->forget($key);
-        }
-        $cache->forget(CacheKey::LIST_THREAD_KEYS);
-        return true;
     }
 
     public function formatThread($thread)
@@ -787,6 +793,7 @@ class Thread extends DzqModel
         }
         return $data;
     }
+
     /**
      * @desc 获取本次查询要替换的特殊符号
      * @param $linkString
@@ -795,20 +802,39 @@ class Thread extends DzqModel
     public function getReplaceString($linkString)
     {
         preg_match_all('/:[a-z]+:/i', $linkString, $m1);
-        preg_match_all('/@.+? /', $linkString, $m2);
-        preg_match_all('/#.+?#/', $linkString, $m3);
         $m1 = array_unique($m1[0]);
-        $m2 = array_unique($m2[0]);
-        $m3 = array_unique($m3[0]);
-        $m2 = str_replace(['@', ''], '', $m2);
-        $m3 = str_replace('#', '', $m3);
         $search = [];
         $replace = [];
-        $emojis = Emoji::query()->select('code', 'url')->whereIn('code', $m1)->get()->map(function ($item) use ($search) {
-            $item['url'] = Utils::getDzqDomain() . '/' . $item['url'];
-            $item['html'] = sprintf('<img style="display:inline-block;vertical-align:top" src="%s" alt="ciya" class="qq-emotion">', $item['url']);
-            return $item;
-        })->toArray();
+        $emojisList = Emoji::getEmojis();
+        $emojis = [];
+        foreach ($emojisList as $emoji) {
+            if (in_array($emoji['code'], $m1)) {
+                $url = Utils::getDzqDomain() . '/' . $emoji['url'];
+                $alt = str_replace(':', '', $emoji['code']);
+                $emojis[] = [
+                    'code' => $emoji['code'],
+                    'url' => $url,
+                    'html' => sprintf('<img style="display:inline-block;vertical-align:top" src="%s" alt="%s" class="qq-emotion">', $url, $alt)
+                ];
+            }
+        }
+        foreach ($emojis as $emoji) {
+            $search[] = $emoji['code'];
+            $replace[] = $emoji['html'];
+        }
+        foreach ($m1 as $item) {
+            if (!in_array($item, $search)) {
+                $search[] = $item;
+                $replace[] = $item;
+            }
+        }
+        /* 正则只处理表情，@ # 在数据迁移时完成，这里不在匹配
+        preg_match_all('/@.+? /', $linkString, $m2);
+        preg_match_all('/#.+?#/', $linkString, $m3);
+        $m2 = array_unique($m2[0]);
+        $m3 = array_unique($m3[0]);
+        $m2 = str_replace(['@', ' '], '', $m2);
+        $m3 = str_replace('#', '', $m3);
         $ats = User::query()->select('id', 'username')->whereIn('username', $m2)->get()->map(function ($item) {
             $item['username'] = '@' . $item['username'];
             $item['html'] = sprintf('<span id="member" value="%s">%s</span>', $item['id'], $item['username']);
@@ -819,10 +845,6 @@ class Thread extends DzqModel
             $item['html'] = sprintf('<span id="topic" value="%s">%s</span>', $item['id'], $item['content']);
             return $item;
         })->toArray();
-        foreach ($emojis as $emoji) {
-            $search[] = $emoji['code'];
-            $replace[] = $emoji['html'];
-        }
         foreach ($ats as $at) {
             $search[] = $at['username'];
             $replace[] = $at['html'];
@@ -831,6 +853,73 @@ class Thread extends DzqModel
             $search[] = $topic['content'];
             $replace[] = $topic['html'];
         }
+
+        foreach ($m2 as $item) {
+            $item = '@' . $item;
+            if (!in_array($item, $search)) {
+                $search[] = $item;
+                $replace[] = $item;
+            }
+        }
+        foreach ($m3 as $item) {
+            $item = '#' . $item . '#';
+            if (!in_array($item, $search)) {
+                $search[] = $item;
+                $replace[] = $item;
+            }
+        }
+        */
+
         return [$search, $replace];
+    }
+
+    public function getSearchString($linkString)
+    {
+        preg_match_all('/:[a-z]+:/i', $linkString, $m1);
+        $m1 = array_unique($m1[0]);
+        /* 正则只处理表情，@ # 在数据迁移时完成，这里不在匹配
+        preg_match_all('/@.+? /', $linkString, $m2);
+        preg_match_all('/#.+?#/', $linkString, $m3);
+        $m2 = array_unique($m2[0]);
+        $m3 = array_unique($m3[0]);
+        $m2 = str_replace([' '], '', $m2);
+        return array_merge(array_values($m1), array_values($m2), array_values($m3));
+        */
+        return array_values($m1);
+    }
+
+    public function getReplaceStringV3($linkString)
+    {
+        list($searches, $replaces) = $this->getReplaceString($linkString);
+        $sReplaces = [];
+        foreach ($searches as $k => $v) {
+            $sReplaces[$v] = $replaces[$k] ?? $searches[$k];
+        }
+        return $sReplaces;
+    }
+
+    public static function getOneActiveThread($threadId, $toArray = false)
+    {
+        $ret = self::query()
+            ->where([
+                'id' => $threadId,
+                'is_approved' => Thread::BOOL_YES,
+                'is_draft' => Thread::BOOL_NO,
+            ])
+            ->whereNull('deleted_at')
+            ->first();
+        $toArray && $ret = $ret->toArray();
+        return $ret;
+    }
+
+    public static function getOneThread($threadId, $toArray = false)
+    {
+        $ret = self::query()
+            ->where([
+                'id' => $threadId,
+            ])
+            ->first();
+        $toArray && $ret = $ret->toArray();
+        return $ret;
     }
 }

@@ -22,13 +22,9 @@ use App\Models\Post;
 use App\Models\Thread;
 use App\Models\User;
 use App\Models\Finance;
-use Discuz\Auth\AssertPermissionTrait;
-use Discuz\Auth\Exception\PermissionDeniedException;
 
 class FirstStatistics
 {
-    use AssertPermissionTrait;
-
     protected $actor;
     protected $type;
     protected $createdAtBegin;
@@ -53,13 +49,8 @@ class FirstStatistics
         return call_user_func([$this, '__invoke']);
     }
 
-    /**
-     * @return mixed
-     * @throws PermissionDeniedException
-     */
     public function __invoke()
     {
-        $this->assertCan($this->actor, 'viewSiteInfo');
         $beginTime = $this->getBeginTime();
         $endTime = $this->getEndTime();
 
@@ -121,39 +112,16 @@ class FirstStatistics
         );
 
         $overData=[];
-        $overData['over']['activeUserNumToday']=User::query()
-            ->whereBetween('login_at', array($beginTime, $endTime))
-            ->where('status',0)
-            ->count();
-        $overData['over']['addUserNumToday']=User::query()
-            ->whereBetween('joined_at', array($beginTime, $endTime))
-            ->where('status',0)
-            ->count();
-        $overData['over']['addThreadNumToday']=Thread::query()
-            ->whereBetween('created_at', array($beginTime, $endTime))
-            ->whereNull('deleted_at')
-            ->where('is_draft',0)
-            ->count();
-        $overData['over']['addPostNumToday']=Post::query()
-            ->whereBetween('created_at', array($beginTime, $endTime))
-            ->where('is_first',0)
-            ->count();
+        $overData['over']['activeUserNumToday']=User::query()->whereBetween('login_at', array($beginTime, $endTime))->count();
+        $overData['over']['addUserNumToday']=User::query()->whereBetween('joined_at', array($beginTime, $endTime))->count();
+        $overData['over']['addThreadNumToday']=Thread::query()->whereBetween('created_at', array($beginTime, $endTime))->count();
+        $overData['over']['addPostNumToday']=Post::query()->whereBetween('created_at', array($beginTime, $endTime))->count();
 
-        $overData['over']['totalUserNum']=User::query()
-            ->where('status',0)
-            ->count();
-        $overData['over']['totalThreadNum']=Thread::query()
-            ->whereNull('deleted_at')
-            ->where('is_draft',0)
-            ->count();
-        $overData['over']['totalPostNum']=Post::query()
-            ->where('is_first',0)
-            ->count();
-        $overData['over']['essenceThreadNum']=Thread::query()
-            ->where('is_essence', 1)
-            ->whereNull('deleted_at')
-            ->where('is_draft',0)
-            ->count();
+        $overData['over']['totalUserNum']=User::query()->count();
+        $overData['over']['totalThreadNum']=Thread::query()->count();
+        $overData['over']['totalPostNum']=Post::query()->count();
+        $overData['over']['essenceThreadNum']=Thread::query()->where('is_essence', 1)->count();
+
 
         data_set(
             $statisticsData,
@@ -194,14 +162,12 @@ class FirstStatistics
     }
 
     public function toMonth($data,$monthArr){
-        //dump($monthArr);
         $tdData = $data->toArray();
-        //dump($tdData);
+
         $month = [];
         $months = [];
         foreach ($tdData as $k=>$value){
             $da = explode('/',$value['date']);
-            //dump($da);
             if(substr($da[1],0,1) == '0'){
                 $n = substr($da[1],1,1);
             }else{
@@ -212,8 +178,7 @@ class FirstStatistics
 
             $months["$da[0]$n"]=$value['count'];
         }
-        //dump($month);
-        //dump($months);
+
         $newData = [];
         foreach ($monthArr as $item=> $val){
             if(in_array($val,$month)){
@@ -280,21 +245,17 @@ class FirstStatistics
 
     public function getThreadDay($type,$createdAtBegin,$createdAtEnd){
         $threadQuery = Thread::query();
-        $threadQuery->whereNull('deleted_at')
-            ->where('is_draft',0)
-            ->whereBetween('created_at', [$createdAtBegin, $createdAtEnd]);
+        $threadQuery->whereBetween('created_at', [$createdAtBegin, $createdAtEnd]);
         return $this->querysql($threadQuery,'thread',$type);
     }
     public function getPostDay($type,$createdAtBegin,$createdAtEnd){
         $postQuery = Post::query();
-        $postQuery->where('is_first',0)
-            ->whereBetween('created_at', [$createdAtBegin, $createdAtEnd]);
+        $postQuery->whereBetween('created_at', [$createdAtBegin, $createdAtEnd]);
         return $this->querysql($postQuery,'post',$type);
     }
     public function getActiveUser($type,$createdAtBegin,$createdAtEnd){
         $userQuery = User::query();
-        $userQuery->whereBetween('login_at', [$createdAtBegin, $createdAtEnd])
-            ->where('status',0);
+        $userQuery->whereBetween('login_at', [$createdAtBegin, $createdAtEnd]);
         return $this->querysql($userQuery,'ActiveUser',$type);
     }
     public function getJoinUser($type,$createdAtBegin,$createdAtEnd){

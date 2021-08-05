@@ -18,6 +18,7 @@
 
 namespace App\Commands\Qcloud;
 
+use App\Exceptions\TranslatorException;
 use App\Models\User;
 use App\Settings\SettingsRepository;
 use Carbon\Carbon;
@@ -55,15 +56,16 @@ class CreateVodUploadSignature
 
     public function __invoke()
     {
-        $this->assertRegistered($this->actor);
-
         $secretId = $this->settings->get('qcloud_secret_id', 'qcloud');
         $secretKey = $this->settings->get('qcloud_secret_key', 'qcloud');
         $subAppId = $this->settings->get('qcloud_vod_sub_app_id', 'qcloud') ?: 0;
-
-        if (!$this->settings->get('qcloud_close', 'qcloud')) {
-            throw new TencentCloudSDKException('tencent_qcloud_close_current');
+        if (!(bool)$this->settings->get('qcloud_close', 'qcloud')) {
+            throw new TranslatorException(trans('setting.tencent_qcloud_close_current'));
         }
+        if (!(bool)$this->settings->get('qcloud_vod', 'qcloud')) {
+            throw new TranslatorException(trans('setting.tencent_qcloud_vod_close_current'));
+        }
+
         if (!$secretId || !$secretKey) {
             throw new PermissionDeniedException;
         }

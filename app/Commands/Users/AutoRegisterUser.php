@@ -64,15 +64,16 @@ class AutoRegisterUser
         $this->data['password'] = '';
 
         // 敏感词校验
-        try {
-            $censor->checkText(Arr::get($this->data, 'username'), 'username');
-            $user = User::where('username', Arr::get($this->data, 'username'))->first();
-            if ($user) {
-                throw new CensorNotPassedException();
-            }
-        } catch (CensorNotPassedException $e) {
+        $username = $censor->checkText(Arr::get($this->data, 'username'), 'username');
+        $username = preg_replace('/\s/ui', '', $username);
+        $exists = User::where('username', $username)->exists();
+        if ($exists) {
             $this->data['username'] = User::getNewUsername();
+        } else {
+            $this->data['username'] = $username;
         }
+
+        $this->data['nickname'] = $censor->checkText(Arr::get($this->data, 'nickname'), 'nickname');
 
         // 审核模式，设置注册为审核状态
         if ($settings->get('register_validate')) {
@@ -85,7 +86,17 @@ class AutoRegisterUser
             $this->data['expired_at'] = Carbon::now();
         }
 
-        $user = User::register(Arr::only($this->data, ['username', 'password', 'register_ip', 'register_port', 'register_reason', 'status']));
+        //扩展字段
+        if ($settings->get('open_ext_fields')) {
+            $this->data['status'] = User::STATUS_NEED_FIELDS;
+        }
+
+        $this->data['bind_type'] = !empty($this->data['bind_type']) ? $this->data['bind_type'] : 0;
+        $user = User::register(Arr::only($this->data, [
+            'username', 'nickname', 'password', 'bind_type',
+            'register_ip', 'register_port', 'register_reason',
+            'status'
+        ]));
 
         $this->events->dispatch(
             new Saving($user, $this->actor, $this->data)

@@ -28,6 +28,7 @@ use App\Events\Users\Logining;
 use App\Events\Users\RefreshTokend;
 use App\Events\Users\Registered;
 use App\Events\Users\RegisteredCheck;
+use App\Events\Users\TransitionBind;
 use App\Listeners\AddApiMiddleware;
 use App\Listeners\DenyUser\DeleteFollow;
 use App\Listeners\Group\ChangeDefaultGroup;
@@ -42,6 +43,7 @@ use App\Listeners\User\CheckLogin;
 use App\Listeners\User\CheckoutSite;
 use App\Listeners\User\InviteBind;
 use App\Listeners\User\Notifications;
+use App\Listeners\User\TransitionBindListener;
 use App\Listeners\User\ValidateLogin;
 use App\Listeners\Wallet\CashReviewSubscriber;
 use App\Listeners\Wallet\CreateUserWalletListener;
@@ -69,7 +71,7 @@ class EventServiceProvider extends BaseEventServiceProvider
         ],
         RegisteredCheck::class => [
             BanLogin::class,
-            ValidateLogin::class,
+//            ValidateLogin::class,
             ChangeLastActived::class
         ],
         // 登录后事件监听
@@ -79,9 +81,9 @@ class EventServiceProvider extends BaseEventServiceProvider
         // 登录事件监听
         Logind::class => [
             BanLogin::class,
-            ValidateLogin::class,
+//            ValidateLogin::class,
             #弃用
-//            CheckoutSite::class,
+            CheckoutSite::class,
             ChangeLastActived::class
         ],
         RefreshTokend::class => [
@@ -108,6 +110,10 @@ class EventServiceProvider extends BaseEventServiceProvider
         WillSerializeData::class => [
             ReplaceContentAttachUrl::class,
         ],
+        //过渡阶段绑定操作
+        TransitionBind::class  => [
+            TransitionBindListener::class
+        ]
     ];
 
     protected $subscribe = [

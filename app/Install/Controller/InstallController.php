@@ -110,6 +110,8 @@ class InstallController implements RequestHandlerInterface
             $token = $this->installAutoLogin($input);
             //上报
             $this->cloudReport($input);
+            //写入当前版本号
+            self::save_current_version('.oldversion');
             //安装成功
             touch($this->app->storagePath().'/install.lock');
         } catch (Exception $e) {
@@ -165,6 +167,10 @@ class InstallController implements RequestHandlerInterface
                 throw new RangeException('MySQL version too low. You need at least MySQL 5.6.');
             }
         }
+        //判断数据库名，数据库名称不能以数字开头
+        $mysqlDatabase = Arr::get($input, 'mysqlDatabase', '');
+        if(empty($mysqlDatabase))       throw new Exception('数据库名称不能为空');
+        if(is_numeric(mb_substr($mysqlDatabase, 0, 1)))         throw new Exception('数据库名称不能以数字开头');
 
         $pdo->query('CREATE DATABASE IF NOT EXISTS '.Arr::get($input, 'mysqlDatabase').' DEFAULT CHARACTER SET = `utf8mb4` DEFAULT COLLATE = `utf8mb4_unicode_ci`')->execute();
 
@@ -252,6 +258,7 @@ class InstallController implements RequestHandlerInterface
         $userWallet->truncate();
         $this->app['db']->statement('SET FOREIGN_KEY_CHECKS=1;');
         $user->username = Arr::get($input, 'adminUsername');
+        $user->nickname = Arr::get($input, 'adminUsername');
         $user->password = Arr::get($input, 'adminPassword');
         $user->last_login_ip = Arr::get($input, 'ip');
         $user->last_login_port = Arr::get($input, 'port');
@@ -299,5 +306,32 @@ class InstallController implements RequestHandlerInterface
     {
         $configFile = $this->app->basePath('config/config.php');
         file_exists($configFile) && unlink($configFile);
+    }
+
+    public function save_current_version($file_name)
+    {
+        $version = self::extract_version_from_source();
+        if ($version) {
+            file_put_contents(__DIR__ . '/../../../public/' . $file_name, $version);
+        }
+    }
+
+    public function extract_version_from_source()
+    {
+        $dir = __DIR__;
+        $appfile = $dir . "/../../../framework/src/Foundation/Application.php";
+        if (!file_exists($appfile)) {
+            $appfile = $dir . "/../../../vendor/discuz/core/src/Foundation/Application.php";
+            if (!file_exists($appfile)) {
+                return false;
+            }
+        }
+        $content = file_get_contents($appfile);
+        $match = NULL;
+        preg_match("/const VERSION = '(.*)';$/m", $content, $match);
+        if ($match) {
+            return $match[1];
+        }
+        return false;
     }
 }

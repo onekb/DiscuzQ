@@ -39,6 +39,16 @@ class RepliedMessage extends SimpleMessage
 
     public function render()
     {
+
+        $isFirst = false;
+        if($this->post->is_first){
+            $isFirst = true;
+        }elseif (!($this->post->is_first) && !($this->post->reply_post_id) && !($this->post->comment_post_id)){
+            $isFirst = true;
+        }else{
+            $isFirst = false;
+        }
+
         $build = [
             'user_id' => $this->post->user_id,
             'thread_id' => 0, // 必传
@@ -49,6 +59,7 @@ class RepliedMessage extends SimpleMessage
             'post_content' => '',
             'reply_post_id' => 0, // 根据该字段判断是否是楼中楼
             'post_created_at' => '',
+            'is_first'=>$isFirst
         ];
 
         $this->changeBuild($build);
@@ -61,7 +72,7 @@ class RepliedMessage extends SimpleMessage
      */
     public function changeBuild(&$build)
     {
-        $result = $this->post->getSummaryContent(Post::NOTICE_LENGTH);
+        $result = $this->post->getSummaryContent(Post::NOTICE_WITHOUT_LENGTH);
 
         /**
          * 判断是否是楼中楼的回复
@@ -86,7 +97,13 @@ class RepliedMessage extends SimpleMessage
         // 主题数据
         $build['thread_id'] = $this->post->thread->id;
         $build['thread_username'] = $this->post->thread->user->username;
-        $build['thread_title'] = $firstContent ?? $result['first_content'];
+
+        if($this->post->is_first){
+            $build['thread_title'] = $firstContent ?? $result['first_content'];
+        }else{
+            $build['thread_title'] = "";
+        }
+
         $build['thread_created_at'] = $this->post->thread->formatDate('created_at');
     }
 }

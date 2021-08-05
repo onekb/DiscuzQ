@@ -18,8 +18,11 @@
 
 namespace App\Api\Exceptions;
 
+use App\Common\ResponseCode;
+use Discuz\Common\Utils;
 use Exception;
 use App\Exceptions\TranslatorException;
+use Illuminate\Http\Request;
 use Tobscure\JsonApi\Exception\Handler\ExceptionHandlerInterface;
 use Tobscure\JsonApi\Exception\Handler\ResponseBag;
 
@@ -44,6 +47,11 @@ class TranslatorExceptionHandler implements ExceptionHandlerInterface
      */
     public function handle(Exception $e)
     {
+        $path = Request::capture()->getPathInfo();
+        if (strstr($path, 'v2')||strstr($path, 'v3')) {
+            Utils::outPut(ResponseCode::INVALID_PARAMETER, $e->getMessage());
+            return null;
+        }
         $errors = [
             [
                 'status' => $e->getCode(),

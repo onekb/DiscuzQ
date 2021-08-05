@@ -22,6 +22,10 @@ return [
     'order_type_text'               => '文字帖红包',
     'order_type_long'               => '长文帖红包',
 
+    'order_type_redpacket'          => '支付红包',
+    'order_type_question_reward'    => '支付悬赏',
+    'order_type_merge'              => '红包与悬赏合并支付',
+
     'payee_not_found'               => '收款人不存在',
     'order_group_error'             => '用户组不存在或配置有误',
     'order_group_forbidden'         => '默认用户组不允许被购买',
@@ -32,9 +36,9 @@ return [
 
     'order_pay_group_closed' => '权限购买未开启',
 
-    'not_find_site_expire_site_price' => '未设置站点价格或站点过期时间',
-
     'abnormal_text_order_return_money'      => '文字帖订单异常返现',
     'abnormal_long_order_return_money'      => '长文帖订单异常返现',
     'abnormal_question_order_return_money'  => '问答帖订单异常返现',
+
+    'not_find_site_expire_site_price'       => '站点续费相关配置(站点过期时间、站点价格)不全',
 ];

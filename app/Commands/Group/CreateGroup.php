@@ -77,24 +77,28 @@ class CreateGroup
     {
         $this->assertCan($this->actor, 'create');
 
-        $attributes = Arr::get($this->data, 'attributes', []);
-
         $group = new Group();
 
-        $group->name = Arr::get($attributes, 'name');
-        $group->type = Arr::get($attributes, 'type', '');
-        $group->color = Arr::get($attributes, 'color', '');
-        $group->icon = Arr::get($attributes, 'icon', '');
-        $group->is_display = (bool) Arr::get($attributes, 'isDisplay');
-        $group->is_paid = (int) Arr::get($attributes, 'is_paid');
+        $group->name = $this->data['name'];
+        $group->type = $this->data['type'];
+        $group->color = $this->data['color'];
+        $group->icon = $this->data['icon'];
+        $group->is_display =(bool) $this->data['isDisplay'];
+        $group->is_paid = (int)$this-> data['isPaid'];
+        $group->default =(bool) $this->data['default'];
+        $group->fee = (int)$this->data['fee'];
+        $group->days =(int) $this->data['days'];
+        $group->scale =(double) $this->data['scale'];
+        $group->is_subordinate = (bool)$this->data['isSubordinate'];
+        $group->is_commission =(bool) $this->data['isCommission'];
 
         if ($group->is_paid) {
-            $fee = (float) Arr::get($attributes, 'fee');
+            $fee = $this->data['fee'];
             $group->fee = sprintf('%.2f', $fee);
         }
 
         if ($group->is_paid) {
-            $group->days = Arr::get($attributes, 'days');
+            $group->days = $this->data['days'];
         }
 
         $group->raise(new Created($group));
@@ -102,8 +106,6 @@ class CreateGroup
         $this->events->dispatch(
             new Saving($group, $this->actor, $this->data)
         );
-
-        $this->validator->valid($group->getAttributes());
 
         $group->save();
 

@@ -1,30 +1,63 @@
-<!DOCTYPE html><html lang=zh-CN><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge,chrome=1"><meta name=renderer content=webkit><meta name=apple-mobile-web-app-capable content=yes><meta name=x5-fullscreen content=true><meta name=fullscreen content=yes><title></title><script>// 通过 WeixinJSBridge 设置网页字体为默认大小，并禁止用户自定义缩放页面(安卓)
-      (function() {
-      if (typeof WeixinJSBridge == "object" && typeof WeixinJSBridge.invoke == "function") {
-        handleFontSize();
-      } else {
-        if (document.addEventListener) {
-            document.addEventListener("WeixinJSBridgeReady", handleFontSize, false);
-        } else if (document.attachEvent) {
-            document.attachEvent("WeixinJSBridgeReady", handleFontSize);
-            document.attachEvent("onWeixinJSBridgeReady", handleFontSize);
-        }
-      }
-      function handleFontSize() {
-        WeixinJSBridge.invoke('setFontSizeCallback', { 'fontSize' : 0 });
-        WeixinJSBridge.on('menu:setfont', function() {
-            WeixinJSBridge.invoke('setFontSizeCallback', { 'fontSize' : 0 });
-        });
-      }
-      })();
-      document.addEventListener('DOMContentLoaded', function() {
-        document.documentElement.style.fontSize = document.documentElement.clientWidth / 20 + 'px';
-      })
-      var coverSupport = 'CSS' in window && typeof CSS.supports === 'function' && (CSS.supports('top: env(a)') || CSS.supports('top: constant(a)'));
-      document.write('<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0' + (coverSupport ? ', viewport-fit=cover' : '') + '" />');</script><link rel=stylesheet href=/static/index.c48efa55.css><link href=https://imgcache.qq.com/open/qcloud/video/tcplayer/tcplayer.css rel=stylesheet><script defer src=https://imgcache.qq.com/open/qcloud/video/tcplayer/libs/hls.min.0.12.4.js></script><script defer src=https://imgcache.qq.com/open/qcloud/video/tcplayer/tcplayer.v4.min.js></script><script async src=https://3gimg.qq.com/lightmap/components/geolocation/geolocation.min.js></script><script defer src=https://ssl.captcha.qq.com/TCaptcha.js></script><link href=https://dl.discuz.chat/lib/4.5.0/vditor.css rel=stylesheet><link href=/static/js/dzq-cps~2efdf138.4379ad85.js rel=prefetch><link href=/static/js/dzq-cps~39ec5a15.e6775af1.js rel=prefetch><link href=/static/js/dzq-cps~66e3f277.c8a79fc9.js rel=prefetch><link href=/static/js/dzq-cps~8becc859.bf634360.js rel=prefetch><link href=/static/js/pages-common-error.b8f483b9.js rel=prefetch><link href=/static/js/pages-common-message.18eea8ee.js rel=prefetch><link href=/static/js/pages-common-view.3958f818.js rel=prefetch><link href=/static/js/pages-home-index.17740fe8.js rel=prefetch><link href=/static/js/pages-invite-income.2fe10911.js rel=prefetch><link href=/static/js/pages-invite-index.e1a5fae2.js rel=prefetch><link href=/static/js/pages-invite-invited.f93c3613.js rel=prefetch><link href=/static/js/pages-invite-user.d7e2f288.js rel=prefetch><link href=/static/js/pages-manage-index.efd89420.js rel=prefetch><link href=/static/js/pages-manage-invite.7b505831.js rel=prefetch><link href=/static/js/pages-manage-member.4e065430.js rel=prefetch><link href=/static/js/pages-manage-users.6e3b2355.js rel=prefetch><link href=/static/js/pages-modify-authen.569a4d5f.js rel=prefetch><link href=/static/js/pages-modify-editpwd.96dd6bb1.js rel=prefetch><link href=/static/js/pages-modify-editusername.7d600dc4.js rel=prefetch><link href=/static/js/pages-modify-findpwd.503cb95f.js rel=prefetch><link href=/static/js/pages-modify-mobile.5ff07472.js rel=prefetch><link href=/static/js/pages-modify-newpwd.1c1078ab.js rel=prefetch><link href=/static/js/pages-modify-paypwd.ddd3eee3.js rel=prefetch><link href=/static/js/pages-modify-realname.5bc93497.js rel=prefetch><link href=/static/js/pages-modify-right.9c00031e.js rel=prefetch><link href=/static/js/pages-modify-rightdetails.b2a74465.js rel=prefetch><link href=/static/js/pages-modify-setphon.3a618aa7.js rel=prefetch><link href=/static/js/pages-modify-signature.905c74cd.js rel=prefetch><link href=/static/js/pages-modify-withdrawals.d8ef2cd9.js rel=prefetch><link href=/static/js/pages-my-favorite.f0ae0d4e.js rel=prefetch><link href=/static/js/pages-my-freeze.dec24e2b.js rel=prefetch><link href=/static/js/pages-my-orderlist.b1442e4d.js rel=prefetch><link href=/static/js/pages-my-profile.f7e8d781.js rel=prefetch><link href=/static/js/pages-my-shield.d29bd5fa.js rel=prefetch><link href=/static/js/pages-my-wallet.b7e329fc.js rel=prefetch><link href=/static/js/pages-my-walletlist.4e34b4d5.js rel=prefetch><link href=/static/js/pages-my-withdrawalslist.170a800b.js rel=prefetch><link href=/static/js/pages-notice-msglist.5fec4385.js rel=prefetch><link href=/static/js/pages-notice-notice.c80e17df.js rel=prefetch><link href=/static/js/pages-profile-index.e2ec06bf.js rel=prefetch><link href=/static/js/pages-share-site.1ba2e190.js rel=prefetch><link href=/static/js/pages-share-topic.dfdc99bb.js rel=prefetch><link href=/static/js/pages-site-index.0335c8ff.js rel=prefetch><link href=/static/js/pages-site-info.d733c1b6.js rel=prefetch><link href=/static/js/pages-site-partner-invite.fe2b6101.js rel=prefetch><link href=/static/js/pages-site-payH5.3fce75df.js rel=prefetch><link href=/static/js/pages-site-search-theme.f869142a.js rel=prefetch><link href=/static/js/pages-site-search-user.827bd1f0.js rel=prefetch><link href=/static/js/pages-site-search.ab8f56ce.js rel=prefetch><link href=/static/js/pages-topic-attachment.1303b28e.js rel=prefetch><link href=/static/js/pages-topic-comment.dd659478.js rel=prefetch><link href=/static/js/pages-topic-content.ba27a0a8.js rel=prefetch><link href=/static/js/pages-topic-list.62b9c02e.js rel=prefetch><link href=/static/js/pages-topic-parse-goods.103bf9cd.js rel=prefetch><link href=/static/js/pages-topic-position.47987941.js rel=prefetch><link href=/static/js/pages-topic-topic.54cf73d1.js rel=prefetch><link href=/static/js/pages-user-at-member.aee21f20.js rel=prefetch><link href=/static/js/pages-user-login-bind-phone.5b1a6c7f.js rel=prefetch><link href=/static/js/pages-user-login-bind.c520a1a4.js rel=prefetch><link href=/static/js/pages-user-login.f18f693f.js rel=prefetch><link href=/static/js/pages-user-pc-login.b97e0759.js rel=prefetch><link href=/static/js/pages-user-pc-relation.348ceb47.js rel=prefetch><link href=/static/js/pages-user-phone-login-register.2fbc3f56.js rel=prefetch><link href=/static/js/pages-user-phone-login.0fe62875.js rel=prefetch><link href=/static/js/pages-user-register-bind-phone.c1e86baa.js rel=prefetch><link href=/static/js/pages-user-register-bind.be53402c.js rel=prefetch><link href=/static/js/pages-user-register.8f17c25b.js rel=prefetch><link href=/static/js/pages-user-supple-mentary.378dc1a0.js rel=prefetch><link href=/static/js/pages-user-uc-login.7f3160d4.js rel=prefetch><link href=/static/js/pages-user-warning.d90f4b84.js rel=prefetch><link href=/static/js/pages-user-wechat.bb1764dc.js rel=prefetch><link href=/static/js/pagesplay_web-AddTheTheme.d069a733.js rel=prefetch><link href=/static/js/pagesplay_web-Addanexisting-theme.cc14a1ce.js rel=prefetch><link href=/static/js/pagesplay_web-compile-money.db403da2.js rel=prefetch><link href=/static/js/pagesplay_web-drafts.4575ccdb.js rel=prefetch><link href=/static/js/pagesplay_web-my_purchase.4e61a84d.js rel=prefetch><link href=/static/js/pagesplay_web-reward-to-ask.2d3a0960.js rel=prefetch><link href=/static/js/topic-index.2fc2dc1f.js rel=prefetch><link href=/static/js/topic-post.2224bed2.js rel=prefetch><link href=/static/js/vditor.22710a58.js rel=prefetch><link href=/static/js/chunk-common.269cf92a.js rel=preload as=script><link href=/static/js/chunk-dcloudio.3eaf6a93.js rel=preload as=script><link href=/static/js/chunk-vendors.439d13a1.js rel=preload as=script><link href=/static/js/index.3ac67c23.js rel=preload as=script></head><body><noscript><strong>Please enable JavaScript to continue.</strong></noscript><div id=app></div><script src=/static/js/chunk-common.269cf92a.js></script><script src=/static/js/chunk-dcloudio.3eaf6a93.js></script><script src=/static/js/chunk-vendors.439d13a1.js></script><script src=/static/js/index.3ac67c23.js></script></body><style>/* stylelint-disable */
-    body {
-      /* padding-bottom: 0;
-      padding-bottom: constant(safe-area-inset-bottom);
-      padding-bottom: env(safe-area-inset-bottom); */
-      -webkit-text-size-adjust: 100%;
-    }</style></html>
+<!DOCTYPE html><html lang="cn"><head><meta name="screen-orientation" content="portrait"/><meta name="x5-orientation" content="portrait"/><script>
+              setTimeout(function() {
+                function remCalc (){
+                  var a = 375;
+                  if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    a=document.documentElement.clientWidth||document.body.clientWidth;
+                    if(a>750){a=750}else{if(a<320){a=320}}
+                  }
+                  document.documentElement.style.fontSize=(a/7.5)*2+"px";
+                };
+                remCalc();
+                window.addEventListener('resize', remCalc);
+              }, 0);
+          </script><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover"/><meta name="keywords" content="欢迎您"/><meta name="description" content="欢迎您"/><title>欢迎您</title><meta name="next-head-count" content="5"/><link rel="preload" href="/_next/static/css/styles~f075b844.3b36565e.chunk.css" as="style" crossorigin="anonymous"/><link rel="stylesheet" href="/_next/static/css/styles~f075b844.3b36565e.chunk.css" crossorigin="anonymous" data-n-g=""/><noscript data-n-css=""></noscript><link rel="preload" href="/_next/static/chunks/webpack-f05e0cb351dd0126857a.js" as="script" crossorigin="anonymous"/><link rel="preload" href="/_next/static/chunks/framework~f9ca8911.04d0db93c3651611635b.js" as="script" crossorigin="anonymous"/><link rel="preload" href="/_next/static/chunks/main~253ae210-1d9804530a5bdb792fa8.js" as="script" crossorigin="anonymous"/><link rel="preload" href="/_next/static/chunks/8313d723~9d180afe.634d0b32251c68e6feff.js" as="script" crossorigin="anonymous"/><link rel="preload" href="/_next/static/chunks/2aea5580d478d8ff011a75622c75f94921966634~493df0b3.57403230ab0fe81332a6.js" as="script" crossorigin="anonymous"/><link rel="preload" href="/_next/static/chunks/styles~f075b844.3724a6e1bace426ad2a4.js" as="script" crossorigin="anonymous"/><link rel="preload" href="/_next/static/chunks/pages/_app~493df0b3-8f62c155c44e263c621e.js" as="script" crossorigin="anonymous"/><link rel="preload" href="/_next/static/chunks/pages/index~493df0b3-b1de0b6440d453a321a5.js" as="script" crossorigin="anonymous"/></head><body><div id="__next"><div data-dzq-theme="light"></div></div><script>
+                var userAgent = navigator.userAgent; //取得浏览器的userAgent字符串
+                var isIE = userAgent.indexOf("compatible") > -1 && userAgent.indexOf("MSIE") > -1; //判断是否IE<11浏览器
+                var isIE11 = userAgent.indexOf('Trident') > -1 && userAgent.indexOf("rv:11.0") > -1;
+                if(isIE || isIE11) {
+                  document.body.innerHTML = '<style>html,body{width: 100%;height: 100%;display: block;}h1{padding: 20px;}h3{padding: 15px;}.box{text-align: center;margin-top: 40vh;}</style><div class="box"><h1>站点不支持IE浏览器！</h1><h3>请使用QQ浏览器、chorme，Edge等浏览器。</h3></div>';
+                }
+            </script><script id="__NEXT_DATA__" type="application/json" crossorigin="anonymous">{"props":{"pageProps":{"serverSite":{"platform":"static","closeSite":null,"webConfig":null},"serverUser":{}}},"page":"/","query":{},"buildId":"P-Ff0Vs2rO9r7t07_vDpd","nextExport":true,"isFallback":false,"gip":true}</script><script crossorigin="anonymous" nomodule="" src="/_next/static/chunks/polyfills~a4403643-576490b61b096423485f.js"></script><script src="/_next/static/chunks/webpack-f05e0cb351dd0126857a.js" async="" crossorigin="anonymous"></script><script src="/_next/static/chunks/framework~f9ca8911.04d0db93c3651611635b.js" async="" crossorigin="anonymous"></script><script src="/_next/static/chunks/main~253ae210-1d9804530a5bdb792fa8.js" async="" crossorigin="anonymous"></script><script src="/_next/static/chunks/8313d723~9d180afe.634d0b32251c68e6feff.js" async="" crossorigin="anonymous"></script><script src="/_next/static/chunks/2aea5580d478d8ff011a75622c75f94921966634~493df0b3.57403230ab0fe81332a6.js" async="" crossorigin="anonymous"></script><script src="/_next/static/chunks/styles~f075b844.3724a6e1bace426ad2a4.js" async="" crossorigin="anonymous"></script><script src="/_next/static/chunks/pages/_app~493df0b3-8f62c155c44e263c621e.js" async="" crossorigin="anonymous"></script><script src="/_next/static/chunks/pages/index~493df0b3-b1de0b6440d453a321a5.js" async="" crossorigin="anonymous"></script><script src="/_next/static/P-Ff0Vs2rO9r7t07_vDpd/_buildManifest.js" async="" crossorigin="anonymous"></script><script src="/_next/static/P-Ff0Vs2rO9r7t07_vDpd/_ssgManifest.js" async="" crossorigin="anonymous"></script></body><script>
+          window.sessionStorage.setItem('__TD_td_channel', window.location.hostname.replace(/./g, '_'));
+          var tdjs = document.createElement('script');
+          tdjs.type = 'text/javascript';
+          tdjs.async = true;
+          tdjs.src = 'https://jic.talkingdata.com/app/h5/v1?appid=750AEE91CF4446A19A2D12D5EE32F725';
+          document.getElementsByTagName('body')[0].appendChild(tdjs);
+
+          var dzqjs = document.createElement('script');
+          dzqjs.type = 'text/javascript';
+          dzqjs.async = true;
+          dzqjs.src = 'https://dl.discuz.chat/dzq.js';
+          document.getElementsByTagName('body')[0].appendChild(dzqjs);
+        </script><script>
+            // 微信设置字体最大，布局乱的补丁
+            function is_weixn() {
+              var ua = navigator.userAgent.toLowerCase();
+              return ua.match(/MicroMessenger/i) == "micromessenger";
+            }
+            if (is_weixn()) {
+              if (
+                typeof WeixinJSBridge == "object" &&
+                typeof WeixinJSBridge.invoke == "function"
+              ) {
+                handleFontSize();
+              } else {
+                if (document.addEventListener) {
+                  document.addEventListener("WeixinJSBridgeReady", handleFontSize, false);
+                } else if (document.attachEvent) {
+                  document.attachEvent("WeixinJSBridgeReady", handleFontSize);
+                  document.attachEvent("onWeixinJSBridgeReady", handleFontSize);
+                }
+              }
+              function handleFontSize() {
+                // 设置网页字体为默认大小
+                WeixinJSBridge.invoke("setFontSizeCallback", { fontSize: 0 });
+                // 重写设置网页字体大小的事件
+                WeixinJSBridge.on("menu:setfont", function () {
+                  WeixinJSBridge.invoke("setFontSizeCallback", { fontSize: 0 });
+                });
+              }
+            }
+        </script><script async="" src="https://mapapi.qq.com/web/mapComponents/geoLocation/v/geolocation.min.js"></script><script async="" src="https://cdn.jsdelivr.net/npm/@discuzq/vditor@1.0.22/dist/js/lute/lute.min.js"></script><script src="https://cdn-go.cn/aegis/aegis-sdk/latest/aegis.min.js?_bid=3977"></script></html>

@@ -18,6 +18,8 @@
 
 namespace App\Console;
 
+use App\Console\Commands\AbnormalOrderDealCommand;
+use App\Console\Commands\AttachmentAttributeUpdateCommand;
 use App\Console\Commands\AttachmentClearCommand;
 use App\Console\Commands\AvatarClearCommand;
 use App\Console\Commands\FinanceCreateCommand;
@@ -26,6 +28,7 @@ use App\Console\Commands\QueryWechatOrderConmmand;
 use App\Console\Commands\QuestionClearCommand;
 use App\Console\Commands\ThreadRewardExpireCommand;
 use App\Console\Commands\RedPacketExpireCommand;
+use App\Console\Commands\TranscodeVideoCommand;
 use Discuz\Console\Kernel as ConsoleKernel;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -39,7 +42,10 @@ class Kernel extends ConsoleKernel
         InviteExpireCommand::class,
         QuestionClearCommand::class,
         ThreadRewardExpireCommand::class,
-        RedPacketExpireCommand::class
+        RedPacketExpireCommand::class,
+        AbnormalOrderDealCommand::class,
+        TranscodeVideoCommand::class,
+        AttachmentAttributeUpdateCommand::class
     ];
 
     /**
@@ -55,10 +61,13 @@ class Kernel extends ConsoleKernel
         $schedule->command('invite:expire')->everyMinute()->withoutOverlapping();
         $schedule->command('reward:expire')->everyMinute()->withoutOverlapping();
         $schedule->command('redPacket:expire')->everyMinute()->withoutOverlapping();
+        $schedule->command('abnormalOrder:clear')->everyMinute()->withoutOverlapping();
+        $schedule->command('transcode:update')->everyFiveMinutes()->withoutOverlapping();
+        $schedule->command('attachment:update')->everyFiveMinutes()->withoutOverlapping();
 
         // 维护清理
-        $schedule->command('clear:attachment')->daily();
-        $schedule->command('clear:video')->daily();
+//        $schedule->command('clear:attachment')->daily();
+//        $schedule->command('clear:video')->daily();
         $schedule->command('clear:question')->daily();
         $schedule->command('clear:thread_draft')->daily();
         $schedule->command('clear:session_token')->everyMinute();

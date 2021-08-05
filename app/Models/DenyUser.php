@@ -18,9 +18,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Common\CacheKey;
+use Discuz\Base\DzqCache;
+use Discuz\Base\DzqModel;
 
-class DenyUser extends Model
+class DenyUser extends DzqModel
 {
+
     public const UPDATED_AT = null;
+    public function clearCache()
+    {
+        CacheKey::delListCache();
+    }
 }

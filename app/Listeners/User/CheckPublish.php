@@ -18,6 +18,7 @@
 
 namespace App\Listeners\User;
 
+use App\Common\ResponseCode;
 use App\Events\Post\Saving as PostSaving;
 use App\Events\Thread\Saving as ThreadSaving;
 use Discuz\Auth\AssertPermissionTrait;
@@ -59,20 +60,11 @@ class CheckPublish
         if ($needValidate) {
             $rules = [];
 
-            // 发布内容需先实名认证
-            if (! $event->actor->isAdmin() && $event->actor->can('publishNeedRealName')) {
-                $rules['user'][] = function ($attribute, $value, $fail) use ($event) {
-                    if (! $event->actor->realname) {
-                        $fail(trans('validation.publishNeedRealName'));
-                    }
-                };
-            }
-
             // 发布内容需先绑定手机
             if (! $event->actor->isAdmin() && $event->actor->can('publishNeedBindPhone')) {
                 $rules['user'][] = function ($attribute, $value, $fail) use ($event) {
                     if (! $event->actor->mobile) {
-                        $fail(trans('validation.publishNeedBindPhone'));
+                        \Discuz\Common\Utils::outPut(ResponseCode::INVALID_PARAMETER, '请先绑定手机号');
                     }
                 };
             }

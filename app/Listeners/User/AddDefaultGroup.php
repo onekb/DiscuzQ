@@ -33,7 +33,7 @@ class AddDefaultGroup
     {
         $code = Arr::get($event->data, 'code');
 
-        if (! $code || ! Invite::lengthByAdmin($code)) {
+        if (! $code || ! Invite::lengthByAdmin($code)) {//管理员邀请也为普通会员
             $event->user->resetGroup();
         }
     }

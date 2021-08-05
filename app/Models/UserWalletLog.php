@@ -137,6 +137,37 @@ class UserWalletLog extends Model
 
     const TYPE_QUESTION_ABNORMAL_REFUND = 124; // 问答帖订单异常返现
 
+    const TYPE_ABNORMAL_ORDER_REFUND = 130; // 异常订单退款
+
+    /* -------分割线(以下为V3新增枚举值150-170) ----- */
+    const TYPE_REDPACKET_FREEZE = 150; // 红包冻结
+
+    const TYPE_REDPACKET_INCOME = 151; // 红包收入
+
+    const TYPE_REDPACKET_REFUND = 152; // 红包退款
+
+    const TYPE_REDPACKET_EXPEND = 153; // 红包支出
+
+    const TYPE_REDPACKET_ORDER_ABNORMAL_REFUND = 154; // 红包订单异常退款
+
+    const TYPE_QUESTION_REWARD_FREEZE = 160; // 悬赏问答冻结
+
+    const TYPE_QUESTION_REWARD_INCOME = 161; // 悬赏问答收入
+
+    const TYPE_QUESTION_REWARD_REFUND = 162; // 悬赏问答退款
+
+    const TYPE_QUESTION_ORDER_ABNORMAL_REFUND = 163; // 悬赏订单异常退款
+
+    const TYPE_QUESTION_REWARD_EXPEND = 164; // 悬赏采纳支出
+
+    const TYPE_QUESTION_REWARD_FREEZE_RETURN = 165; // 悬赏冻结返回
+
+    const TYPE_MERGE_FREEZE = 170; // 合并订单冻结
+
+    const TYPE_MERGE_REFUND = 171; // 合并订单退款
+
+    const TYPE_MERGE_ORDER_ABNORMAL_REFUND = 172; // 合并订单异常退款
+
     /**
      * 创建钱包动账记录
      *

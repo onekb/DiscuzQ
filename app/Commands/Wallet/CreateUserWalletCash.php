@@ -74,8 +74,6 @@ class CreateUserWalletCash
      */
     public function handle(Validator $validator, ConnectionInterface $db, SettingsRepository $setting)
     {
-        // 判断有没有权限执行此操作
-        $this->assertCan($this->actor, 'cash.create');
 
         $this->data = collect(Arr::get($this->data, 'data.attributes'));
 
@@ -117,7 +115,7 @@ class CreateUserWalletCash
         if ($cash_interval_time != 0) {
             $time_before = Carbon::now()->addDays(-$cash_interval_time);
             //提现间隔时间
-            $cash_record = UserWalletCash::where('created_at', '>=', $time_before)->where('user_id', $this->actor->id)->first();
+            $cash_record = UserWalletCash::where('created_at', '>=', $time_before)->first();
             if (!empty($cash_record)) {
                 throw new WalletException('cash_interval_time');
             }

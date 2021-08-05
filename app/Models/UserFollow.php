@@ -18,7 +18,10 @@
 
 namespace App\Models;
 
+use App\Common\CacheKey;
 use Carbon\Carbon;
+use Discuz\Base\DzqCache;
+use Discuz\Base\DzqModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -31,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property Carbon $created_at
  * @package App\Models
  */
-class UserFollow extends Model
+class UserFollow extends DzqModel
 {
     const MUTUAL = 1; //相互关注
 
@@ -77,5 +80,10 @@ class UserFollow extends Model
     public function toUser()
     {
         return $this->belongsTo(User::class, 'to_user_id');
+    }
+
+    protected function clearCache()
+    {
+        DzqCache::delKey(CacheKey::LIST_THREADS_V3_ATTENTION);
     }
 }

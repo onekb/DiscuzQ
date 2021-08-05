@@ -69,4 +69,19 @@ return [
     'cash_mch_invalid'      => '未开启微信企业付款到零钱功能',
 
     'abnormal_order_refund' => '异常订单退款',
+
+    'redpacket_freeze' => '红包冻结',
+    'redpacket_expend' => '红包支出',
+    'redpacket_income' => '红包收入',
+    'redpacket_refund' => '红包过期退款',
+    'redpacket_order_abnormal_refund' => '红包订单异常退款',
+    'question_reward_freeze' => '悬赏冻结',
+    'question_reward_income' => '悬赏收入',
+    'question_reward_refund' => '悬赏过期退款',
+    'question_order_abnormal_refund' => '悬赏订单异常退款',
+    'question_reward_expend' => '悬赏采纳支出',
+    'question_reward_freeze_return' => '悬赏冻结返回',
+    'merge_freeze' => '合并订单冻结',
+    'merge_refund' => '合并订单退款',
+    'merge_order_abnormal_refund' => '合并订单异常退款'
 ];

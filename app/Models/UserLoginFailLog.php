@@ -100,6 +100,13 @@ class UserLoginFailLog extends Model
             ->update(['count'=>0]);
     }
 
+    public static function reSetFailCountByUserId($userId)
+    {
+        return self::query()
+            ->where(['user_id'=>$userId])
+            ->update(['count'=>0]);
+    }
+
     /**
      * get fail data by ip
      * @param $ip

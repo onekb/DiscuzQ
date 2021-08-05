@@ -103,6 +103,8 @@ class Post extends DzqModel
      */
     const NOTICE_LENGTH = 80;
 
+    const NOTICE_WITHOUT_LENGTH = 0;
+
     const UNAPPROVED = 0;
 
     const APPROVED = 1;
@@ -222,27 +224,34 @@ class Post extends DzqModel
     public function getSummaryTextAttribute()
     {
        $content = Str::of($this->content ?: '');
-
-        if ($content->length() > self::SUMMARY_LENGTH) {
-
-            $content = static::$formatter->parse(
-                $content->substr(0, self::SUMMARY_LENGTH)->finish(self::SUMMARY_END_WITH)
-            );
+        if (substr($content, 0, 3) === '<r>' && substr($content, -4) != '</r>') {
+             $content = mb_substr($content, 3, -4);
+        }
+        if (substr($content, 0, 3) === '<t>' && substr($content, -4) != '</t>') {
+            $content = mb_substr($content, 3, -4);
+        }
+        if (substr($content, 0, 3) === '<p>' && substr($content, -4) != '</p>') {
+            $content = mb_substr($content, 3, -4);
+        }
+        if (mb_strlen($content) > self::SUMMARY_LENGTH) {
+            $content = mb_substr($content, 0, 80, "UTF-8") . self::SUMMARY_END_WITH;
+            $content = '<t><r><p>' . $content . '</p></r></t>';
             $content = static::$formatter->render($content);
         }
+
         return str_replace('<br>', '', $content);
     }
 
     /**
      * Unparse the parsed content.
-     *
+     * obsolete
      * @param string $value
      * @return string
      */
-    public function getContentAttribute($value)
-    {
-        return html_entity_decode(strip_tags($value), ENT_QUOTES, 'UTF-8');
-    }
+//    public function getContentAttribute($value)
+//    {
+//        return html_entity_decode(strip_tags($value), ENT_QUOTES, 'UTF-8');
+//    }
 
     /**
      * Get the parsed/raw content.
@@ -256,24 +265,24 @@ class Post extends DzqModel
 
     /**
      * Parse the content before it is saved to the database.
-     *
+     * obsolete
      * @param string $value
      */
-    public function setContentAttribute($value)
-    {
-        if (blank($value) && $this->is_first) {
-            $defaultContent = [
-                Thread::TYPE_OF_VIDEO => trans('post.default_content.video'),
-                Thread::TYPE_OF_IMAGE => trans('post.default_content.image'),
-                Thread::TYPE_OF_AUDIO => trans('post.default_content.audio'),
-                Thread::TYPE_OF_GOODS => trans('post.default_content.goods'),
-            ];
-
-            $value = $defaultContent[$this->thread->type] ?? '';
-        }
-
-        $this->attributes['content'] = $value ? static::$formatter->parse($value, $this) : null;
-    }
+//    public function setContentAttribute($value)
+//    {
+//        if (blank($value) && $this->is_first) {
+//            $defaultContent = [
+//                Thread::TYPE_OF_VIDEO => trans('post.default_content.video'),
+//                Thread::TYPE_OF_IMAGE => trans('post.default_content.image'),
+//                Thread::TYPE_OF_AUDIO => trans('post.default_content.audio'),
+//                Thread::TYPE_OF_GOODS => trans('post.default_content.goods'),
+//            ];
+//
+//            $value = $defaultContent[$this->thread->type] ?? '';
+//        }
+//
+//        $this->attributes['content'] = $value ? static::$formatter->parse($value, $this) : null;
+//    }
 
     /**
      * Set the parsed/raw content.
@@ -292,11 +301,12 @@ class Post extends DzqModel
      */
     public function formatContent()
     {
-        if (empty($this->attributes['content'])) {
-            return $this->attributes['content'];
-        }
-        empty(static::$formatter) && Post::setFormatter(app()->make(Formatter::class));
-        return static::$formatter->render($this->attributes['content']);
+//        if (empty($this->attributes['content'])) {
+//            return $this->attributes['content'];
+//        }
+//        empty(static::$formatter) && Post::setFormatter(app()->make(Formatter::class));
+//        return static::$formatter->render($this->attributes['content']);
+        return $this->attributes['content'];
     }
 
     /**
@@ -316,6 +326,9 @@ class Post extends DzqModel
         ];
 
         $this->content = $substr ? Str::of($this->content)->substr(0, $substr) : $this->content;
+        if(is_object($this->content)){
+            $this->content = (string)$this->content;
+        }
         if ($parse) {
             // 原文
             $content = $this->content;
@@ -333,21 +346,25 @@ class Post extends DzqModel
             /**
              * 判断长文点赞通知内容为标题
              */
-            if ($this->thread->type === Thread::TYPE_OF_LONG) {
-                $firstContent = $this->thread->getContentByType(self::NOTICE_LENGTH, $parse);
+
+            if ($this->thread->type === Thread::TYPE_OF_ALL) {
+                $firstContent = $this->thread->getContentByType(self::NOTICE_WITHOUT_LENGTH, $parse);
             } else {
                 // 如果是首帖 firstContent === content 内容一样
                 if ($this->is_first) {
                     $firstContent = $content;
                 } else {
-                    $firstContent = $this->thread->getContentByType(self::NOTICE_LENGTH, $parse);
+                    $firstContent = $this->thread->getContentByType(self::NOTICE_WITHOUT_LENGTH, $parse);
                 }
+            }
+            if(is_object($firstContent)){
+                $firstContent = (string)$firstContent;
             }
         }
 
-        $build['content'] = $content;
-        $build['first_content'] = $firstContent ?? $special->purify($this->thread->getContentByType(Thread::CONTENT_LENGTH, $parse));
 
+        $build['content'] = $content;
+        $build['first_content'] = $firstContent ?? $special->purify($this->thread->getContentByType(Thread::CONTENT_WITHOUT_LENGTH, $parse));
         return $build;
     }
 
@@ -587,6 +604,11 @@ class Post extends DzqModel
         return $this->hasMany(Attachment::class, 'type_id')->where('type', Attachment::TYPE_OF_IMAGE)->orderBy('order');
     }
 
+    public function imagesAnswer()
+    {
+        return $this->hasMany(Attachment::class, 'type_id')->where('type',Attachment::TYPE_OF_ANSWER )->orderBy('order');
+    }
+
     /**
      * Define the relationship with the post's attachments.
      *
@@ -653,47 +675,24 @@ class Post extends DzqModel
         static::$formatter = $formatter;
     }
 
-    public function save(array $options = [])
+    public function getPostReward($changeType = '')
     {
-        $this->removePostCache();
-        return parent::save($options); // TODO: Change the autogenerated stub
-    }
-
-    public function delete()
-    {
-        $this->removePostCache();
-        return parent::delete(); // TODO: Change the autogenerated stub
-    }
-
-    public function update(array $attributes = [], array $options = [])
-    {
-        $this->removePostCache();
-        return parent::update($attributes, $options); // TODO: Change the autogenerated stub
-    }
-
-    private function removePostCache()
-    {
-        $threadId = $this->thread_id;
-        $cacheKey0 = CacheKey::POST_RESOURCE_BY_ID . '0' . $threadId;
-        $cacheKey1 = CacheKey::POST_RESOURCE_BY_ID . '1' . $threadId;
-        $cache = app('cache');
-        $cache->forget(CacheKey::LIST_V2_THREADS);
-        $f1 = $cache->forget($cacheKey0);
-        $f2 = $cache->forget($cacheKey1);
-        return $f1 || $f2;
-    }
-
-    public function getPostReward()
-    {
-        $this->removePostCache();
         $thread = ($this->relationLoaded('thread') && array_key_exists('type', $this->thread->attributes))
             ? $this->thread
             : Thread::query()->select(['id', 'type'])->where('id', $this->thread_id)->first();
         $this->rewards = 0;
-        if($thread->type == Thread::TYPE_OF_QUESTION){
-            $this->rewards = UserWalletLog::query()
-                ->where(['post_id' => $this->id, 'thread_id' => $this->thread_id])
-                ->sum('change_available_amount');
+
+        $rewardTom = ThreadTom::query()->where('thread_id',$thread['id'])
+            ->where('tom_type',107)
+            ->first();
+        if(!empty($rewardTom)){
+            $UserWalletLog = UserWalletLog::query()
+                ->where(['post_id' => $this->id, 'thread_id' => $this->thread_id]);
+            if ($changeType) {
+                $UserWalletLog->where( 'change_type' , $changeType);
+            }
+            $this->rewards = $UserWalletLog->sum('change_available_amount');
+
         }
         return $this->rewards;
     }
@@ -715,16 +714,29 @@ class Post extends DzqModel
 
     public function getContentSummary($post, &$postId = false)
     {
-//        $post = self::query()->where(['thread_id' => $threadId, 'is_first' => self::FIRST_YES])->first();
         if (empty($post)) {
             return '';
         } else {
-            $content = strip_tags($post['content']);
-            if (mb_strlen($content) > self::SUMMARY_LENGTH) {
-                $content = Str::substr($content, 0, self::SUMMARY_LENGTH) . self::SUMMARY_END_WITH;
-            }
+            $content = self::autoGenerateTitle($post['content']);
             $postId == true && $postId = $post['id'];
             return $content;
         }
+    }
+
+    public static function autoGenerateTitle($content)
+    {
+        $content = strip_tags($content);
+        if (mb_strlen($content) > self::SUMMARY_LENGTH) {
+            $content = Str::substr($content, 0, self::SUMMARY_LENGTH) . self::SUMMARY_END_WITH;
+        }
+        return $content;
+    }
+
+    public static function getOneActivePost($threadId)
+    {
+        return self::query()
+            ->where(['thread_id' => $threadId, 'is_first' => Post::FIRST_YES, 'is_approved' => Post::APPROVED])
+            ->whereNull('deleted_at')
+            ->first();
     }
 }

@@ -79,8 +79,13 @@ class ReceiveRedPacket
     {
         $this->connection = $connection;
         $this->bus = $bus;
-
-        $order = Order::query()->where('thread_id', $this->thread['id'])->first();
+        $orderType = [Order::ORDER_TYPE_MERGE, Order::ORDER_TYPE_TEXT, Order::ORDER_TYPE_LONG, Order::ORDER_TYPE_REDPACKET];
+        $orderStatus = [Order::ORDER_STATUS_PAID, Order::ORDER_STATUS_PART_OF_RETURN];
+        $order = Order::query()
+            ->where('thread_id', $this->thread['id'])
+            ->whereIn('status', $orderStatus)
+            ->whereIn('type', $orderType)
+            ->first();
         if (empty($order)) {
             throw new Exception(trans('redpacket.thread_order_illegal'));
         }
@@ -93,16 +98,21 @@ class ReceiveRedPacket
             $prepareChangeAmount = $this->redPacket['remain_money'] / $this->redPacket['remain_number'];
         }
 
-        if ($this->thread['type'] == Thread::TYPE_OF_TEXT) {
+        if ($order->type == Order::ORDER_TYPE_TEXT) {
             $expend_change_type = UserWalletLog::TYPE_EXPEND_TEXT;// 100 文字帖红包支出
             $income_change_type = UserWalletLog::TYPE_INCOME_TEXT;// 102 文字帖红包收入
             $expend_change_desc = trans('wallet.expend_text');//文字帖红包支出
             $income_change_desc = trans('wallet.income_text');//文字帖红包收入
-        } else {
+        } elseif ($order->type == Order::ORDER_TYPE_LONG) {
             $expend_change_type = UserWalletLog::TYPE_EXPEND_LONG;// 110 长字帖红包支出
             $income_change_type = UserWalletLog::TYPE_INCOME_LONG;// 112 长字帖红包收入
             $expend_change_desc = trans('wallet.expend_long');//长文帖红包支出
             $income_change_desc = trans('wallet.income_long');//长文帖红包收入
+        } else {
+            $expend_change_type = UserWalletLog::TYPE_REDPACKET_EXPEND;// 153 红包支出
+            $income_change_type = UserWalletLog::TYPE_REDPACKET_INCOME;// 151 红包收入
+            $expend_change_desc = trans('wallet.redpacket_expend');//红包支出
+            $income_change_desc = trans('wallet.redpacket_income');//红包收入
         }
 
         // Start Transaction

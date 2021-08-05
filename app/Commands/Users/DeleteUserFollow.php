@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Models\UserFollow;
 use App\Repositories\UserFollowRepository;
 use Discuz\Auth\AssertPermissionTrait;
+use Discuz\Auth\Exception\NotAuthenticatedException;
 use Discuz\Foundation\EventsDispatchTrait;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -69,7 +70,9 @@ class DeleteUserFollow
     public function __invoke(UserFollow $userFollow, UserFollowRepository $userFollowRepository, User $user, Dispatcher $events)
     {
         $this->events = $events;
-        $this->assertRegistered($this->actor);
+        if ($this->actor->isGuest()){
+            throw new NotAuthenticatedException;
+        }
 
         try {
             $userFollowRes = $userFollowRepository->findOrFail($this->to_user_id, $this->from_user_id, $this->actor);

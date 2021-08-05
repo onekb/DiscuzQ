@@ -93,6 +93,7 @@ abstract class AbstractWechatUserController extends AbstractResourceController
     {
         $sessionId = Arr::get($request->getQueryParams(), 'sessionId');
 
+
         $sessionToken = Arr::get($request->getQueryParams(), 'session_token', null);
 
         $request = $request->withAttribute('session', new SessionToken())->withAttribute('sessionId', $sessionId);

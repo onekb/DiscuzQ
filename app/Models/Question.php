@@ -321,11 +321,7 @@ class Question extends DzqModel
 
         $users = User::instance()->getUsers($buserIds);
         $users = array_column($users, null, 'id');
-        if (isset($users[1])) {
-            $users = $users[1];
-        } else {
-            $users = [];
-        }
+        $users = !empty($users[1]['realname']) ? $users[1]['realname'] : array();
 
         return [
             'threadId' => $question['thread_id'],
@@ -337,7 +333,7 @@ class Question extends DzqModel
             'price' => $question['price'],
             'onlookerUnitPrice' => $question['onlooker_unit_price'],
             'onlookerPrice' => $question['onlooker_price'],
-            'isReal' => isset($users['realname']) ? $this->getIsReal($users['realname']) : false,
+            'isReal' => $this->getIsReal($users['realname']),
             'onlookerNumber' => $question['onlooker_number'],
             'isOnlooker' => $question['is_onlooker'],
             'isAnswer' => $question['is_answer'],

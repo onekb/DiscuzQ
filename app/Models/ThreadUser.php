@@ -18,8 +18,10 @@
 
 namespace App\Models;
 
+use App\Common\CacheKey;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Discuz\Base\DzqCache;
+use Discuz\Base\DzqModel;
 
 /**
  * Models a thread-user state record in the database.
@@ -30,6 +32,12 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property Thread $thread
  * @property User $user
  */
-class ThreadUser extends Pivot
+class ThreadUser extends DzqModel
 {
+    protected $table = 'thread_user';
+
+    protected function clearCache()
+    {
+        DzqCache::delKey(CacheKey::LIST_THREADS_V3_THREAD_USERS . $this->user_id);
+    }
 }

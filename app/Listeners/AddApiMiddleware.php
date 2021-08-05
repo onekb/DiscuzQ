@@ -19,7 +19,6 @@
 namespace App\Listeners;
 
 use App\Api\Middleware\ClearSessionMiddleware;
-use App\Api\Middleware\CreateThreadOrderRefundMiddleware;
 use App\Api\Middleware\FakeHttpMethods;
 use App\Api\Middleware\OperationLogMiddleware;
 use Discuz\Api\Events\ConfigMiddleware;
@@ -37,10 +36,11 @@ class AddApiMiddleware
 
     public function handle(ConfigMiddleware $event)
     {
-        $event->pipe->pipe($this->app->make(ClearSessionMiddleware::class));
+        if (!app()->config('middleware_cache')) {
+            $event->pipe->pipe($this->app->make(ClearSessionMiddleware::class));
+        }
         $event->pipe->pipe($this->app->make(FakeHttpMethods::class));
         $event->pipe->pipe($this->app->make(OperationLogMiddleware::class));
         $event->pipe->pipe($this->app->make(CheckPaidUserGroupMiddleware::class));
-        $event->pipe->pipe($this->app->make(CreateThreadOrderRefundMiddleware::class));
     }
 }

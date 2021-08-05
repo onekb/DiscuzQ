@@ -64,6 +64,8 @@ return [
     'tencent_captcha_code_100' => '验证码错误(100):的配置参数错误',
     'tencent_captcha_unknown_error' => '验证码未知错误:腾讯云未知错误',
     'tencent_captcha_unknown_CaptchaCode' => '验证码未知错误:腾讯云验证码未知CaptchaCode',
+    'tencent_qcloud_close_current' => '腾讯云API配置没有开启',
+    'tencent_qcloud_vod_close_current' => '腾讯云点播配置没有开启',
 
 
     'wxpay_appid_error' => 'app_id只能选择 公众号配置 或 小程序配置 中设置的值',
@@ -79,4 +81,8 @@ return [
 
     // notice message
     'template_app_id_secret_not_found' => '模板ID、appID、secret 未找到',
+
+    // qcloud_captcha
+    'qcloud_captcha_app_id_cannot_be_empty' => '验证码 App Id 不能为空。',
+    'aqcloud_captcha_secret_key_cannot_be_empty' => '验证码 App Secret 不能为空。',
 ];

@@ -55,7 +55,7 @@ class ThreadDraftClearCommand extends AbstractCommand
         //清理草稿箱中超过7天的主题数据
         $threads = $this->thread->query()
             ->where('is_draft', '1')
-            ->where('updated_at', '<', Carbon::getWeekendDays())
+            ->where('updated_at', '<', Carbon::parse()->subDays(7))
             ->get();
 
         foreach ($threads as $thread) {

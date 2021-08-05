@@ -21,6 +21,7 @@ namespace App\Api\Serializer;
 use App\Models\User;
 use App\Models\UserQq;
 use App\Models\UserSignInFields;
+use App\Models\UserWallet;
 use App\Repositories\UserFollowRepository;
 use Discuz\Api\Serializer\AbstractSerializer;
 use Discuz\Contracts\Setting\SettingsRepository;
@@ -121,10 +122,19 @@ class UserSerializer extends AbstractSerializer
 
         // 钱包余额
         if ($this->actor->id === $model->id) {
+            //userWallet 使用缓存减低数据库查询
+            $cache = app('cache');
+            $userWallet = $cache->get('user_wallet_'.$model->id);
+            if(empty($userWallet)){
+                $userWallet = $this->actor->userWallet->toArray();
+                $cache->put('user_wallet_'.$model->id, serialize($userWallet), 5 * 60);
+            }else{
+                $userWallet = unserialize($userWallet);
+            }
             $attributes += [
                 'canWalletPay'  => $gate->allows('walletPay', $model),
-                'walletBalance' => $this->actor->userWallet->available_amount,
-                'walletFreeze'  => $this->actor->userWallet->freeze_amount,
+                'walletBalance' => $userWallet['available_amount'],
+                'walletFreeze'  => $userWallet['freeze_amount'],
             ];
         }
 

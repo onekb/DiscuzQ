@@ -17,9 +17,13 @@
 
 namespace App\Common;
 
-
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Monolog\Formatter\LineFormatter;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class Utils
 {
@@ -27,16 +31,13 @@ class Utils
     {
         $diff = time() - strtotime($time);
         if ($diff < 60) {
-            return $diff . '秒';
+            return $diff . '秒前';
         }
         if ($diff >= 60 && $diff < 60 * 60) {
-            return intval($diff / 60.0) . '分钟';
+            return intval($diff / 60.0) . '分钟前';
         }
         if ($diff >= 60 * 60 && $diff < 24 * 60 * 60) {
-            return intval($diff / (60 * 60.0)) . '小时';
-        }
-        if ($diff >= 24 * 60 * 60 && $diff < 30 * 24 * 60 * 60) {
-            return intval($diff / (24.0 * 60 * 60)) . '天';
+            return intval($diff / (60 * 60.0)) . '小时前';
         }
         return date('Y-m-d H:i:s', strtotime($time));
     }
@@ -113,5 +114,55 @@ class Utils
     public static function arrayKeysToCamel(array $params, array $exceptKeys = []): array
     {
         return static::arrayKeysTransform($params, [\Illuminate\Support\Str::class, 'camel'], $exceptKeys);
+    }
+
+    /**
+     * 把数组的键转换为下划线
+     *
+     * @param array $params
+     * @param array $exceptKeys
+     *
+     * @return array
+     */
+    public static function arrayKeysToSnake(array $params, array $exceptKeys = []): array
+    {
+        return static::arrayKeysTransform($params, [\Illuminate\Support\Str::class, 'snake'], $exceptKeys);
+    }
+
+    public static function logOldPermissionPosition($method)
+    {
+        // 整改完之前，先忽略日志，增长太快
+        if (!app()->has('permLog')) {
+            $logConfig = [
+                'alias' => 'permLog',
+                'path' => 'logs/permLog.log',
+                'level' => Logger::INFO,
+            ];
+
+            $handler = new RotatingFileHandler(
+                storage_path(Arr::get($logConfig, 'path')),
+                200,
+                Arr::get($logConfig, 'level')
+            );
+            $handler->setFormatter(new LineFormatter(null, null, true, true));
+            app()->instance(Arr::get($logConfig, 'alias'), new Logger(Arr::get($logConfig, 'alias'), [$handler]));
+            app()->alias(Arr::get($logConfig, 'alias'), LoggerInterface::class);
+        }
+
+        /** @var LoggerInterface $logger */
+        $logger = app('permLog');
+        $trace = collect(debug_backtrace())->map(function ($trace) {
+            return Arr::only($trace, ['file', 'line', 'function', 'class', 'type']);
+        })->slice(0, 10);
+        $logger->info('in: '.$method.':'.PHP_EOL.json_encode($trace));
+    }
+
+    /**
+     * 由于浮点数的原因，取整比较两个数。这里暂时不用 bc 模块，用bc需要php安置对应模块
+     * @param $leftM
+     * @param $rightM
+     */
+    public static function compareMath($leftM, $rightM){
+        return  intval($leftM * 100) != intval($rightM * 100);
     }
 }

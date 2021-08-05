@@ -20,6 +20,7 @@ namespace App\Events\Attachment;
 
 use App\Commands\Attachment\AttachmentUploader;
 use App\Models\User;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class Uploaded
 {

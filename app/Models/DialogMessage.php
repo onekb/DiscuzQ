@@ -22,6 +22,7 @@ use App\Formatter\DialogMessageFormatter;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Intervention\Image\ImageManager;
 
 /**
  * @property int $id
@@ -29,6 +30,7 @@ use Illuminate\Support\Str;
  * @property int $attachment_id
  * @property int $dialog_id
  * @property int $message_text
+ * @property int $read_status
  * @property Carbon $updated_at
  * @property Carbon $created_at
  * @package App\Models
@@ -38,6 +40,10 @@ class DialogMessage extends Model
     const SUMMARY_LENGTH = 40;
 
     const SUMMARY_END_WITH = '...';
+
+    const NORMAL_MESSAGE = 1;
+
+    const EMPTY_MESSAGE = 0;
 
     /**
      * {@inheritdoc}
@@ -67,7 +73,7 @@ class DialogMessage extends Model
     public function getMessageTextAttribute($value)
     {
         $value = json_decode(stripslashes($value));
-        $value['message_text'] = static::$formatter->unparse($value['message_text']);
+      //  $value['message_text'] = static::$formatter->unparse($value['message_text']);
         $value = json_encode($value);
 
         return $value;
@@ -140,12 +146,25 @@ class DialogMessage extends Model
         return $messageText;
     }
 
-    public function getImageUrlMessageText()
+    public function getImageUrlMessageText($attachmentId = null)
     {
         $message_text_old = $this->attributes['message_text'] ?: '';
         $message_text = json_decode(stripslashes($message_text_old));
         if (!empty($message_text)) {
             $messageText = $message_text->image_url;
+            if($messageText){
+                if(!empty($attachmentId)) {
+                   $attachmentRecord = Attachment::query()->where('id', $attachmentId)->first(["file_width", "file_height"])->toArray();
+                   if(!empty($attachmentRecord['file_width']) && !empty($attachmentRecord['file_height'])){
+                        $signUrl = strrchr($messageText, '?');
+                        if (strstr($signUrl, 'sign-time') && strstr($signUrl, 'signature')) {
+                            $messageText = $messageText."width=".$attachmentRecord['file_width']."&"."height=".$attachmentRecord['file_height'];
+                        } else {
+                            $messageText = $messageText."?width=".$attachmentRecord['file_width']."&"."height=".$attachmentRecord['file_height'];
+                        }
+                    }
+                }
+            }
         } else {
             $messageText = '';
         }
@@ -153,14 +172,16 @@ class DialogMessage extends Model
         return $messageText;
     }
 
-    public static function build($user_id, $dialog_id, $attachment_id, $message_text)
+    public static function build($user_id, $dialog_id, $attachment_id, $message_text,$read_status, $status)
     {
         $dialogMessage = new static();
 
         $dialogMessage->user_id       = $user_id;
         $dialogMessage->dialog_id     = $dialog_id;
-        $dialogMessage->attachment_id = $attachment_id;
+        $dialogMessage->attachment_id = $attachment_id ?: 0;
         $dialogMessage->message_text  = $message_text;
+        $dialogMessage->read_status   = $read_status;
+        $dialogMessage->status        = $status;
 
         return $dialogMessage;
     }

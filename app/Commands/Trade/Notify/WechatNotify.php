@@ -57,6 +57,7 @@ class WechatNotify
     {
         $this->config = $setting->tag('wxpay');
         $notify_result = NotifyTrade::notify(GatewayConfig::WECAHT_PAY_NOTIFY, $this->config);
+        app('log')->info('WechatNotify的notify_result' . $notify_result);
         if (isset($notify_result['result_code']) && $notify_result['result_code'] == 'SUCCESS') {
             //支付成功
             if ($this->queryOrderStatus($notify_result['transaction_id'])) {
@@ -75,6 +76,7 @@ class WechatNotify
                 try {
                     //支付成功处理
                     $order_info = $this->paymentSuccess($payment_sn, $trade_no, $setting, $events);
+                    app('log')->info('WechatNotify的order_info处理结果' . $order_info);
                     if ($order_info) {
                         $events->dispatch(
                             new Updated($order_info)

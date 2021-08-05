@@ -48,11 +48,36 @@ class WechatNotifyController extends AbstractResourceController
     {
         $document = new Document();
         $data     = $this->data($request, $document);
+        $result = DiscuzResponseFactory::XmlResponse($data);
+        if ($result) {
+            if (is_object($result)) {
+                $result = json_encode($result);
+            }
+            if (is_array($result)) {
+                $result = implode(',', $result);
+            }
+            app('log')->info('apiv1-result-handle记录：' . $result);
+        }
+
         return DiscuzResponseFactory::XmlResponse($data);
     }
 
     public function data(ServerRequestInterface $request, Document $document)
     {
+        $result = $this->bus->dispatch(
+            new WechatNotify($request->getParsedBody())
+        );
+        if ($result) {
+            if (is_object($result)) {
+                $result = json_encode($result);
+            }
+            if (is_array($result)) {
+                $result = implode(',', $result);
+            }
+
+            app('log')->info('apiv1-result-data记录：' . $result);
+        }
+
         return $this->bus->dispatch(
             new WechatNotify($request->getParsedBody())
         );

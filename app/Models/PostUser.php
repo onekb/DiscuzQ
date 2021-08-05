@@ -18,7 +18,9 @@
 
 namespace App\Models;
 
+use App\Common\CacheKey;
 use Carbon\Carbon;
+use Discuz\Base\DzqCache;
 use Discuz\Base\DzqModel;
 
 /**
@@ -26,6 +28,7 @@ use Discuz\Base\DzqModel;
  *
  * @property int $user_id
  * @property int $thread_id
+ * @property int $post_id
  * @property Carbon|null $created_at
  * @property Thread $thread
  * @property User $user
@@ -33,12 +36,24 @@ use Discuz\Base\DzqModel;
 class PostUser extends DzqModel
 {
     protected $table = 'post_user';
+
     public function likedUsers()
     {
         return $this->hasOne(User::class);
     }
-    public function getPostIdsByUid($postIds,$userId){
-        return  self::query()->whereIn('post_id',$postIds)->where('user_id',$userId)
+
+    public function getPostIdsByUid($postIds, $userId)
+    {
+        return self::query()->whereIn('post_id', $postIds)->where('user_id', $userId)
             ->get()->pluck('post_id')->toArray();
+    }
+
+    protected function clearCache()
+    {
+        DzqCache::delKey(CacheKey::LIST_THREADS_V3_POST_LIKED . $this->user_id);
+        $post = Post::query()->where('id', $this->post_id)->first();
+        if (!empty($post)) {
+            DzqCache::delHashKey(CacheKey::LIST_THREADS_V3_POST_USERS, $post['thread_id']);
+        }
     }
 }

@@ -44,7 +44,6 @@ class SendNotifyOfWalletChanges
         if ($amount <= 0) {
             return;
         }
-
         // 只是收款人接收收入通知，扣款人不接受扣款通知（没有扣款通知）
         if (isset($data['change_type'])) {
             switch ($data['change_type']) {
@@ -127,6 +126,20 @@ class SendNotifyOfWalletChanges
                         ]),
                     ];
                     // Tag 发送得到红包通知
+                    $user->notify(new ReceiveRedPacket($user, $order, $build));
+                    break;
+                case UserWalletLog::TYPE_REDPACKET_INCOME:
+
+                    $thread = Thread::query()->where('id', $data['thread_id'])->first();
+                    $order = $thread->orders()->whereIn('type', [Order::ORDER_TYPE_REDPACKET, Order::ORDER_TYPE_MERGE])->first();
+                    $build = [
+                        'message' => $order->thread->getContentByType(Thread::CONTENT_LENGTH, true),
+                        'raw' => array_merge(Arr::only($order->toArray(), ['id', 'thread_id', 'type']), [
+                            'actor_username' => $user->username,   // 发送人姓名
+                            'actual_amount' => $amount,     // 获取作者实际金额
+                        ]),
+                    ];
+                    
                     $user->notify(new ReceiveRedPacket($user, $order, $build));
                     break;
             }

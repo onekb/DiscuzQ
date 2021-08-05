@@ -20,18 +20,18 @@ namespace App\Commands\Dialog;
 
 use App\Censor\Censor;
 use App\Models\Dialog;
+use App\Models\DialogMessage;
 use App\Models\User;
 use App\Repositories\UserRepository;
-use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Foundation\EventsDispatchTrait;
+use Exception;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Bus\Dispatcher as DispatcherBus;
 use Illuminate\Support\Arr;
 
 class CreateDialog
 {
-    use AssertPermissionTrait;
     use EventsDispatchTrait;
 
     /**
@@ -60,31 +60,33 @@ class CreateDialog
     {
         $this->events = $events;
 
-        $this->assertCan($this->actor, 'dialog.create');
-
         $sender = $this->actor->id;
         $recipient = Arr::get($this->attributes, 'recipient_username');
 
         $recipientUser = $user->query()->where('username', $recipient)->firstOrFail();
 
         if ($sender == $recipientUser->id) {
-            throw new PermissionDeniedException();
+            throw new Exception('不能给自己发送私信');
         }
         //在黑名单中，不能创建会话
         if (in_array($sender, array_column($recipientUser->deny->toArray(), 'id'))) {
-            throw new PermissionDeniedException('user_deny');
+            throw new PermissionDeniedException('已被屏蔽，不能发起私信对话');
         }
 
         $dialogRes = $dialog::buildOrFetch($sender, $recipientUser->id);
 
         //创建会话时如传入消息内容，则创建消息
-        $message_text = Arr::get($this->attributes, 'message_text', null);
-        if ($message_text) {
-            $this->attributes['dialog_id'] = $dialogRes->id;
-            $bus->dispatchNow(
-                new CreateDialogMessage($this->actor, $this->attributes)
-            );
+        if (!empty($this->attributes['message_text']) || 
+           (!empty($this->attributes['attachment_id']) && !empty($this->attributes['image_url']))) {
+            $this->attributes['status'] = DialogMessage::NORMAL_MESSAGE;
+        } else {
+            $this->attributes['status'] = DialogMessage::EMPTY_MESSAGE;
         }
-        return $dialogRes;
+        $this->attributes['dialog_id'] = $dialogRes->id;
+        $dialogMessageRes = $bus->dispatchNow(
+            new CreateDialogMessage($this->actor, $this->attributes)
+        );
+
+        return ['dialogId' => $dialogRes->id, 'dialogMessageId' => $dialogMessageRes->id];
     }
 }

@@ -43,8 +43,7 @@ class ThreadListener
 
     public function subscribe(Dispatcher $events)
     {
-        // 分类主题
-        $events->listen(Saving::class, CheckPublish::class);
+
         $events->listen(Saving::class, SaveCategoryToDatabase::class);
 
         // 发布主题

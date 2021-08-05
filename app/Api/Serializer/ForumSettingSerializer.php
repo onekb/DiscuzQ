@@ -25,8 +25,7 @@ use App\Models\User;
 use App\Settings\ForumSettingField;
 use Discuz\Api\Serializer\AbstractSerializer;
 use Discuz\Common\PubEnum;
-use Discuz\Common\Utils;
-use Discuz\Contracts\Setting\SettingsRepository;
+use App\Settings\SettingsRepository;
 use Discuz\Http\UrlGenerator;
 use Illuminate\Support\Arr;
 
@@ -37,6 +36,8 @@ class ForumSettingSerializer extends AbstractSerializer
     protected $settings;
 
     protected $forumField;
+
+    protected $settingcache;
 
     public function __construct(SettingsRepository $settings, ForumSettingField $forumField, SettingCache $settingcache)
     {
@@ -78,8 +79,8 @@ class ForumSettingSerializer extends AbstractSerializer
                 'site_introduction' => $this->settings->get('site_introduction'),
                 'site_mode' => $this->settings->get('site_mode'), // pay public
                 'open_ext_fields'=>$this->settings->get('open_ext_fields'),
-//                'site_close' => (bool)$this->settings->get('site_close'),
-                'site_manage' => json_decode($this->settings->get('site_manage'), true),
+                'site_close' => (bool)$this->settings->get('site_close'),
+//                'site_manage' => json_decode($this->settings->get('site_manage'), true),
                 'api_freq'    => $actor->isAdmin()?json_decode($this->settings->get('api_freq'), true):null,
                 'site_close_msg'=>$this->settings->get('site_close_msg'),
                 'site_favicon' => $site_favicon,
@@ -118,13 +119,14 @@ class ForumSettingSerializer extends AbstractSerializer
                 'password_length' => (int)$this->settings->get('password_length'),
                 'password_strength' => empty($this->settings->get('password_strength')) ? [] : explode(',', $this->settings->get('password_strength')),
                 'register_type' => (int)$this->settings->get('register_type', 'default', 0),
+                'is_need_transition' => (bool)$this->settings->get('is_need_transition'),
             ],
 
             // 第三方登录设置
             'passport' => [
                 'offiaccount_close' => (bool)$this->settings->get('offiaccount_close', 'wx_offiaccount'), // 微信H5 开关
                 'miniprogram_close' => (bool)$this->settings->get('miniprogram_close', 'wx_miniprogram'), // 微信小程序 开关
-                'oplatform_close' => (bool)$this->settings->get('oplatform_close', 'wx_oplatform'),       // 微信PC 开关
+//                'oplatform_close' => (bool)$this->settings->get('oplatform_close', 'wx_oplatform'),       // 微信PC 开关
             ],
 
             // 支付设置
@@ -230,9 +232,9 @@ class ForumSettingSerializer extends AbstractSerializer
         ];
 
         // 站点开关 - 满足条件返回
-//        if ($attributes['set_site']['site_close'] == 1) {
-//            $attributes['set_site'] += $this->forumField->getSiteClose();
-//        }
+        if ($attributes['set_site']['site_close'] == 1) {
+            $attributes['set_site'] += $this->forumField->getSiteClose();
+        }
 
         // 付费模式 - 满足条件返回
         if ($attributes['set_site']['site_mode'] == 'pay') {
@@ -252,12 +254,12 @@ class ForumSettingSerializer extends AbstractSerializer
         $headers = $this->request->getHeaders();
         $headersStr = strtolower(json_encode($headers, 256));
         if (! $this->settings->get('miniprogram_video', 'wx_miniprogram') &&
-            (strpos(Arr::get($this->request->getServerParams(), 'HTTP_X_APP_PLATFORM'), 'wx_miniprogram') !== false || strpos($headersStr, 'miniprogram') !== false || 
+            (strpos(Arr::get($this->request->getServerParams(), 'HTTP_X_APP_PLATFORM'), 'wx_miniprogram') !== false || strpos($headersStr, 'miniprogram') !== false ||
                 strpos($headersStr, 'compress') !== false)) {
             $attributes['other']['can_create_thread_video'] = false;
         }
-        //判断三种注册方式是否置灰禁用
-        $attributes['sign_enable']=$this->getSignInEnable($attributes);
+        //判断三种注册方式是否置灰禁用,   3.0无注册方式选项
+//        $attributes['sign_enable']=$this->getSignInEnable($attributes);
 
         // 判断用户是否存在
         if ($actor->exists) {

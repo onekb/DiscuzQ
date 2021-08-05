@@ -103,7 +103,7 @@ class UpdateThreadV2Controller extends DzqController
         }
 
         if($isEssence || $isEssence===false){
-            $attributes['isEssence'] = $isEssence;
+            $attributes['is_essence'] = $isEssence;
         }
         if($isSticky || $isSticky===false){
             $attributes['isSticky'] = $isSticky;

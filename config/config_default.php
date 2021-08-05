@@ -96,6 +96,18 @@ return [
                 'url' => 'avatar',
                 'visibility' => 'public',
             ],
+            'background' => [
+                'driver' => 'local',
+                'root' => storage_path('app/public/background'),
+                'url' => 'background',
+                'visibility' => 'public',
+            ],
+            'background_cos' => [
+                'driver' => 'cos',
+                'root' => storage_path('app/public/background'),
+                'url' => 'background',
+                'visibility' => 'public',
+            ],
             'attachment' => [
                 'driver' => 'local',
                 'root'   => storage_path('app'),

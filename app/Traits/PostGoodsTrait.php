@@ -80,7 +80,7 @@ trait PostGoodsTrait
                 $this->wirelessShare();
                 break;
             default:
-                throw new TranslatorException('post_goods_not_found_regex');
+                throw new TranslatorException(trans('post.post_goods_not_found_regex'));
         }
     }
 

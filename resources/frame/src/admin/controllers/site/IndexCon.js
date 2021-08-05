@@ -331,7 +331,7 @@ export default {
       userName: "", //用户名
 
       dialogVisible: false, // 云API配置弹框
-      secretId:'',
+      secretId:'', 
       secretKey:'',
       appId:'',
     };
@@ -760,11 +760,7 @@ export default {
     },
 
     quitClick() {
-      const token = localStorage.getItem('access_token');
-      const userId = localStorage.getItem('user_id');
       localStorage.clear();
-      token && localStorage.setItem('access_token', token);
-      userId && localStorage.setItem('user_id', userId);
       this.$router.push({ path: "/admin/login" });
     },
 
@@ -835,8 +831,7 @@ export default {
         if(res.errors){
           throw new Error(res.errors[0].code);
         }
-        this.$message({ message: '提交成功', type: 'success' });
-        this.dialogVisible = false;
+          this.$message({ message: '提交成功', type: 'success' });
       })
       }
         catch(err){

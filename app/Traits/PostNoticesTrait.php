@@ -71,11 +71,31 @@ trait PostNoticesTrait
      */
     public function sendRelated(Post $post, User $actor)
     {
-        $mentioned = Utils::getAttributeValues($post->parsedContent, 'USERMENTION', 'id');
+        if (empty($post->parsedContent)) {
+            return;
+        }
 
-        $post->mentionUsers()->sync($mentioned);
+        preg_match_all('/<span.*>(.*)<\/span>/isU', $post->parsedContent, $newsNameArr);
+        $newsNameArr = $newsNameArr[1];
+        if (empty($newsNameArr)) {
+            return;
+        }
 
-        $users = User::query()->whereIn('id', $mentioned)->get();
+        $newsNameArr2 = [];
+        foreach ($newsNameArr as $v) {
+            $string = trim(substr($v, 1));
+            if ($actor->nickname != $string) {
+                $newsNameArr2[] = $string;
+            }
+        }
+
+        $users = User::query()->whereIn('username', $newsNameArr2)->get();
+        if (empty($users)) {
+            return;
+        }
+
+        $post->mentionUsers()->sync(array_column($users->toArray(), 'id'));
+
         $users->load('deny');
         $users->filter(function ($user) use ($post) {
             //把作者拉黑的用户不发通知

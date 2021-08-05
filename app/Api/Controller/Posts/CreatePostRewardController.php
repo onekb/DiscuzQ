@@ -112,7 +112,13 @@ class CreatePostRewardController implements RequestHandlerInterface
             throw new Exception(trans('post.post_reward_post_user_id_limit'));
         }
 
-        $threadRewardOrder = Order::query()->where(['thread_id' => $thread_id, 'status' => Order::ORDER_STATUS_PAID])->first();
+        $orderType = [Order::ORDER_TYPE_QUESTION, Order::ORDER_TYPE_QUESTION_REWARD, Order::ORDER_TYPE_MERGE];
+        $orderStatus = [Order::ORDER_STATUS_PAID, Order::ORDER_STATUS_PART_OF_RETURN];
+        $threadRewardOrder = Order::query()
+            ->where(['thread_id' => $thread_id, 'user_id' => $actor->id])
+            ->whereIn('status', $orderStatus)
+            ->whereIn('type', $orderType)
+            ->first();
         if(empty($threadRewardOrder)){
             app('log')->info('获取不到悬赏帖订单信息，作者' . $actor->username . '悬赏采纳失败！;悬赏问答帖ID为：' . $thread_id);
             throw new Exception(trans('post.post_reward_order_error'));
@@ -123,8 +129,20 @@ class CreatePostRewardController implements RequestHandlerInterface
             throw new Exception(trans('post.post_reward_not_equal_to_order_price'));
         }
 
-        // 通过订单实付金额、用户钱包流水统计实际已悬赏的金额，获取真实的剩余金额
-        $postRewardLog = UserWalletLog::query()->where('thread_id', $thread_id)->get()->toArray();
+        // $postRewardLog-已发放的悬赏流水记录
+        if ($threadRewardOrder->type == Order::ORDER_TYPE_QUESTION) {
+            $postRewardLog = UserWalletLog::query()
+                ->where(['thread_id' => $thread_id, 'change_type' => UserWalletLog::TYPE_INCOME_THREAD_REWARD])
+                ->get()->toArray();
+                $changeType = UserWalletLog::TYPE_INCOME_THREAD_REWARD;// 120悬赏问答收入
+                $changeDesc = trans('wallet.income_thread_reward');
+        } else {
+            $postRewardLog = UserWalletLog::query()
+                ->where(['thread_id' => $thread_id, 'change_type' => UserWalletLog::TYPE_QUESTION_REWARD_INCOME])
+                ->get()->toArray();
+            $changeType = UserWalletLog::TYPE_QUESTION_REWARD_INCOME;// 120悬赏问答收入
+            $changeDesc = trans('wallet.question_reward_income');
+        }
         $rewardTotal = 0;
         if(!empty($postRewardLog)){
             $rewardTotal = array_sum(array_column($postRewardLog, 'change_available_amount'));
@@ -159,8 +177,8 @@ class CreatePostRewardController implements RequestHandlerInterface
                 $posts['user_id'],
                 $rewards,
                 0,
-                UserWalletLog::TYPE_INCOME_THREAD_REWARD,
-                trans('wallet.income_thread_reward'),
+                $changeType,
+                $changeDesc,
                 null,
                 null,
                 $actor->id,
@@ -178,7 +196,7 @@ class CreatePostRewardController implements RequestHandlerInterface
         }
 
         // 发送通知
-        app(ThreadRewardRepository::class)->returnThreadRewardNotify($thread_id, $posts['user_id'], $rewards, UserWalletLog::TYPE_INCOME_THREAD_REWARD);
+        app(ThreadRewardRepository::class)->returnThreadRewardNotify($thread_id, $posts['user_id'], $rewards, $changeType);
         return DiscuzResponseFactory::EmptyResponse(204);
     }
 }

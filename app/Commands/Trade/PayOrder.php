@@ -18,7 +18,6 @@
 
 namespace App\Commands\Trade;
 
-use App\Exceptions\TradeErrorException;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\UserWalletFailLogs;
@@ -27,7 +26,6 @@ use App\Settings\SettingsRepository;
 use App\Trade\Config\GatewayConfig;
 use App\Trade\PayTrade;
 use Carbon\Carbon;
-use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Exception;
 use Illuminate\Contracts\Container\BindingResolutionException;
@@ -39,8 +37,6 @@ use Illuminate\Validation\ValidationException;
 
 class PayOrder
 {
-    use AssertPermissionTrait;
-
     /**
      * 订单编号
      *
@@ -109,20 +105,19 @@ class PayOrder
      * @param UserWalletFailLogsRepository $userWalletFailLogs
      * @return Order
      * @throws PermissionDeniedException
-     * @throws TradeErrorException
      * @throws ValidationException
      * @throws BindingResolutionException
      * @throws Exception
      */
     public function handle(Validator $validator, SettingsRepository $setting, UrlGenerator $url, UserWalletFailLogsRepository $userWalletFailLogs)
     {
-        $this->assertCan($this->actor, 'trade.pay.order');
-
         $this->setting = $setting;
         $this->url     = $url;
         $this->userWalletFailLogs = $userWalletFailLogs;
+        if(Arr::get($this->data, 'data.attributes')){
+            $this->data = collect(Arr::get($this->data, 'data.attributes'));
+        }
 
-        $this->data = collect(Arr::get($this->data, 'data.attributes'));
         // 使用钱包支付时，检查是否设置支付密码
         if (
             $this->data->get('payment_type') == Order::PAYMENT_TYPE_WALLET
@@ -161,24 +156,27 @@ class PayOrder
                             app('payLog')->info("密码错误达到上线,订单号:{$this->order_sn},用户id:{$this->actor->id}");
                             throw new Exception(trans('trade.pay_password_failures_times_toplimit'));
                         } else {
-                            $fail(trans('trade.wallet_pay_password_error', ['value'=>UserWalletFailLogs::TOPLIMIT - $failCount]));
+                            throw new Exception(trans('trade.wallet_pay_password_error', ['value'=>UserWalletFailLogs::TOPLIMIT - $failCount]));
                         }
                     }
                 }
             ],
         ]);
 
+
         if ($validator_info->fails()) {
-            app('payLog')->info("支付验证参数错误,订单号:{$this->order_sn},用户id:{$this->actor->id}");
+            app('payLog')->info("支付验证参数错误,订单号:{$this->order_sn},用户id:{$this->actor->id}" . "，错误信息：" . $validator_info);
             throw new ValidationException($validator_info);
         }
+
         // 正确后清除错误记录
-        if ($failCount > 0) {
+        if ($this->data->get('payment_type') == Order::PAYMENT_TYPE_WALLET && $failCount > 0) {
             UserWalletFailLogs::deleteAll($this->actor->id);
         }
 
         /** @var Order $order_info */
-        $order_info = Order::query()->where('user_id', $this->actor->id)
+        $order_info = Order::query()
+            ->where('user_id', $this->actor->id)
             ->where('order_sn', $this->order_sn)
             ->where('status', Order::ORDER_STATUS_PENDING)
             ->firstOrFail();
@@ -221,6 +219,15 @@ class PayOrder
             case Order::ORDER_TYPE_LONG:
                 $order_info->body = trans('order.order_type_long');
                 break;
+            case Order::ORDER_TYPE_REDPACKET:
+                $order_info->body = trans('order.order_type_redpacket');
+                break;
+            case Order::ORDER_TYPE_QUESTION_REWARD:
+                $order_info->body = trans('order.order_type_question_reward');
+                break;
+            case Order::ORDER_TYPE_MERGE:
+                $order_info->body = trans('order.order_type_merge');
+                break;
             default:
                 $order_info->body = '';
                 break;
@@ -240,7 +247,6 @@ class PayOrder
      * 获取支付参数
      * @param array $order_info
      * @return array  $order_info 支付参数数组
-     * @throws TradeErrorException
      * @throws BindingResolutionException
      */
     public function paymentParams($order_info)
@@ -258,7 +264,8 @@ class PayOrder
             case Order::PAYMENT_TYPE_WECHAT_JS: //微信网页、公众号
             case Order::PAYMENT_TYPE_WECHAT_MINI: //微信小程序支付
                 $config = $this->setting->tag('wxpay'); //配置信息
-                $config['notify_url'] = $this->url->to('/api/trade/notify/wechat');
+                // $config['notify_url'] = $this->url->to('/api/trade/notify/wechat');
+                $config['notify_url'] = $this->url->to('/apiv3/trade/notify/wechat');
                 switch ($this->payment_type) {
                     case Order::PAYMENT_TYPE_WECHAT_NATIVE: //微信扫码支付
                         $pay_gateway          = GatewayConfig::WECAHT_PAY_NATIVE;
@@ -308,7 +315,7 @@ class PayOrder
                 app('payLog')->info("支付参数payment_type枚举错误,传参payment_type:{$this->payment_type},订单号:{$this->order_sn},用户id:{$this->actor->id}");
                 throw new Exception(trans('trade.payment_method_invalid'));
         }
-
+        app('log')->info('支付的配置信息为：' . implode(',', $config) . ',支付网关：' . $pay_gateway, $config);
         return PayTrade::pay($order_info, $pay_gateway, $config, $extra); //生成支付参数
     }
 }

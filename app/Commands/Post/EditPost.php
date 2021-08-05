@@ -29,7 +29,6 @@ use App\Models\PostMod;
 use App\Models\User;
 use App\Repositories\PostRepository;
 use App\Validators\PostValidator;
-use Discuz\Auth\AssertPermissionTrait;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Foundation\EventsDispatchTrait;
 use EasyWeChat\Kernel\Exceptions\InvalidConfigException;
@@ -40,7 +39,6 @@ use Illuminate\Validation\ValidationException;
 
 class EditPost
 {
-    use AssertPermissionTrait;
     use EventsDispatchTrait;
 
     /**
@@ -92,13 +90,11 @@ class EditPost
     {
         $this->events = $events;
 
-        $post = $posts->findOrFail($this->postId, $this->actor);
+        $post = Post::query()->where('id', $this->postId)->firstOrFail();
 
         $attributes = Arr::get($this->data, 'attributes', []);
 
         if (isset($attributes['content'])) {
-            $this->assertCan($this->actor, 'edit', $post);
-
             $post->raise(new Revising($post, $this->actor, $this->data));
 
             $post->revise(trim($attributes['content']), $this->actor);
@@ -118,8 +114,6 @@ class EditPost
         }
 
         if (isset($attributes['isApproved']) && $attributes['isApproved'] < 3) {
-            $this->assertCan($this->actor, 'approve', $post);
-
             if ($post->is_approved != $attributes['isApproved']) {
                 $post->is_approved = $attributes['isApproved'];
 
@@ -130,8 +124,6 @@ class EditPost
         }
 
         if (isset($attributes['isDeleted'])) {
-            $this->assertCan($this->actor, 'hide', $post);
-
             if ($attributes['isDeleted']) {
                 $post->hide($this->actor, ['message' => $attributes['message'] ?? '']);
             } else {

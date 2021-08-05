@@ -18,14 +18,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Common\CacheKey;
+use Discuz\Base\DzqCache;
+use Discuz\Base\DzqModel;
 
 /**
  * @property string $key
  * @property string $value
  * @property string $tag
  */
-class Setting extends Model
+class Setting extends DzqModel
 {
     /**
      * {@inheritdoc}
@@ -53,6 +55,24 @@ class Setting extends Model
     public $timestamps = false;
 
     public static $encrypt;
+
+    const DIGIEAL = 0; //密码类型必须有数字
+    const LOWER_CASE_LETTERS = 1; //密码类型必须有小写字母
+    const SYMBOL = 2; //密码类型必须有符号
+    const UPPERCASE_LETTER = 3; //密码类型必须有大写字母
+    /**
+     * 开启云服务有关联动选项
+     * @var array
+     */
+    public static $linkage = [
+        'qcloud_cms_image',
+        'qcloud_cms_text',
+        'qcloud_sms',
+        'qcloud_faceid',
+        'qcloud_cos',
+        'qcloud_vod',
+        'qcloud_captcha',
+    ];
 
     /**
      * 需要加密的数据字段
@@ -93,7 +113,7 @@ class Setting extends Model
         'site_create_thread4' => ['createThread.4'],
         'site_create_thread5' => ['createThread.5'],
         'site_create_thread6' => ['createThread.6'],
-        'site_can_reward'  =>  ['switch.thread.canBeReward', 'thread.canBeReward']
+        'site_can_reward' => ['switch.thread.canBeReward', 'thread.canBeReward']
     ];
 
     /**
@@ -153,14 +173,46 @@ class Setting extends Model
         $headersStr = strtolower(json_encode($headers, 256));
         $serverStr = strtolower(json_encode($server, 256));
 
-        if (strstr($serverStr, 'miniprogram') || strstr($headersStr, 'miniprogram') || 
+        if (strstr($serverStr, 'miniprogram') || strstr($headersStr, 'miniprogram') ||
             strstr($headersStr, 'compress')) {
             $settings = Setting::query()->where(['key' => 'miniprogram_video', 'tag' => 'wx_miniprogram'])->first();
-            if(!$settings->value){
+            if (!$settings->value) {
                 return false;
             }
         }
 
         return true;
+    }
+
+
+    /*
+ * 更新value值
+ */
+    public static function modifyValue($key, $value, $tag = 'default')
+    {
+        return Setting::query()->where('key', $key)->where('tag', $tag)->update(['value' => $value]);
+    }
+
+
+    /*
+  * 获取value参数值
+  */
+    public static function getValue($key, $tag = '', $value = '')
+    {
+        if ($key) {
+            $settings = Setting::query()->where('key', $key);
+        }
+        if ($tag) {
+            $settings = $settings->where('tag', $tag);
+        }
+        if ($value) {
+            $settings = $settings->where('value', $value);
+        }
+        return $settings->value('value');
+    }
+
+    protected function clearCache()
+    {
+        DzqCache::delKey(CacheKey::SETTINGS);
     }
 }

@@ -18,6 +18,7 @@
 
 namespace App\Listeners\Thread;
 
+use App\Common\ResponseCode;
 use App\Events\Thread\Saving;
 use App\Events\Thread\ThreadWasCategorized;
 use App\Exceptions\CategoryNotFoundException;
@@ -62,7 +63,7 @@ class SaveCategoryToDatabase
 
                 $thread->category_id = $category->id;
             } else {
-                throw new CategoryNotFoundException;
+                \Discuz\Common\Utils::outPut(ResponseCode::CATEGORY_NOT_FOUNF);
             }
 
             // 是否有权在该分类下发布内容

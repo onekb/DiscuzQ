@@ -25,6 +25,7 @@ use App\Models\Setting;
 use App\Observer\UserWechatObserver;
 use App\Settings\SettingsRepository;
 use App\User\AvatarUploader;
+use App\User\BackgroundUploader;
 use Discuz\Contracts\Setting\SettingsRepository as ContractsSettingsRepository;
 use Discuz\Foundation\Application;
 use Illuminate\Contracts\Encryption\Encrypter;
@@ -53,10 +54,12 @@ class SettingsServiceProvider extends ServiceProvider
 
             $attachmentDisk = 'attachment';
             $avatarDisk = 'avatar';
+            $backgroundDisk = 'background';
 
             if (Arr::get($qcloud, 'qcloud_cos', false)) {
                 $attachmentDisk = 'attachment_cos';
                 $avatarDisk = 'avatar_cos';
+                $backgroundDisk = 'background_cos';
             }
 
             $this->app->when([
@@ -76,6 +79,14 @@ class SettingsServiceProvider extends ServiceProvider
             ->give(function (Application $app) use ($avatarDisk) {
                 return $app->make(Factory::class)->disk($avatarDisk);
             });
+
+            $this->app->when([
+                BackgroundUploader::class
+            ])
+                ->needs(ContractsFilesystem::class)
+                ->give(function (Application $app) use ($backgroundDisk) {
+                    return $app->make(Factory::class)->disk($backgroundDisk);
+                });
         }
 
         $events = $this->app->make('events');

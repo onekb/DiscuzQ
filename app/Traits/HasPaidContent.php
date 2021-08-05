@@ -24,6 +24,8 @@ use App\Models\Question;
 use App\Models\Thread;
 use App\Models\ThreadVideo;
 use App\Models\User;
+use Discuz\Auth\Guest;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Str;
 
 /**
@@ -51,6 +53,7 @@ trait HasPaidContent
      */
     public function paidContent($model)
     {
+        if(empty($this->actor))     $this->actor = new Guest();
         Thread::setStateUser($this->actor);
 
         // 作者本人 或 管理员 或 回答者本人 不处理（新增类型时请保证 $model->user_id 存在）
@@ -160,6 +163,8 @@ trait HasPaidContent
                 $words = ceil($content->length() * $post->thread->free_words);
             }
             $post->content = $content->substr(0, $words)->finish(Post::SUMMARY_END_WITH);
+            //替换最后一个  ![u%3D2496571732%2C442429806%26fm%3D26%26gp%3D0.png](https://discuzq-img-1258344699.cos.ap-guangzhou.myqcloud.com/public/attachments/2021/05/27/Q3UqtLIfRTGBHjenrnVXbtZB7...
+            $post->content = preg_replace('/\!\[u[^\]]*]\(http[^"]*\.\.\./s', '', $post->content);
         }
     }
 
@@ -170,20 +175,6 @@ trait HasPaidContent
      */
     public function blurImage(Attachment $attachment)
     {
-        if (!is_null($attachment->getAttributeValue('xblur')))
-        {
-            if ($attachment->getAttributeValue('xblur') === 1)
-            {
-                $attachment->setAttribute('blur', true);
-
-                $parts = explode('.', $attachment->attachment);
-                $parts[0] = md5($parts[0]);
-
-                $attachment->attachment = implode('_blur.', $parts);
-            }                
-            return;
-        }
-
         if (
             is_null($attachment->getAttributeValue('blur'))
             && $attachment->type === Attachment::TYPE_OF_IMAGE

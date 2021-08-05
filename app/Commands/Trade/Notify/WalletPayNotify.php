@@ -67,7 +67,9 @@ class WalletPayNotify
         try {
             // 从钱包余额中扣除订单金额
             $userWallet = UserWallet::query()->lockForUpdate()->find($this->data['user_id']);
-            $userWallet->available_amount = $userWallet->available_amount - $this->data['amount'];
+            $changeAvailableAmount = bcsub($userWallet->available_amount, $this->data['amount'], 2);
+            $changeFreezeAmount = bcadd($userWallet->freeze_amount, $this->data['amount'], 2);
+            $updateData = ['available_amount' => $changeAvailableAmount];
 
             // 记录钱包变更明细
             switch ($this->data['type']) {
@@ -91,7 +93,7 @@ class WalletPayNotify
                     $change_type = UserWalletLog::TYPE_QUESTION_FREEZE;
                     $change_type_lang = 'wallet.question_freeze_desc';
                     // 钱包&钱包日志 增加冻结金额数
-                    $userWallet->freeze_amount = $userWallet->freeze_amount + $this->data['amount'];
+                    $updateData = ['available_amount' => $changeAvailableAmount, 'freeze_amount' => $changeFreezeAmount];
                     $freezeAmount = $this->data['amount'];
                     break;
                 case Order::ORDER_TYPE_ONLOOKER:
@@ -110,14 +112,32 @@ class WalletPayNotify
                     $change_type = UserWalletLog::TYPE_TEXT_FREEZE;
                     $change_type_lang = 'wallet.freeze_text';
                     // 钱包&钱包日志 增加文字帖红包冻结金额数
-                    $userWallet->freeze_amount = $userWallet->freeze_amount + $this->data['amount'];
+                    $updateData = ['available_amount' => $changeAvailableAmount, 'freeze_amount' => $changeFreezeAmount];
                     $freezeAmount = $this->data['amount'];
                     break;
                 case Order::ORDER_TYPE_LONG:
                     $change_type = UserWalletLog::TYPE_LONG_FREEZE;
                     $change_type_lang = 'wallet.freeze_long';
                     // 钱包&钱包日志 增加长文帖红包冻结金额数
-                    $userWallet->freeze_amount = $userWallet->freeze_amount + $this->data['amount'];
+                    $updateData = ['available_amount' => $changeAvailableAmount, 'freeze_amount' => $changeFreezeAmount];
+                    $freezeAmount = $this->data['amount'];
+                    break;
+                case Order::ORDER_TYPE_REDPACKET:
+                    $change_type = UserWalletLog::TYPE_REDPACKET_FREEZE;
+                    $change_type_lang = 'wallet.redpacket_freeze';
+                    $updateData = ['available_amount' => $changeAvailableAmount, 'freeze_amount' => $changeFreezeAmount];
+                    $freezeAmount = $this->data['amount'];
+                    break;
+                case Order::ORDER_TYPE_QUESTION_REWARD:
+                    $change_type = UserWalletLog::TYPE_QUESTION_REWARD_FREEZE;
+                    $change_type_lang = 'wallet.question_reward_freeze';
+                    $updateData = ['available_amount' => $changeAvailableAmount, 'freeze_amount' => $changeFreezeAmount];
+                    $freezeAmount = $this->data['amount'];
+                    break;
+                case Order::ORDER_TYPE_MERGE:
+                    $change_type = UserWalletLog::TYPE_MERGE_FREEZE;
+                    $change_type_lang = 'wallet.merge_freeze';
+                    $updateData = ['available_amount' => $changeAvailableAmount, 'freeze_amount' => $changeFreezeAmount];
                     $freezeAmount = $this->data['amount'];
                     break;
                 default:
@@ -125,7 +145,7 @@ class WalletPayNotify
                     $change_type_lang = '';
             }
 
-            $userWallet->save();
+            $userWallet = UserWallet::query()->where('user_id', $this->data['user_id'])->update($updateData);
 
             UserWalletLog::createWalletLog(
                 $this->data['user_id'],
@@ -134,7 +154,11 @@ class WalletPayNotify
                 $change_type,
                 trans($change_type_lang),
                 null,
-                $this->data['id']
+                $this->data['id'],
+                0,
+                0,
+                0,
+                $this->data['thread_id'] ?? 0
             );
 
             // 支付成功处理
@@ -147,7 +171,7 @@ class WalletPayNotify
             }
             $connection->commit();
             if ($order_info) {
-                app('payLog')->info("微信支付成功,用户id:{$this->data['user_id']}");
+                app('payLog')->info("钱包支付成功,用户id:{$this->data['user_id']}");
                 return [
                     'wallet_pay' => [
                         'result' => 'success',

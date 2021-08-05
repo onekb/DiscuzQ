@@ -167,9 +167,9 @@ class RewardedMessage extends SimpleMessage
         $content = '';
 
         if (! is_null($this->order)) {
-            $content = $this->order->thread->getContentByType(Thread::CONTENT_LENGTH);
+            $content = $this->order->thread->getRewardedContent(Thread::CONTENT_WITHOUT_LENGTH);
         } elseif (! is_null($this->question)) {
-            $content = $this->question->thread->getContentByType(Thread::CONTENT_LENGTH);
+            $content = $this->question->thread->getRewardedContent(Thread::CONTENT_WITHOUT_LENGTH);
         }
 
         $this->initData['content'] = $content;

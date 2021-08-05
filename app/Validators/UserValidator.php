@@ -90,15 +90,17 @@ class UserValidator extends AbstractValidator
         $settingsPasswordLength = (int) $settings->get('password_length');
 
         // 获取后台设置的密码强度
-        $settingsPasswordStrength = array_filter(explode(',', trim($settings->get('password_strength'), ',')));
+        if ($settings->get('password_strength') !== '') {
+            $settingsPasswordStrength = explode(',', trim($settings->get('password_strength'), ','));
+
+            // 使用后台设置的密码强度
+            $this->passwordStrength = $settingsPasswordStrength;
+        }
 
         // 后台设置的长度大于默认长度时，使用后台设置的长度
         $this->passwordLength = $settingsPasswordLength > $this->passwordLength
             ? $settingsPasswordLength
             : $this->passwordLength;
-
-        // 使用后台设置的密码强度
-        $this->passwordStrength = $settingsPasswordStrength ?: $this->passwordStrength;
     }
 
     /**

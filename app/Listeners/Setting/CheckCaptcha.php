@@ -18,8 +18,10 @@
 
 namespace App\Listeners\Setting;
 
+use App\Common\ResponseCode;
 use App\Events\Setting\Saving;
 use Discuz\Contracts\Setting\SettingsRepository;
+use Discuz\Common\Utils;
 use Discuz\Wechat\EasyWechatTrait;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Factory as Validator;
@@ -65,11 +67,18 @@ class CheckCaptcha
             // 合并原配置与新配置（新值覆盖旧值）
             $settings = array_merge((array) $this->settings->tag('qcloud'), $settings);
 
-            $this->validator->make($settings, [
-                'qcloud_captcha' => 'nullable|boolean',
-                'qcloud_captcha_app_id' => 'required_if:qcloud_captcha,1',
-                'qcloud_captcha_secret_key' => 'required_if:qcloud_captcha,1',
-            ])->validate();
+            try {
+                $this->validator->make($settings, [
+                    'qcloud_captcha' => 'nullable|boolean',
+                    'qcloud_captcha_app_id' => 'required_if:qcloud_captcha,1',
+                    'qcloud_captcha_secret_key' => 'required_if:qcloud_captcha,1',
+                ], [
+                    'qcloud_captcha_app_id.required_if' => trans('setting.qcloud_captcha_app_id_cannot_be_empty'),
+                    'qcloud_captcha_secret_key.required_if' => trans('setting.aqcloud_captcha_secret_key_cannot_be_empty')
+                ])->validate();
+            } catch (ValidationException $e) {
+                Utils::outPut(ResponseCode::INVALID_PARAMETER, $e->validator->getMessageBag()->first());
+            }
         }
     }
 }
