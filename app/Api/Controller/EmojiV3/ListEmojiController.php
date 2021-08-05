@@ -18,7 +18,6 @@
 
 namespace App\Api\Controller\EmojiV3;
 
-use App\Common\CacheKey;
 use App\Common\ResponseCode;
 use App\Models\Emoji;
 use App\Repositories\UserRepository;
@@ -33,14 +32,7 @@ class ListEmojiController extends DzqController
 
     public function main()
     {
-        $emojis = Emoji::getEmojis();
-        $url = $this->request->getUri();
-        $port = $url->getPort();
-        $port = $port == null ? '' : ':' . $port;
-        $path = $url->getScheme() . '://' . $url->getHost() . $port . '/';
-        foreach ($emojis as $k => $v) {
-            $emojis[$k]['url'] = $path . $v['url'];
-        }
+        $emojis = Emoji::getEmojiListForController($this->request);
         $result = $this->camelData($emojis);
         $this->outPut(ResponseCode::SUCCESS, '', $result);
     }

@@ -46,6 +46,19 @@ class Emoji extends DzqModel
         return $emojis;
     }
 
+    public static function getEmojiListForController($request)
+    {
+        $emojis = Emoji::getEmojis();
+        $url = $request->getUri();
+        $port = $url->getPort();
+        $port = $port == null ? '' : ':' . $port;
+        $path = $url->getScheme() . '://' . $url->getHost() . $port . '/';
+        foreach ($emojis as $k => $v) {
+            $emojis[$k]['url'] = $path . $v['url'];
+        }
+        return $emojis;
+    }
+
     protected function clearCache()
     {
         DzqCache::delKey(CacheKey::LIST_EMOJI);

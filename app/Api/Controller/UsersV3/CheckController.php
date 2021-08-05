@@ -49,29 +49,40 @@ class CheckController extends DzqController
     {
         try {
             $username = $this->inPut('username');
-            //去除字符串中空格
-            $username = str_replace(' ', '', $username);
-            //敏感词检查
-            $this->censor->checkText($username, 'username');
-            if(strlen($username) == 0) {
-                return $this->outPut(ResponseCode::USERNAME_NOT_NULL);
+            $nickname = $this->inPut('nickname');
+            if (!empty($username)) {
+                $this->checkIsRepeat('username', $username);
             }
-            //长度检查
-            if(mb_strlen($username,'UTF8') > 15){
-                return $this->outPut(ResponseCode::NAME_LENGTH_ERROR);
+            if (!empty($nickname)) {
+                $this->checkIsRepeat('nickname', $nickname);
             }
-            //重名检查
-            $userNameCount = User::query()->where('username', $username)->count('id');
-            if($userNameCount > 0){
-                return $this->outPut(ResponseCode::USERNAME_HAD_EXIST);
-            }
-
-            return $this->outPut(ResponseCode::SUCCESS);
+            $this->outPut(ResponseCode::SUCCESS);
         } catch (\Exception $e) {
-            DzqLog::error('user_nickname_check_api_error', [
-                'username' => $this->inPut('username')
+            DzqLog::error('username_nickname_check_api_error', [
+                'username' => $this->inPut('username'),
+                'nickname' => $this->inPut('nickname')
             ], $e->getMessage());
-            return $this->outPut(ResponseCode::INTERNAL_ERROR, '用户昵称检测接口异常');
+            $this->outPut(ResponseCode::INTERNAL_ERROR, '用户昵称检测接口异常');
+        }
+    }
+
+    public function checkIsRepeat($fieled = '', $fieledVal = ''){
+        $msg = $fieled == 'username' ? '用户名' : '昵称';
+        //去除字符串中空格
+        $fieledVal = str_replace(' ', '', $fieledVal);
+        //敏感词检查
+        $this->censor->checkText($fieledVal, $fieled);
+        if(strlen($fieledVal) == 0) {
+            $this->outPut(ResponseCode::USERNAME_NOT_NULL, $msg.'不能为空');
+        }
+        //长度检查
+        if(mb_strlen($fieledVal,'UTF8') > 15){
+            $this->outPut(ResponseCode::NAME_LENGTH_ERROR, $msg.'长度超过15个字符');
+        }
+        //重名检查
+        $userNameCount = User::query()->where($fieled, $fieledVal)->count('id');
+        if($userNameCount > 0){
+            $this->outPut(ResponseCode::USERNAME_HAD_EXIST, $msg.'已经存在');
         }
     }
 

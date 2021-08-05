@@ -227,11 +227,6 @@ class UpdateClientUser
         if (! $nickname || $nickname == $user->nickname) {
             return $validate;
         }
-        // 敏感词校验
-        $this->censor->checkText($nickname,'nickname');
-        if ($this->censor->isMod) {
-            throw new TranslatorException(trans('user.user_nickname_censor_error'));
-        }
 
         // 过滤内容
         $nickname = $this->specialChar->purify($nickname);

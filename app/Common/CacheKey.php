@@ -104,6 +104,8 @@ class CacheKey
 
     const MONITOR_SYSTEM_TASK = 'monitor_system_task:';//监听系统定时任务是否启动
 
+    const  CRAWLER_SPLQUEUE_INPUT_DATA = 'crawler_splqueue_input_data:'; // 数据抓取/内容导入-入参缓存
+
     public static $fileStore = [
         self::LIST_THREADS_V3_POSTS => 20
     ];

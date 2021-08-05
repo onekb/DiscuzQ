@@ -78,7 +78,10 @@ class CreateDialogMessage
         $image_url = Arr::get($this->attributes, 'image_url', '');
 
         //敏感词检查
-        $message_text = trim($censor->checkText(Arr::get($this->attributes, 'message_text'), 'dialog'));
+        $message_text = Arr::get($this->attributes, 'message_text');
+        if (!empty($message_text)) {
+            $message_text = trim($censor->checkText($message_text, 'dialog'));
+        }
 
         /** @var Dialog $dialogRes */
         $dialogRes = $dialog->findOrFail($dialog_id, $this->actor);

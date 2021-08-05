@@ -89,10 +89,10 @@ class ThreadStickController extends DzqController
                 'canViewPosts' => $this->canViewPosts($thread, $permissions)
             ];
         }
-        [$search, $replace] = Thread::instance()->getReplaceString($linkString);
-        foreach ($data as &$item) {
-            $item['title'] = str_replace($search, $replace, $item['title']);
-        }
+//        [$search, $replace] = Thread::instance()->getReplaceString($linkString);
+//        foreach ($data as &$item) {
+//            $item['title'] = str_replace($search, $replace, $item['title']);
+//        }
         $this->outPut(ResponseCode::SUCCESS, '', $data);
     }
 

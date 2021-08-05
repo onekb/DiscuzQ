@@ -717,6 +717,22 @@ class User extends DzqModel
     }
 
     /**
+     * 给昵称拼接随机字符串
+     *
+     * @return string
+     */
+    public static function addStringToNickname($content = '')
+    {
+        $preName = !empty($content) ? $content : trans('validation.attributes.username_prefix');
+        $nickname = $preName . Str::random(6);
+        $user = User::query()->where('nickname', $nickname)->first();
+        if ($user) {
+            return self::addStringToNickname();
+        }
+        return $nickname;
+    }
+
+    /**
      * 判断是否有上级 & 上级是否可以推广下线分成
      *
      * @param int $type 1推广下线 2/3收入提成

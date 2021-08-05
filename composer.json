@@ -20,7 +20,8 @@
 		"overtrue/wechat": "~4.0",
 		"s9e/text-formatter": "^2.3",
         "doctrine/dbal": "^2.12.0",
-        "qcloud/vod-sdk-v5": "^2.0"
+        "qcloud/vod-sdk-v5": "^2.0",
+        "qcloud_sts/qcloud-sts-sdk": "^3.0"
     },
 	"config" : {
 		"optimize-autoloader" : true,

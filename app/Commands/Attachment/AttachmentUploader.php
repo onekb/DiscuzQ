@@ -97,6 +97,20 @@ class AttachmentUploader
         $this->put($type, $this->file, $this->fileName, $this->path, $options);
     }
 
+    /**
+     * @param $file
+     * @param int $type
+     * @param array $options
+     */
+    public function uploadCrawlerData($file, $type, $options = [])
+    {
+        $this->file = $file;
+
+        $this->fileName = Str::random(40) . '.' . $this->file->getClientOriginalExtension();
+
+        $this->putCrawlerAttachemnt($type, $this->file, $this->fileName, $this->path, $options);
+    }
+
     public function delete(Attachment $attachment)
     {
         /** @var Factory $filesystem */
@@ -151,6 +165,33 @@ class AttachmentUploader
             ], $options);
         }
         $this->filesystem->putFileAs($path, $file, $fileName, $options);
+    }
+
+    public function putCrawlerAttachemnt($type, $file, $fileName, $path = '', $options = [])
+    {
+        $path = $path ?: $this->path;
+
+        /**
+         * 如果类型是 1（帖子图片）并且使用云存储，就使用云上数据处理，生成高斯模糊图。
+         * @see https://cloud.tencent.com/document/product/460/18147#.E4.BA.91.E4.B8.8A.E6.95.B0.E6.8D.AE.E5.A4.84.E7.90.86
+         */
+        if ($type === Attachment::TYPE_OF_IMAGE) {
+            [$hash, $extension] = explode('.', $fileName);
+
+            $options = array_merge($this->options, [
+                'header' => [
+                    'PicOperations' => json_encode([
+                        'rules' => [
+                            [
+                                'fileid' => md5($hash) . '_blur.' . $extension,
+                                'rule' => 'imageMogr2/thumbnail/500x500/blur/40x20',
+                            ]
+                        ],
+                    ]),
+                ]
+            ], $options);
+        }
+        app(Factory::class)->disk('attachment_cos')->putFileAs($path, $file, $fileName, $options);
     }
 
     /**

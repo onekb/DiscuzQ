@@ -123,34 +123,21 @@ class RegisterController extends AuthBaseController
             }
         } catch (\Exception $e) {
             DzqLog::error('username_register_api_error', $data, $e->getMessage());
-            return $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常');
+            $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常');
         }
 
         $this->connection->beginTransaction();
         try {
-            //用户名校验
-            $result = strpos($data['username'],' ');
-            if ($result !== false) {
-                $this->connection->rollback();
-                $this->outPut(ResponseCode::USERNAME_NOT_ALLOW_HAS_SPACE);
-            }
+            $this->checkName('username', $data);
 
-            //重名校验
-            $user = User::query()->where('username',$data['username'])->lockForUpdate()->first();
-            if (!empty($user)) {
-                $this->connection->rollback();
-                $this->outPut(ResponseCode::USERNAME_HAD_EXIST);
-            }
-
-            $this->censor->checkText($data['username'], 'username');
             //密码校验
             $result = strpos($data['password'],' ');
             if ($result !== false) {
                 $this->connection->rollback();
                 $this->outPut(ResponseCode::PASSWORD_NOT_ALLOW_HAS_SPACE);
             }
-            //昵称校验
-            $this->censor->checkText($data['nickname'], 'nickname');
+
+            $this->checkName('nickname', $data);
 
             $user = $this->bus->dispatch(
                 new RegisterUser($this->request->getAttribute('actor'), $data)
@@ -163,15 +150,31 @@ class RegisterController extends AuthBaseController
 
             $accessToken = $this->getAccessToken($user);
             $this->connection->commit();
-            return $this->outPut(ResponseCode::SUCCESS,
+            $this->outPut(ResponseCode::SUCCESS,
                                  '',
                                  $this->camelData($this->addUserInfo($user, $accessToken))
             );
         } catch (\Exception $e) {
             DzqLog::error('username_register_api_error', $data, $e->getMessage());
             $this->connection->rollback();
-            return $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常');
+            $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常');
         }
+    }
 
+    private function checkName($name = 'username', $data = []){
+        $preMsg = $name == 'username' ? '用户名' : '昵称';
+        $result = strpos($data[$name],' ');
+        if ($result !== false) {
+            $this->connection->rollback();
+            $this->outPut(ResponseCode::USERNAME_NOT_ALLOW_HAS_SPACE, $preMsg.'不允许包含空格');
+        }
+        //重名校验
+        $user = User::query()->where($name,$data[$name])->lockForUpdate()->first();
+        if (!empty($user)) {
+            $this->connection->rollback();
+            $this->outPut(ResponseCode::USERNAME_HAD_EXIST, $preMsg.'已经存在');
+        }
+        //敏感词检测
+        $this->censor->checkText($data[$name], $name);
     }
 }

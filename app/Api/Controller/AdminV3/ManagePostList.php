@@ -75,7 +75,7 @@ class ManagePostList extends DzqController
 
         $query = Post::query()
             ->select(
-                'posts.id as post_id', 'posts.thread_id', 'posts.user_id','posts.content', 'posts.ip',
+                'posts.id as post_id', 'posts.thread_id', 'posts.reply_post_id','posts.user_id','posts.content', 'posts.ip',
                 'posts.updated_at', 'posts.deleted_user_id' ,'posts.deleted_at',
                 'threads.title',
                 'users.nickname'

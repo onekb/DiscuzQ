@@ -164,7 +164,6 @@ class TopicListController extends DzqController
             $threadTopics = ThreadTopic::query()
                 ->selectRaw(' `topic_id`, MAX(`thread_id`) as thread_id')
                 ->join('threads', 'id', '=', 'thread_id')
-                ->where('threads.is_sticky', Thread::BOOL_NO)
                 ->where('threads.is_draft', Thread::IS_NOT_DRAFT)
                 ->where('threads.is_approved', Thread::APPROVED)
                 ->whereNull('threads.deleted_at')
@@ -183,7 +182,6 @@ class TopicListController extends DzqController
 
         $query = Thread::query();
         $query->join('thread_topic', 'thread_topic.thread_id', '=', 'threads.id');
-        $query->where('threads.is_sticky', Thread::BOOL_NO);
         $query->where('threads.is_draft', Thread::IS_NOT_DRAFT);
         $query->where('threads.is_approved', Thread::APPROVED);
         $query->whereNull('threads.deleted_at');

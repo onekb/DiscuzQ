@@ -540,12 +540,6 @@ class UpdateAdminUser
         if (! $nickname || $nickname == $user->nickname) {
             return $validate;
         }
-        // 敏感词校验
-        $this->censor->checkText($nickname);
-
-        if ($this->censor->isMod) {
-            \Discuz\Common\Utils::outPut(ResponseCode::NICKNAME_CENSOR_NOT_PASSED);
-        }
 
         // 过滤内容
         $nickname = $this->specialChar->purify($nickname);

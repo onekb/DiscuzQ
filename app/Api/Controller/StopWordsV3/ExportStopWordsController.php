@@ -53,7 +53,10 @@ class ExportStopWordsController extends DzqController
                 $replacement = $stopWord->replacement;
             } else {
                 $replacement = ($stopWord->ugc == '{REPLACE}' ? $stopWord->replacement : $stopWord->ugc)
-                    . '|' . ($stopWord->username == '{REPLACE}' ? $stopWord->replacement : $stopWord->username);
+                    . '|' . ($stopWord->username == '{REPLACE}' ? $stopWord->replacement : $stopWord->username)
+                    . '|' . ($stopWord->signature == '{REPLACE}' ? $stopWord->replacement : $stopWord->signature)
+                    . '|' . ($stopWord->dialog == '{REPLACE}' ? $stopWord->replacement : $stopWord->dialog)
+                    . '|' . ($stopWord->nickname == '{REPLACE}' ? $stopWord->replacement : $stopWord->nickname);
             }
 
             return $stopWord->find . '=' . $replacement;

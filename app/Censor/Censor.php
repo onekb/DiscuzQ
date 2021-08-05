@@ -104,13 +104,13 @@ class Censor
      */
     public function checkText($content, $type = 'ugc')
     {
-        if (blank($content)) {
-            return $content;
-        }
-
         // 本地敏感词校验（暂时无此开关，默认开启）
         if ($this->setting->get('censor', 'default', true)) {
             $content = $this->localStopWordsCheck($content, $type);
+        }
+        
+        if (blank($content)) {
+            return $content;
         }
 
         /**

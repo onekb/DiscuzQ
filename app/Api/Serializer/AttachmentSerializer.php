@@ -215,6 +215,14 @@ class AttachmentSerializer extends AbstractSerializer
     }
 
 
+    public function getImgUrl($model)
+    {
+        return $this->settings->get('qcloud_cos_sign_url', 'qcloud', true)
+            ? $this->filesystem->disk('attachment_cos')->temporaryUrl($model->full_path, Carbon::now()->addDay())
+            : $this->filesystem->disk('attachment_cos')->url($model->full_path);
+    }
+
+
     private function remoteUrl($attachUrl)
     {
         return $this->settings->get('qcloud_cos_sign_url', 'qcloud', true)

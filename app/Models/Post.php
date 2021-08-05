@@ -735,6 +735,10 @@ class Post extends DzqModel
         $content = strip_tags($content);
         if (mb_strlen($content) > self::SUMMARY_LENGTH) {
             $content = Str::substr($content, 0, self::SUMMARY_LENGTH) . self::SUMMARY_END_WITH;
+            //针对最后的表情被截断的情况做截断处理
+            $content = preg_replace('/([^\w])\:\w*\.\.\./s', '$1...', $content);
+            //处理内容开头是表情，表情被截断的情况
+            $content = preg_replace('/^\:\w*\.\.\./s', '...', $content);
         }
         return $content;
     }

@@ -18,9 +18,11 @@
 
 namespace App\Api\Controller\UsersV3;
 
+use App\Censor\Censor;
 use App\Commands\Users\UpdateClientUser;
 use App\Common\CacheKey;
 use App\Common\ResponseCode;
+use App\Models\User;
 use App\Repositories\UserRepository;
 use Discuz\Base\DzqCache;
 use Discuz\Base\DzqController;
@@ -40,11 +42,13 @@ class UpdateUsersController extends DzqController
     protected $settings;
     protected $passwordLength = 6;
     protected $passwordStrength = [];
+    protected $censor;
 
-    public function __construct(Dispatcher $bus, SettingsRepository $settings)
+    public function __construct(Dispatcher $bus, SettingsRepository $settings, Censor $censor)
     {
         $this->bus = $bus;
         $this->settings = $settings;
+        $this->censor = $censor;
     }
 
     // 权限检查
@@ -158,8 +162,24 @@ class UpdateUsersController extends DzqController
         if (!empty($registerReason)) {
             $requestData['register_reason'] = $registerReason;
         }
-        if (!empty($nickname)) {
-            $requestData['nickname'] = $nickname;
+
+        if (isset($this->request->getParsedBody()['nickname'])){
+            if (empty($nickname)) {
+                $this->outPut(ResponseCode::INVALID_PARAMETER,'昵称不能为空');
+            }
+            $isHasSpace = strpos($nickname,' ');
+            if ($isHasSpace !== false) {
+                $this->outPut(ResponseCode::USERNAME_NOT_ALLOW_HAS_SPACE, '昵称不允许包含空格');
+            }
+            $isExists = User::query()->where('nickname', $nickname)->where('id', '<>', $id)->exists();
+            if (!empty($isExists)) {
+                $this->outPut(ResponseCode::USERNAME_HAD_EXIST, '昵称已经存在');
+            }
+            $this->censor->checkText($nickname,'nickname');
+            if (!empty($nickname)) {
+                $requestData['nickname'] = $nickname;
+            }
+
         }
 
         $result = $this->bus->dispatch(
@@ -188,7 +208,7 @@ class UpdateUsersController extends DzqController
         }
         $returnData['signature'] = $data['signature'];
 
-        return $this->outPut(ResponseCode::SUCCESS, '', $returnData);
+        $this->outPut(ResponseCode::SUCCESS, '', $returnData);
     }
 
     protected function getPasswordRules()

@@ -17,9 +17,11 @@
 
 namespace App\Api\Controller\ThreadsV3;
 
+use App\Api\Serializer\AttachmentSerializer;
 use App\Censor\Censor;
 use App\Common\CacheKey;
 use App\Common\ResponseCode;
+use App\Models\Attachment;
 use App\Traits\PostNoticesTrait;
 use Discuz\Base\DzqCache;
 use App\Formatter\Formatter;
@@ -106,7 +108,7 @@ trait ThreadTrait
             $concatString = $thread['title'] . $post['content'];
             list($searches, $replaces) = ThreadHelper::getThreadSearchReplace($concatString);
             $result['title'] = str_replace($searches, $replaces, $result['title']);
-            $result['content']['text'] = str_replace($searches, $replaces, $result['content']['text']);
+//            $result['content']['text'] = str_replace($searches, $replaces, $result['content']['text']);
         }
         return $result;
     }
@@ -324,6 +326,10 @@ trait ThreadTrait
                         $text = strip_tags($post['content']);
                         $freeLength = mb_strlen($text) * $freeWords;
                         $text = mb_substr($text, 0, $freeLength) . Post::SUMMARY_END_WITH;
+                        //针对最后的表情被截断的情况做截断处理
+                        $text = preg_replace('/([^\w])\:\w*\.\.\./s', '$1...', $text);
+                        //处理内容开头是表情，表情被截断的情况
+                        $text = preg_replace('/^\:\w*\.\.\./s', '...', $text);
                     }
                 }
                 $content['text'] = $text;
@@ -354,21 +360,52 @@ trait ThreadTrait
                     }
                 }
             }
-            if (!empty($body)) {
+            if (!empty($body) || strpos($content['text'], '<img') !== false) {
                 $attachments_body = $body;
-                $attachments = array_combine(array_column($attachments_body, 'id'), array_column($attachments_body, 'url'));
+                $attachments = [];
+                if(!empty($body)){
+                    $attachments = array_combine(array_column($attachments_body, 'id'), array_column($attachments_body, 'url'));
+                }
                 $isset_attachment_ids = [];
-                $xml = preg_replace_callback(
-                    '<img src="(.*?)" alt="(.*?)" title="(\d+)">',
-                    function ($m) use ($attachments, &$isset_attachment_ids) {
-                        if (!empty($m)) {
-                            $id = trim($m[3], '"');
-                            $isset_attachment_ids[] = $id;
-                            return 'img src="' . $attachments[$id] . '" alt="' . $m[2] . '" title="' . $id . '"';
+                //这里增加 前端拖拽图片的图文混排的形式
+                if(strpos($xml, 'attachmentId') !== false){
+                    preg_match_all('/attachmentId-(\d+)/', $xml, $attachmentIds_all);
+                }
+                if(!empty($attachmentIds_all[1])){
+                    $content_attachments = Attachment::query()->whereIn('id', $attachmentIds_all[1])->get();
+                    if(!empty($content_attachments)){
+                        $serializer = $this->app->make(AttachmentSerializer::class);
+                        foreach ($content_attachments as $val){
+                            $attachments[$val->id] = $serializer->getImgUrl($val);
                         }
-                    },
-                    $xml
-                );
+                    }
+                }
+                if(!empty($attachments)){
+                    $xml = preg_replace_callback(
+                        '<img src="(.*)" alt="attachmentId-(\d+)" />',
+                        function ($m) use ($attachments) {
+                            if (!empty($m)) {
+                                $id = trim($m[2], '"');
+                                return 'img src="' . $attachments[$id] . '" alt="attachmentId-' . $id . '"';
+                            }
+                        },
+                        $xml
+                    );
+                    $xml = preg_replace_callback(
+                        '<img src="(.*?)" alt="(.*?)" title="(\d+)">',
+                        function ($m) use ($attachments, &$isset_attachment_ids) {
+                            if (!empty($m)) {
+                                $id = trim($m[3], '"');
+                                $isset_attachment_ids[] = $id;
+                                return 'img src="' . $attachments[$id] . '" alt="' . $m[2] . '" title="' . $id . '"';
+                            }
+                        },
+                        $xml
+                    );
+                }
+
+
+
                 //针对图文混排的情况，这里要去掉外部图片展示
 //                if (!empty($tom_image_key)) unset($content['indexes'][$tom_image_key]);
                 $content['text'] = $xml;
@@ -631,13 +668,14 @@ trait ThreadTrait
         }
         $call = $call[0];
         $call = str_replace(['@', ' '], '', $call);
-        $ats = User::query()->select('id', 'username')->whereIn('username', $call)->get()->map(function ($item) {
-            $item['username'] = '@' . $item['username'];
-            $item['html'] = sprintf('<span id="member" value="%s">%s</span>', $item['id'], $item['username']);
+        $ats = User::query()->select('id', 'nickname')->whereIn('nickname', $call)->get()->map(function ($item) {
+            $item['nickname'] = '@' . $item['nickname'];
+            $item['html'] = sprintf('<span id="member" value="%s">%s</span>', $item['id'], $item['nickname']);
             return $item;
         })->toArray();
         foreach ($ats as $val) {
-            $text = preg_replace("/{$val['username']}/", "{$val['html']}", $text, 1);
+            $val['nickname'] = preg_quote($val['nickname']);
+            $text = preg_replace("/{$val['nickname']}/", "{$val['html']}", $text, 1);
         }
         return $text;
     }

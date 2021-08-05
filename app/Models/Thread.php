@@ -172,6 +172,9 @@ class Thread extends DzqModel
     const ORDER_TITLE_LENGTH = 20;
     const ORDER_TITLE_END_WITH = '...';
 
+    const CRAWLER_DATA_PLATFORM_OF_WEIBO = 1;
+
+    const CREATE_CRAWLER_DATA_LIMIT_MINUTE_TIME = 60;
 
     /**
      * {@inheritdoc}

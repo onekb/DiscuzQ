@@ -80,7 +80,7 @@ trait ThreadListTrait
         list($searches, $replaces) = ThreadHelper::getThreadSearchReplace($concatString);
         foreach ($result as &$item) {
             $item['title'] = str_replace($searches, $replaces, $item['title']);
-            $text = str_replace($searches, $replaces, $item['content']['text']);
+//            $text = str_replace($searches, $replaces, $item['content']['text']);
             if ($isList) {
                 $maxText = 5000;
                 //todo 等待前端解决表情导致文字内容过长的问题
@@ -88,7 +88,7 @@ trait ThreadListTrait
 //                    $text = mb_substr($text, 0, $maxText) . '...';
 //                }
             }
-            $item['content']['text'] = $text;
+//            $item['content']['text'] = $text;
         }
         return $result;
     }

@@ -19,7 +19,6 @@
 namespace App\Commands\Users;
 
 use App\Censor\Censor;
-use App\Censor\CensorNotPassedException;
 use App\Common\ResponseCode;
 use App\Events\Users\Registered;
 use App\Events\Users\Saving;
@@ -52,11 +51,10 @@ class AutoRegisterUser
 
     /**
      * @param Dispatcher $events
-     * @param Censor $censor
      * @param SettingsRepository $settings
      * @return User
      */
-    public function handle(Dispatcher $events, Censor $censor, SettingsRepository $settings)
+    public function handle(Dispatcher $events, SettingsRepository $settings)
     {
         $this->events = $events;
         $request = app('request');
@@ -66,27 +64,10 @@ class AutoRegisterUser
         //自动注册没有密码，后续用户可以设置密码
         $this->data['password'] = '';
 
-        DzqLog::info('begin_auto_register_user_process_checkText', ['data' => $this->data] ,DzqLog::LOG_LOGIN);
-        // 敏感词校验
-        try {
-            $username = $censor->checkText(Arr::get($this->data, 'username'), 'username');
-        } catch (\Exception $e) {
-            DzqLog::error('checkText_error', [
-                'username'   => Arr::get($this->data, 'username')
-            ], $e->getMessage());
-            Utils::outPut(ResponseCode::NET_ERROR, '敏感词检测异常');
-        }
+        $this->checkName('username');
+        $this->checkName('nickname');
 
-        DzqLog::info('end_auto_register_user_process_checkText', ['data' => $this->data] ,DzqLog::LOG_LOGIN);
-        $username = preg_replace('/\s/ui', '', $username);
-        $exists = User::where('username', $username)->exists();
-        if ($exists) {
-            $this->data['username'] = User::getNewUsername();
-        } else {
-            $this->data['username'] = $username;
-        }
-        DzqLog::info('auto_register_user_process', ['data' => $this->data] ,DzqLog::LOG_LOGIN);
-        $this->data['nickname'] = $censor->checkText(Arr::get($this->data, 'nickname'), 'nickname');
+        DzqLog::info('auto_register_user_process', ['data' => $this->data], DzqLog::LOG_LOGIN);
 
         // 审核模式，设置注册为审核状态
         if ($settings->get('register_validate')) {
@@ -111,6 +92,8 @@ class AutoRegisterUser
             'status'
         ]));
 
+        DzqLog::info('end_register_user', ['data' => $this->data, 'user' => $user], DzqLog::LOG_LOGIN);
+
         $this->events->dispatch(
             new Saving($user, $this->actor, $this->data)
         );
@@ -122,5 +105,30 @@ class AutoRegisterUser
         $this->dispatchEventsFor($user, $this->actor);
 
         return $user;
+    }
+
+    private function checkName($name = 'username')
+    {
+        $censor = app(Censor::class);
+        DzqLog::info('begin_check_'.$name.'_process_checkText', ['data' => $this->data], DzqLog::LOG_LOGIN);
+        try {
+            $content = $censor->checkText(Arr::get($this->data, $name), $name);
+        } catch (\Exception $e) {
+            DzqLog::error('checkText_error', [
+                $name   => Arr::get($this->data, $name)
+            ], $e->getMessage());
+            $preMsg = $name == 'username' ? '用户名' : '昵称';
+            Utils::outPut(ResponseCode::NET_ERROR, $preMsg.'敏感词检测异常');
+        }
+        DzqLog::info('end_check_'.$name.'_process_checkText', ['data' => $this->data], DzqLog::LOG_LOGIN);
+        $content = preg_replace('/\s/ui', '', $content);
+        $exists = User::where($name, $content)->exists();
+        if ($exists) {
+            $this->data[$name] = $name == 'username'
+                                    ? User::getNewUsername()
+                                    : User::addStringToNickname($content);
+        } else {
+            $this->data[$name] = $content;
+        }
     }
 }

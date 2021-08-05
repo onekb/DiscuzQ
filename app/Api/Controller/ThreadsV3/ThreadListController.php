@@ -48,6 +48,7 @@ class ThreadListController extends DzqController
     private $viewHotList = false;
     protected $settings;
 
+    private $group = null;
 
     public function __construct(SettingsRepository $settings)
     {
@@ -60,6 +61,7 @@ class ThreadListController extends DzqController
         $categoryIds = $filter['categoryids'] ?? [];
         $complex = $filter['complex'] ?? null;
         $user = $this->user;
+        $this->group = $user->groups->toArray();
         $this->viewHotList();
         $this->categoryIds = Category::instance()->getValidCategoryIds($this->user, $categoryIds);
         if (!$this->viewHotList) {
@@ -90,8 +92,8 @@ class ThreadListController extends DzqController
 
     private function viewHotList()
     {
-        $groups = $this->user->groups->toArray();
-        $group = current($groups);
+        $group = $this->group;
+        $group = current($group);
         $paid = boolval($this->inPut('pay'));
         if (!empty($group)) {
             if (($group['id'] == Group::UNPAID || $group['id'] == Group::GUEST_ID) && $paid) {
@@ -468,7 +470,7 @@ class ThreadListController extends DzqController
 
     private function filterKey($perPage, $filter, $withLoginUser = false)
     {
-        $serialize = ['perPage' => $perPage, 'filter' => $filter];
+        $serialize = ['perPage' => $perPage, 'filter' => $filter,'group'=>$this->group];
         $withLoginUser && $serialize['user'] = $this->user->id;
         return md5(serialize($serialize));
     }

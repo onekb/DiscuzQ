@@ -58,7 +58,7 @@ class ImageBusi extends TomBaseBusi
         $thread = DzqCache::hGet(CacheKey::LIST_THREADS_V3_THREADS, $threadId, function ($threadId) {
             return Thread::getOneThread($threadId, true);
         });
-        app('log')->info('帖子id:'.$threadId.'帖子:'.json_encode($thread).'查询文件入参：' . json_encode($imageIds) .'缓存查询出的参数' . json_encode($attachments));
+
         foreach ($attachments as $attachment) {
             if (!empty($thread)) {
                 $item = $this->camelData($serializer->getBeautyAttachment($attachment, $thread, $this->user));
@@ -69,7 +69,6 @@ class ImageBusi extends TomBaseBusi
                 $result[] = $item;
             }
         }
-        app('log')->info('帖子id:'.$threadId.'图片出参日志:'.json_encode($result));
         return $this->jsonReturn($result);
     }
 }

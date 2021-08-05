@@ -21,6 +21,7 @@ namespace App\Api\Controller\CacheV3;
 use App\Common\ResponseCode;
 use App\Repositories\UserRepository;
 use Discuz\Auth\Exception\PermissionDeniedException;
+use Discuz\Base\DzqCache;
 use Discuz\Base\DzqController;
 use Discuz\Base\DzqLog;
 
@@ -37,7 +38,7 @@ class DeleteCacheController extends DzqController
     public function main()
     {
         try {
-            app('cache')->clear();
+            DzqCache::clear();
         } catch (\Exception $e) {
              DzqLog::error('cache_clear_failure', [$e->getMessage()]);
              return $this->outPut(ResponseCode::INTERNAL_ERROR, '清空缓存失败！');

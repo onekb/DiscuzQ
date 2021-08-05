@@ -72,6 +72,7 @@ class ManageThemeList extends DzqController
         $deletedAtEnd = $this->inPut('deletedAtEnd'); //删除结束时间
         $deletedNickname = $this->inPut('deletedNickname'); //删除帖子用户
         $categoryId = intval($this->inPut('categoryId')); //分类id
+        $topicId = intval($this->inPut('topicId')); //话题id
         $sort = $this->inPut('sort') ? $this->inPut('sort') : '-updated_at';     //排序
 
         $query = Thread::query()
@@ -149,6 +150,13 @@ class ManageThemeList extends DzqController
         $query->leftJoin('categories', 'categories.id', '=', 'threads.category_id');
         if (!empty($categoryId)) {
             $query->where('threads.category_id', $categoryId);
+        }
+
+        //话题Id
+        if (!empty($topicId)) {
+            $query->leftJoin('posts', 'posts.thread_id', '=', 'threads.id')
+                ->where('content', 'like', '%value="'.$topicId.'"%')
+                ->where('is_first', true);
         }
 
         //发帖时间筛选

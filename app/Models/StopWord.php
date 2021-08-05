@@ -63,6 +63,8 @@ class StopWord extends Model
      */
     const REPLACE = '{REPLACE}';
 
+    const LIMITCOUNT = 10000;
+
     /**
      * @var string[]
      */

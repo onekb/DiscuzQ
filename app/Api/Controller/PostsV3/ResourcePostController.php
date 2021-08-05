@@ -24,6 +24,7 @@ use App\Api\Serializer\AttachmentSerializer;
 use App\Api\Serializer\CommentPostSerializer;
 use App\Common\ResponseCode;
 use App\Models\Attachment;
+use App\Models\Group;
 use App\Models\UserWalletLog;
 use App\Models\GroupUser;
 use App\Models\Post;
@@ -153,6 +154,16 @@ class ResourcePostController extends DzqController
         }
         $users = User::query()->whereIn('id', $userIds)->get(['id','nickname','avatar','realname'])->toArray();
         $users = array_column($users, null, 'id');
+
+        $groupUsers = GroupUser::query()->whereIn('user_id',$userIds)->get(['group_id','user_id'])->toArray();
+        $groupId = array_column($groupUsers, 'group_id');
+        $userGroups = array_column($groupUsers, null, 'user_id');
+
+        $groups = Group::query()->whereIn('id',$groupId)->get(['id','name','is_display'])->toArray();
+        $groupInfo = array_column($groups, null, 'id');
+        foreach ($users as $k=>$val){
+            $users[$k]['groups'] = $this->getGroup($groupInfo,$userGroups,$k);
+        }
         return $users;
     }
 
@@ -198,5 +209,12 @@ class ResourcePostController extends DzqController
         ];
     }
 
+    protected function getGroup($groupInfo,$userGroups,$k){
+        return [
+            'id' => !empty($groupInfo[$userGroups[$k]['group_id']]['id']) ? $groupInfo[$userGroups[$k]['group_id']]['id'] : null,
+            'name' => !empty($groupInfo[$userGroups[$k]['group_id']]['name']) ? $groupInfo[$userGroups[$k]['group_id']]['name'] : null,
+            'isDisplay' => !empty($groupInfo[$userGroups[$k]['group_id']]['is_display']) ? $groupInfo[$userGroups[$k]['group_id']]['is_display'] : false
+        ];
+    }
 
 }

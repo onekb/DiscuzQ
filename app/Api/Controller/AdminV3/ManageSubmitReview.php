@@ -18,6 +18,7 @@
 namespace App\Api\Controller\AdminV3;
 
 use App\Common\CacheKey;
+use App\Events\Post\PostWasApproved;
 use App\Events\Post\Saved;
 use App\Models\AdminActionLog;
 use App\Models\Category;
@@ -103,7 +104,7 @@ class ManageSubmitReview extends DzqController
                 $threadTitle = '【'. $v->title .'】';
             }
             //审核主题
-            if (empty($v->deleted_at) && in_array($arr[$v->id]['isApproved'], [1, 2]) && $v->is_approved != $arr[$v->id]['isApproved']) {
+            if (isset($arr[$v->id]['isApproved']) && empty($v->deleted_at) && in_array($arr[$v->id]['isApproved'], [1, 2]) && $v->is_approved != $arr[$v->id]['isApproved']) {
 
                 $v->is_approved = $arr[$v->id]['isApproved'];
                 $v->save();
@@ -118,10 +119,9 @@ class ManageSubmitReview extends DzqController
                     $action_desc = $threadTitle.',被忽略';
                 }
 
-
                 $logArr[] = $this->logs('用户主题帖'. $action_desc);
                 //删除主题
-            }else if (in_array($arr[$v->id]['isDeleted'],[true, false])) {
+            }else if (isset($arr[$v->id]['isDeleted']) && in_array($arr[$v->id]['isDeleted'],[true, false])) {
 
                 if ($arr[$v->id]['isDeleted'] == true) {
                     //软删除
@@ -175,9 +175,10 @@ class ManageSubmitReview extends DzqController
             Thread::query()->whereIn('id',$deleteThreads)->delete();
         }
 
-        if (isset($threadIds)) {
+        // 重复发送@通知了
+        /* if (isset($threadIds)) {
             $this->threadsSendMiddleware($threadIds);
-        }
+        } */
 
         CacheKey::delListCache();
         return $logArr;
@@ -202,7 +203,7 @@ class ManageSubmitReview extends DzqController
                 $threadContent = '【'. $v->content .'】';
             }
             //审核回复
-            if (empty($v->deleted_at) && in_array($arr[$v->id]['isApproved'], [1, 2]) && $v->is_approved != $arr[$v->id]['isApproved']) {
+            if (isset($arr[$v->id]['isApproved']) && empty($v->deleted_at) && in_array($arr[$v->id]['isApproved'], [1, 2]) && $v->is_approved != $arr[$v->id]['isApproved']) {
 
                 $v->is_approved = $arr[$v->id]['isApproved'];
                 $v->save();
@@ -222,7 +223,7 @@ class ManageSubmitReview extends DzqController
                 $logArr[] = $this->logs('用户回复评论'. $action_desc);
 
                 //删除回复
-            } else if (in_array($arr[$v->id]['isDeleted'],[true, false])) {
+            } else if (isset($arr[$v->id]['isDeleted']) && in_array($arr[$v->id]['isDeleted'],[true, false])) {
 
                 if ($arr[$v->id]['isDeleted'] == true) {
 
@@ -288,7 +289,7 @@ class ManageSubmitReview extends DzqController
             ->where('is_first',true)
             ->get();
 
-        foreach ($posts as $key=>$post) {
+        foreach ($posts as $key => $post) {
             if (empty($post->parsedContent)) {
                 continue;
             }
@@ -303,13 +304,21 @@ class ManageSubmitReview extends DzqController
             if (empty($users)) {
                 continue;
             }
-            $this->sendRelated($post, $actor, $users);
+
+            $this->sendUserRelated($post, $actor, $users);
         }
     }
 
-    //评论发帖@用户判断处理
+    //评论审核、发帖@、领取红包、回复通知处理
     public function postSendMiddleware($post){
-        if (empty($post->parsedContent)) {
+        $this->events = app()->make(Dispatcher::class);
+        $actor = User::query()->where('id', $post->thread->user_id)->first();
+        $post->raise(
+            new PostWasApproved($post, $actor, ['message' => ''])
+        );
+        $this->dispatchEventsFor($post, $actor);
+
+        /* if (empty($post->parsedContent)) {
             return;
         }
 
@@ -326,7 +335,7 @@ class ManageSubmitReview extends DzqController
             return;
         }
 
-        $this->sendRelated($post, $actor, $users);
+        $this->sendRelated($post, $actor, $users); */
     }
 
     //发送@内容处理
@@ -349,7 +358,7 @@ class ManageSubmitReview extends DzqController
     }
 
     //发帖@用户发送通知消息
-    private function sendRelated($post, $actor, $users)
+    private function sendUserRelated($post, $actor, $users)
     {
         $post->mentionUsers()->sync(array_column($users->toArray(), 'id'));
 

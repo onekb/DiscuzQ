@@ -102,6 +102,9 @@ trait PostNoticesTrait
             return ! in_array($post->user_id, array_column($user->deny->toArray(), 'id'));
         })->each(function (User $user) use ($post, $actor) {
             // Tag 发送通知
+            if ($post->is_approved == Post::UNAPPROVED) {
+                return;
+            }
             $user->notify(new Related($actor, $post));
         });
     }

@@ -181,9 +181,10 @@ class CreatePostController extends DzqController
         $build = $this->getPost($post, true);
         $data = $this->camelData($build);
         // 返回content要解析后的，方便前端直接展示最新的数据
-        $content = str_replace(['<r>', '</r>', '<t>', '</t>'], ['', '', '', ''], $content);
-        list($searches, $replaces) = ThreadHelper::getThreadSearchReplace($content);
-        $data['content'] = str_replace($searches, $replaces, $content);
+//        $content = str_replace(['<r>', '</r>', '<t>', '</t>'], ['', '', '', ''], $content);
+//        list($searches, $replaces) = ThreadHelper::getThreadSearchReplace($content);
+//        $data['content'] = str_replace($searches, $replaces, $content);
+        $data['content'] = $content;
 
         return $this->outPut(ResponseCode::SUCCESS, '', $data);
     }
@@ -272,11 +273,10 @@ class CreatePostController extends DzqController
         $userIds = [$userId];
         $groups = GroupUser::instance()->getGroupInfo($userIds);
         $groups = array_column($groups, null, 'user_id');
-
+        $group = [];
         if (!empty($groups[$userId])) {
             $group = $this->getGroupInfo($groups[$userId]);
         }
-        $group = [$group];
 
         return [
             'id' => $user['id'],

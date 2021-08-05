@@ -180,11 +180,10 @@ class PostListener
 
             $action = 'approve';
 
-            if ($post->thread->is_red_packet == Thread::HAVE_RED_PACKET) { //当过审的回复为红包帖的回复时触发领红包事件
-                $this->bus->dispatch(
-                    new Saved($post, $post->user, $event->data)
-                );
-            }
+            $this->bus->dispatch(
+                new Saved($post, $post->user, $event->data)
+            );
+
         } elseif ($post->is_approved === Post::IGNORED) {
             $action = 'ignore';
         } else {
@@ -272,6 +271,10 @@ class PostListener
         $post = $event->post;
         //是否草稿
         if($post->thread->is_draft == 1){
+            return;
+        }
+
+        if (isset($event->data['attributes']['isLiked'])){
             return;
         }
 

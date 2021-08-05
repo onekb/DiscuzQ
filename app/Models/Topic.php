@@ -73,6 +73,7 @@ class Topic extends Model
         $threadCount = ThreadTopic::join('threads', 'threads.id', 'thread_topic.thread_id')
             ->where('thread_topic.topic_id', $this->id)
             ->where('threads.is_approved', Thread::APPROVED)
+            ->where('threads.is_draft', Thread::IS_NOT_DRAFT)
             ->whereNull('threads.deleted_at')
             ->whereNotNull('user_id')
             ->count();
@@ -89,6 +90,7 @@ class Topic extends Model
         $viewCount = ThreadTopic::join('threads', 'threads.id', 'thread_topic.thread_id')
             ->where('thread_topic.topic_id', $this->id)
             ->where('threads.is_approved', Thread::APPROVED)
+            ->where('threads.is_draft', Thread::IS_NOT_DRAFT)
             ->whereNull('threads.deleted_at')
             ->sum('view_count');
         $this->view_count = $viewCount;

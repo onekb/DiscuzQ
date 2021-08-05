@@ -98,10 +98,11 @@ class BasicPostSerializer extends AbstractSerializer
         if($thread['type'] != Thread::TYPE_OF_ALL){
             $attributes['content']  =  app()->make(Formatter::class)->render($model->content);
         }else{
-            $content = str_replace(['<t><p>', '</p></t>'], ['', ''],$model->content);
+//            $content = str_replace(['<t><p>', '</p></t>'], ['', ''],$model->content);
             //针对新数据格式的 post，使用内部封装方法正则
-            list($searches, $replaces) = ThreadHelper::getThreadSearchReplace($content);
-            $attributes['content'] = str_replace($searches, $replaces, $content);
+//            list($searches, $replaces) = ThreadHelper::getThreadSearchReplace($content);
+//            $attributes['content'] = str_replace($searches, $replaces, $content);
+            $attributes['content'] = $model->content;
         }
 
 
