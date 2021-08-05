@@ -71,7 +71,7 @@ class WechatPcRebindQrCodeController extends AuthBaseController
     //        if (true) {
                 //获取小程序全局token
                 $app = $this->miniProgram();
-                $optional['path'] = '/pages/user/pc-login';
+                $optional['path'] = 'subPages/user/wx-rebind-action/index';
                 $wxqrcodeResponse = $app->app_code->getUnlimit($sessionToken, $optional);
                 if(is_array($wxqrcodeResponse) && isset($wxqrcodeResponse['errcode']) && isset($wxqrcodeResponse['errmsg'])) {
                     //todo 日志记录
@@ -90,7 +90,14 @@ class WechatPcRebindQrCodeController extends AuthBaseController
                 $redirectUri = urldecode($this->inPut('redirectUri'));
                 $conData = $this->parseUrlQuery($redirectUri);
                 $redirectUri = $conData['url'];
-                $locationUrl = $this->url->action('/apiv3/users/wechat/h5.oauth?redirect='.$redirectUri);
+                $locationUrl = $this->url->action(
+                    '/apiv3/users/wechat/h5.oauth?redirect='.$redirectUri,
+                    ['sessionToken' => $sessionToken]
+                );
+                $locationUrlArr = explode('redirect=', $locationUrl);
+                $locationUrl = $locationUrlArr[0].'redirect='.urlencode($locationUrlArr[1]);
+                //去掉无参数时最后一个是 ? 的字符
+                $locationUrl = rtrim($locationUrl, "?");
 
                 $qrCode = new QrCode($locationUrl);
 
@@ -107,7 +114,7 @@ class WechatPcRebindQrCodeController extends AuthBaseController
             DzqLog::error('wechat_pc_rebind_qr_code_api_error', [
                 'redirectUri' => $this->inPut('redirectUri')
             ], $e->getMessage());
-            return $this->outPut(ResponseCode::INTERNAL_ERROR, 'pc换绑二维码生成接口异常');
+            $this->outPut(ResponseCode::INTERNAL_ERROR, 'pc换绑二维码生成接口异常');
         }
     }
 

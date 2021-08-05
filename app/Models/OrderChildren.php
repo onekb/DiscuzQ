@@ -25,4 +25,9 @@ class OrderChildren extends Model
 {
     public $timestamps = false;
     protected $table = 'order_children';
+
+    const TYPE_REDPACKET = 9;
+    const TYPE_REWARD = 10;
+
+
 }

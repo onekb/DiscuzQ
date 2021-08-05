@@ -26,6 +26,7 @@ use App\Events\Users\PayPasswordChanged;
 use App\Exceptions\TranslatorException;
 use App\Models\Group;
 use App\Models\GroupPaidUser;
+use App\Models\Order;
 use App\Models\User;
 use App\Common\ResponseCode;
 use App\Models\UserActionLogs;
@@ -457,11 +458,23 @@ class UpdateAdminUser
     protected function changeExpiredAt(User $user, array $attributes)
     {
         $expiredAt = Arr::get($attributes, 'expired_at');
-        if (! $expiredAt) {
+        //如果没有修改过期时间，就return
+        if (! $expiredAt || $user->expired_at == Carbon::parse($expiredAt)) {
             return;
         }
 
         $user->expired_at = Carbon::parse($expiredAt);
+        //修改过了过期时间，还需要将对应的 order 表中的 expired_at 修改
+        $order = $user->orders()
+            ->whereIn('type', [Order::ORDER_TYPE_REGISTER, Order::ORDER_TYPE_RENEW])
+            ->where('status', Order::ORDER_STATUS_PAID)
+            ->orderBy('id', 'desc')
+            ->first();
+        if(!empty($order)){
+            $order->expired_at = Carbon::parse($expiredAt);
+            $order->save();
+        }
+
     }
 
     /**

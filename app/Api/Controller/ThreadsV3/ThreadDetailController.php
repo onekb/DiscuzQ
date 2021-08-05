@@ -72,7 +72,8 @@ class ThreadDetailController extends DzqController
             $this->outPut(ResponseCode::RESOURCE_NOT_FOUND, '用户不存在');
         }
         $group = Group::getGroup($user['id']);
-        $thread->increment('view_count');
+        //前端控制浏览数
+//        $thread->increment('view_count');
         $tomInputIndexes = $this->getTomContent($thread);
         $result = $this->packThreadDetail($user, $group, $thread, $post, $tomInputIndexes['tomContent'], true, $tomInputIndexes['tags']);
         $result['orderInfo'] = [];

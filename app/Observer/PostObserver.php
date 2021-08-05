@@ -56,6 +56,7 @@ class PostObserver
 //            }
 //        }
 
+        $this->setPostedAt($post);
         $this->refreshSitePostCount();
     }
 
@@ -64,6 +65,7 @@ class PostObserver
      */
     public function updated(Post $post)
     {
+        $this->setPostedAt($post);
         if ($post->wasChanged(['is_approved', 'deleted_at'])) {
             if ($post->is_first) {
 //                $post->thread->is_approved = $post->is_approved;
@@ -90,6 +92,7 @@ class PostObserver
      */
     public function deleted(Post $post)
     {
+        $this->setPostedAt($post);
         $this->refreshUserLikedCount($post);
         $this->refreshSitePostCount();
     }
@@ -101,7 +104,7 @@ class PostObserver
      */
     private function refreshUserLikedCount(Post $post)
     {
-        if (! $post->is_first) {
+        if (!$post->is_first) {
             return;
         }
 
@@ -162,4 +165,24 @@ class PostObserver
                 ->count()
         );
     }
+
+    private function setPostedAt(Post $post)
+    {
+        $postedAt = null;
+        if ($post->is_first) return;
+        $lastPost = Post::query()
+            ->where([
+                'thread_id' => $post->thread_id,
+                'is_first' => Post::FIRST_NO,
+                'is_approved' => Post::APPROVED_YES
+            ])
+            ->whereNull('deleted_at')
+            ->orderByDesc('id')->first();
+        if (!empty($lastPost)) {
+            $postedAt = $lastPost->created_at;
+        }
+        $post->thread->posted_at = $postedAt;
+        $post->thread->save();
+    }
+
 }

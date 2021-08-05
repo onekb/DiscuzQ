@@ -20,6 +20,7 @@ namespace App\Commands\Trade\Notify;
 
 use App\Events\Order\Updated;
 use App\Models\Order;
+use App\Models\OrderChildren;
 use App\Models\UserWallet;
 use App\Models\UserWalletLog;
 use App\Settings\SettingsRepository;
@@ -74,8 +75,8 @@ class WalletPayNotify
             // 记录钱包变更明细
             switch ($this->data['type']) {
                 case Order::ORDER_TYPE_REGISTER:
-                    $change_type = UserWalletLog::TYPE_EXPEND_RENEW;
-                    $change_type_lang = 'wallet.expend_renew';
+                    $change_type = UserWalletLog::TYPE_EXPEND_REGISTER;
+                    $change_type_lang = 'wallet.expend_register';
                     break;
                 case Order::ORDER_TYPE_REWARD:
                     $change_type = UserWalletLog::TYPE_EXPEND_REWARD;
@@ -135,31 +136,125 @@ class WalletPayNotify
                     $freezeAmount = $this->data['amount'];
                     break;
                 case Order::ORDER_TYPE_MERGE:
-                    $change_type = UserWalletLog::TYPE_MERGE_FREEZE;
-                    $change_type_lang = 'wallet.merge_freeze';
-                    $updateData = ['available_amount' => $changeAvailableAmount, 'freeze_amount' => $changeFreezeAmount];
-                    $freezeAmount = $this->data['amount'];
+                    //合并订单支付 包含  红包 + 悬赏，这里需要拆分成两条钱包流水记录，
+                    //获取 order_children 子订单中红包、悬赏金额
+                    $order_children = OrderChildren::query()->where('order_sn', $this->data['order_sn'])->get(['type', 'amount'])->toArray();
+                    $redpacket_log = $reward_log = [];
+                    foreach ($order_children as $val){
+                        switch ($val['type']){
+                            case OrderChildren::TYPE_REDPACKET:
+                                $redpacket_log = $val;
+                                break;
+                            case OrderChildren::TYPE_REWARD:
+                                $reward_log = $val;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    //红包记录
+                    if(!empty($redpacket_log)){
+                        $change_type = UserWalletLog::TYPE_REDPACKET_FREEZE;
+                        $change_type_lang = 'wallet.redpacket_freeze';
+                        $updateData = [
+                            'available_amount' => bcsub($userWallet->available_amount, $redpacket_log['amount'], 2),
+                            'freeze_amount' => bcadd($userWallet->freeze_amount, $redpacket_log['amount'], 2)
+                        ];
+                        $freezeAmount = $redpacket_log['amount'];
+                        $res = UserWallet::query()->where('user_id', $this->data['user_id'])->update($updateData);
+                        $userWallet->available_amount = $updateData['available_amount'];
+                        $userWallet->freeze_amount = $updateData['freeze_amount'];
+                        if($res === false){
+                            $connection->rollback();
+                            $log->error('合并订单，扣除用户红包金额出错', $this->data);
+                            throw new ErrorException('合并订单，扣除用户红包金额出错', 500);
+                        }
+                        $res = UserWalletLog::createWalletLog(
+                            $this->data['user_id'],
+                            -$redpacket_log['amount'],
+                            $freezeAmount ?? 0,
+                            $change_type,
+                            trans($change_type_lang),
+                            null,
+                            $this->data['id'],
+                            0,
+                            0,
+                            0,
+                            $this->data['thread_id'] ?? 0
+                        );
+                        if($res === false){
+                            $connection->rollback();
+                            $log->error('合并订单，扣除红包，记录用户钱包明细出错', $this->data);
+                            throw new ErrorException('合并订单，扣除红包，记录用户钱包明细出错', 500);
+                        }
+                    }
+                    if(!empty($reward_log)){
+                        $change_type = UserWalletLog::TYPE_QUESTION_REWARD_FREEZE;
+                        $change_type_lang = 'wallet.question_reward_freeze';
+                        $updateData = [
+                            'available_amount' => bcsub($userWallet->available_amount, $reward_log['amount'], 2),
+                            'freeze_amount' => bcadd($userWallet->freeze_amount, $reward_log['amount'], 2)
+                        ];
+                        $freezeAmount = $reward_log['amount'];
+                        $res = UserWallet::query()->where('user_id', $this->data['user_id'])->update($updateData);
+                        if($res === false){
+                            $connection->rollback();
+                            $log->error('合并订单，扣除用户悬赏金额出错', $this->data);
+                            throw new ErrorException('合并订单，扣除用户悬赏金额出错', 500);
+                        }
+                        $res = UserWalletLog::createWalletLog(
+                            $this->data['user_id'],
+                            -$reward_log['amount'],
+                            $freezeAmount ?? 0,
+                            $change_type,
+                            trans($change_type_lang),
+                            null,
+                            $this->data['id'],
+                            0,
+                            0,
+                            0,
+                            $this->data['thread_id'] ?? 0
+                        );
+                        if($res === false){
+                            $connection->rollback();
+                            $log->error('合并订单，扣除悬赏，记录用户钱包明细出错', $this->data);
+                            throw new ErrorException('合并订单，扣除悬赏，记录用户钱包明细出错', 500);
+                        }
+                    }
                     break;
                 default:
                     $change_type = $this->data['type'];
                     $change_type_lang = '';
             }
 
-            $userWallet = UserWallet::query()->where('user_id', $this->data['user_id'])->update($updateData);
+            //合并订单的情况，前面单独处理了，这里就不处理了
+            if($this->data['type'] != Order::ORDER_TYPE_MERGE){
+                $res = UserWallet::query()->where('user_id', $this->data['user_id'])->update($updateData);
+                if($res === false){
+                    $connection->rollback();
+                    $log->error('钱包支付出错', $this->data);
+                    throw new ErrorException('钱包支付出错', 500);
+                }
+                $res = UserWalletLog::createWalletLog(
+                    $this->data['user_id'],
+                    -$this->data['amount'],
+                    $freezeAmount ?? 0,
+                    $change_type,
+                    trans($change_type_lang),
+                    null,
+                    $this->data['id'],
+                    0,
+                    0,
+                    0,
+                    $this->data['thread_id'] ?? 0
+                );
+                if($res === false){
+                    $connection->rollback();
+                    $log->error('钱包支付，增加用户钱包记录明细出错', $this->data);
+                    throw new ErrorException('钱包支付，增加用户钱包记录明细出错', 500);
+                }
+            }
 
-            UserWalletLog::createWalletLog(
-                $this->data['user_id'],
-                -$this->data['amount'],
-                $freezeAmount ?? 0,
-                $change_type,
-                trans($change_type_lang),
-                null,
-                $this->data['id'],
-                0,
-                0,
-                0,
-                $this->data['thread_id'] ?? 0
-            );
 
             // 支付成功处理
             $order_info = $this->paymentSuccess($payment_sn, $trade_no, $setting, $events);

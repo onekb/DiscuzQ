@@ -61,9 +61,7 @@ class ThreadListController extends DzqController
         $complex = $filter['complex'] ?? null;
         $user = $this->user;
         $this->viewHotList();
-
         $this->categoryIds = Category::instance()->getValidCategoryIds($this->user, $categoryIds);
-
         if (!$this->viewHotList) {
 //            if ($this->user->isGuest() && !$this->categoryIds) {
 //                $this->outPut(ResponseCode::JUMP_TO_LOGIN);
@@ -118,7 +116,7 @@ class ThreadListController extends DzqController
             $page = 1;
             $sequence = 0;
             $perPage = 10;
-            $filter = ['sort' => Thread::SORT_BY_HOT];
+            $filter['sort'] = Thread::SORT_BY_HOT;
         }
 //        $this->openQueryLog();
         $this->preloadCount = self::PRELOAD_PAGES * $perPage;
@@ -175,18 +173,6 @@ class ThreadListController extends DzqController
         if ($page == 1 && !$this->viewHotList) {
             $this->loadAllPage($cacheKey, $filterKey, $page, $threadsBuilder, $filter, $perPage);
         }
-        //        if ($this->preload) {
-//            $threads = $this->loadAllPage($cacheKey, $filterKey, $page, $threadsBuilder, $filter, $perPage);
-//        } else {
-//            $threads = $this->loadOnePage($cacheKey, $filterKey, $page, $threadsBuilder, $filter, $perPage);
-//            if (!$this->viewHotList) {
-//                $success = $this->preloadData($page);
-//                if (!$success) {
-//                    $this->info('pre_load_data_error', $filter);
-//                    $threads = $this->loadAllPage($cacheKey, $filterKey, $page, $threadsBuilder, $filter, $perPage);
-//                }
-//            }
-//        }
         return $this->loadOnePage($cacheKey, $filterKey, $page, $threadsBuilder, $filter, $perPage);
     }
 
@@ -203,7 +189,6 @@ class ThreadListController extends DzqController
             });
             return $threads;
         }, true);
-//        $this->initDzqUserData($this->user->id, $cacheKey, $filterKey, $this->preloadCount);
         return $threads;
     }
 
@@ -214,48 +199,6 @@ class ThreadListController extends DzqController
             $threads['pageData'] = array_column($threads['pageData'], 'id');
             return $threads;
         });
-    }
-
-    private function preloadData($page)
-    {
-        if ($page != 1) {
-            return true;
-        }
-        $url = $this->request->getUri();
-        $port = $url->getPort();
-        $path = $url->getPath();
-        $query = $url->getQuery();
-        $scheme = strtolower($url->getScheme());
-        $host = $url->getHost();
-        $getPath = $path . '?' . urldecode($query) . '&preload=1';
-        if ($port == null) {
-            $scheme == 'https' ? $port = 443 : $port = 80;
-        }
-        $authorization = $this->request->getHeader('authorization');
-        $timeout = 5;
-        $t = @fsockopen($host, $port);
-        !$t && $host = '127.0.0.1';
-        @fclose($t);
-        if ($scheme == 'https') {
-            $contextOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false]];
-            $fp = stream_socket_client("ssl://{$host}:{$port}",
-                $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT,
-                stream_context_create($contextOptions));
-        } else {
-            $fp = @fsockopen($host, $port, $errno, $errstr, $timeout);
-        }
-        if (!$fp) {
-            return false;
-        }
-        $headers = "GET " . $getPath . " HTTP/1.1\r\n";
-        $headers .= "Host: " . $host . "\r\n";
-        !empty($authorization[0]) && $headers .= "Authorization: " . $authorization[0] . "\r\n";
-        $headers .= "Content-Type: application/json;charset=utf-8\r\n";
-        $headers .= "Connection: close\r\n\r\n";
-        $result = @fwrite($fp, $headers);
-        usleep(1000);//防止用户没有配置client abort
-        @fclose($fp);
-        return $result;
     }
 
     /**
@@ -272,9 +215,11 @@ class ThreadListController extends DzqController
             'essence' => 'integer|in:0,1',
             'types' => 'array',
             'categoryids' => 'array',
-            'sort' => 'integer|in:1,2,3',
+            'sort' => 'integer|in:1,2,3,4',
             'attention' => 'integer|in:0,1',
-            'complex' => 'integer|in:1,2,3,4,5'
+            'complex' => 'integer|in:1,2,3,4,5',
+            'site' => 'integer|in:0,1',
+            'repeatedIds'=>'array'
         ]);
         $loginUserId = $this->user->id;
         $administrator = $this->user->isAdmin();
@@ -293,7 +238,8 @@ class ThreadListController extends DzqController
         isset($filter['attention']) && $attention = $filter['attention'];
         isset($filter['search']) && $search = $filter['search'];
         isset($filter['complex']) && $complex = $filter['complex'];
-
+        isset($filter['site']) && $site = $filter['site'];
+        isset($filter['repeatedIds']) && $repeatedIds = $filter['repeatedIds'];
         $categoryids = $this->categoryIds;
         $threads = $this->getBaseThreadsBuilder();
         if (!empty($complex)) {
@@ -363,6 +309,9 @@ class ThreadListController extends DzqController
                     $threads->whereBetween('th.created_at', [Carbon::parse('-7 days'), Carbon::now()]);
                     $threads->orderByDesc('th.view_count');
                     break;
+                case Thread::SORT_BY_RENEW://按照更新时间排序
+                    $threads->orderByDesc('th.updated_at');
+                    break;
                 default:
                     $threads->orderByDesc('th.id');
                     break;
@@ -382,6 +331,13 @@ class ThreadListController extends DzqController
                 $threads = $threads->whereNotIn('th.user_id', $denyUserIds);
                 $withLoginUser = true;
             }
+        }
+
+        if(!empty($site)){
+            $threads = $threads->where('th.is_site', Thread::IS_SITE);
+        }
+        if(!empty($repeatedIds)){
+            $threads = $threads->whereNotIn('th.id', $repeatedIds);
         }
         !empty($categoryids) && $threads->whereIn('category_id', $categoryids);
         return $threads;

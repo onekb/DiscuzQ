@@ -317,12 +317,10 @@ trait ThreadTrait
                 $content['text'] = $post['content'];
                 $content['indexes'] = $this->tomDispatcher($tomInput, $this->SELECT_FUNC, $thread['id'], null, $canViewTom);
             } else {
-                $text = '';
-                if ($payType == Thread::PAY_ATTACH) {
-                    $text = $post['content'];
-                } else if ($payType == Thread::PAY_THREAD) {
-                    $freeWords = $thread['free_words'];
-                    if (floatval($freeWords) > 0) {
+                $text = $post['content'];;
+                if ($payType == Thread::PAY_THREAD) {
+                    $freeWords = floatval($thread['free_words']);
+                    if ($freeWords >= 0 && $freeWords < 1) {
                         $text = strip_tags($post['content']);
                         $freeLength = mb_strlen($text) * $freeWords;
                         $text = mb_substr($text, 0, $freeLength) . Post::SUMMARY_END_WITH;
@@ -348,12 +346,11 @@ trait ThreadTrait
         //考虑到升级V3，帖子的type 都要转为 99，所以针对 type 为 99 的也需要处理图文混排
         if (!empty($content['text'])) {
             $xml = $content['text'];
-            $tom_image_key = $body = '';
+            $body = '';
             if (!empty($content['indexes'])) {
                 foreach ($content['indexes'] as $key => $val) {
                     if ($val['tomId'] == TomConfig::TOM_IMAGE) {
                         $body = $val['body'];
-                        $tom_image_key = $key;
                     }
                 }
             }

@@ -205,10 +205,11 @@ class PayOrder
                 $order_info->body = trans('order.order_type_attachment');
                 break;
             case Order::ORDER_TYPE_RENEW:
-                $site_expire = $this->setting->get('site_expire');
+                // 站点有效期可为空，为空表示永久有效
+//                $site_expire = $this->setting->get('site_expire');
                 $site_price = $this->setting->get('site_price');
-                if(empty($site_expire) || empty($site_price)){
-                    app('payLog')->info("站点续费settings表字段site_expire和site_price必须大于0");
+                if(empty($site_price)){
+                    app('payLog')->info("站点续费settings表字段site_price必须大于0");
                     throw new Exception(trans('order.not_find_site_expire_site_price'));
                 }
                 $order_info->body = trans('order.order_type_renew');

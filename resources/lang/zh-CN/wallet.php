@@ -40,6 +40,7 @@ return [
     'income_scale_attachment'   => '分成付费附件收入',
     'income_thread_reward'      => '悬赏问答答题收入',
 
+    'expend_register'           => '注册支出',
     'expend_renew'              => '站点续费支出',
     'expend_reward'             => '打赏主题支出',
     'expend_thread'             => '付费主题支出',

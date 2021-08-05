@@ -19,7 +19,8 @@
 		"lokielse/omnipay-wechatpay": "^3.0",
 		"overtrue/wechat": "~4.0",
 		"s9e/text-formatter": "^2.3",
-        "doctrine/dbal": "^2.12.0"
+        "doctrine/dbal": "^2.12.0",
+        "qcloud/vod-sdk-v5": "^2.0"
     },
 	"config" : {
 		"optimize-autoloader" : true,

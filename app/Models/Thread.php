@@ -139,6 +139,7 @@ class Thread extends DzqModel
     const  SORT_BY_THREAD = 1;//帖子创建时间排序
     const  SORT_BY_POST = 2;//评论创建时间排序
     const SORT_BY_HOT = 3;//热度排序
+    const SORT_BY_RENEW = 4;//帖子更新时间排序
 
     const MY_DRAFT_THREAD = 1;//我的草稿
     const MY_LIKE_THREAD = 2;//我的点赞
@@ -161,6 +162,9 @@ class Thread extends DzqModel
     const PAY_FREE = 0;
     const PAY_THREAD = 1;
     const PAY_ATTACH = 2;
+
+    const IS_SITE = 1;
+    const IS_NOT_SITE = 0;
 
     /**
      * 订单标题展示长度
@@ -341,7 +345,7 @@ class Thread extends DzqModel
     {
         $this->last_posted_user_id = $post->user_id;
         $this->updated_at = $post->created_at->gt($this->updated_at) ? $post->created_at : $this->updated_at;
-        $this->posted_at = $post->created_at;
+//        $this->posted_at = $post->created_at;
         return $this;
     }
 

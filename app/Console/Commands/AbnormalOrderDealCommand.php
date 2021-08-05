@@ -90,8 +90,8 @@ class AbnormalOrderDealCommand extends AbstractCommand
         $query->where(function ($query){
             $query->whereNull('thread_id')->orWhere('thread_id', 0);
         });
-        $order = $query->get();
 
+        $order = $query->get();
         $bar = $this->createProgressBar(count($order));
         $bar->start();
         $this->info('');
@@ -113,8 +113,26 @@ class AbnormalOrderDealCommand extends AbstractCommand
                 $changeType = UserWalletLog::TYPE_QUESTION_ORDER_ABNORMAL_REFUND;// 163 悬赏订单异常退款
                 $changeDesc = trans('wallet.question_order_abnormal_refund');
             } elseif ($item->type == Order::ORDER_TYPE_MERGE) {
-                $changeType = UserWalletLog::TYPE_MERGE_ORDER_ABNORMAL_REFUND;// 172 合并订单异常退款
-                $changeDesc = trans('wallet.merge_order_abnormal_refund');
+                //合并订单支付 包含  红包 + 悬赏，这里需要拆分成两条钱包流水记录，
+                $changeType = $changeDesc = $merge_amount = [];
+                //获取 order_children 子订单中红包、悬赏金额
+                $order_children = OrderChildren::query()->where('order_sn', $item->order_sn)->get(['type', 'amount'])->toArray();
+                foreach ($order_children as $val){
+                    switch ($val['type']){
+                        case OrderChildren::TYPE_REDPACKET:
+                            $changeType[] = UserWalletLog::TYPE_REDPACKET_ORDER_ABNORMAL_REFUND;       // 红包订单异常退款，154
+                            $changeDesc[] = trans('wallet.redpacket_order_abnormal_refund');
+                            $merge_amount[] = $val['amount'];
+                            break;
+                        case OrderChildren::TYPE_REWARD:
+                            $changeType[] = UserWalletLog::TYPE_QUESTION_ORDER_ABNORMAL_REFUND;       // 悬赏订单异常退款，163
+                            $changeDesc[] = trans('wallet.question_order_abnormal_refund');
+                            $merge_amount[] = $val['amount'];
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
 
             $userWallet = UserWallet::query()->where('user_id', $item->user_id)->first();
@@ -146,23 +164,58 @@ class AbnormalOrderDealCommand extends AbstractCommand
             $this->connection->beginTransaction();
             try {
                 if ($item->payment_type == Order::PAYMENT_TYPE_WALLET) {
-                    // 钱包支付 减少冻结金额，增加可用金额
-                    $this->bus->dispatch(new ChangeUserWallet($item->user,
-                        UserWallet::OPERATE_UNFREEZE,
-                        $item->amount,
-                        $data
-                    ));
+                    //如果是合并订单的话，需要分多笔增加余额
+                    if($item->type == Order::ORDER_TYPE_MERGE && !empty($data['change_type']) && !empty($merge_amount)){
+                        foreach ($data['change_type'] as $k => $v){
+                            $m_data = [
+                                'order_id' => $data['order_id'],
+                                'thread_id' => $data['thread_id'],
+                                'post_id' => $data['post_id'],
+                                'change_type'   =>  $v,
+                                'change_desc'   =>  $data['change_desc'][$k]
+                            ];
+                            $this->bus->dispatch(new ChangeUserWallet($item->user,
+                                UserWallet::OPERATE_UNFREEZE,
+                                $merge_amount[$k],
+                                $m_data
+                            ));
+                        }
+                    }else{
+                        // 钱包支付 减少冻结金额，增加可用金额
+                        $this->bus->dispatch(new ChangeUserWallet($item->user,
+                            UserWallet::OPERATE_UNFREEZE,
+                            $item->amount,
+                            $data
+                        ));
+                    }
                 } elseif (
                     $item->payment_type == Order::PAYMENT_TYPE_WECHAT_NATIVE
                     || $item->payment_type == Order::PAYMENT_TYPE_WECHAT_WAP
                     || $item->payment_type == Order::PAYMENT_TYPE_WECHAT_JS
                     || $item->payment_type == Order::PAYMENT_TYPE_WECHAT_MINI
                 ) {
-                    $this->bus->dispatch(new ChangeUserWallet($item->user,
-                        UserWallet::OPERATE_INCREASE,
-                        $item->amount,
-                        $data
-                    ));
+                    if($item->type == Order::ORDER_TYPE_MERGE && !empty($data['change_type']) && !empty($merge_amount)){
+                        foreach ($data['change_type'] as $k => $v){
+                            $m_data = [
+                                'order_id' => $data['order_id'],
+                                'thread_id' => $data['thread_id'],
+                                'post_id' => $data['post_id'],
+                                'change_type'   =>  $v,
+                                'change_desc'   =>  $data['change_desc'][$k]
+                            ];
+                            $this->bus->dispatch(new ChangeUserWallet($item->user,
+                                UserWallet::OPERATE_INCREASE,
+                                $merge_amount[$k],
+                                $m_data
+                            ));
+                        }
+                    }else{
+                        $this->bus->dispatch(new ChangeUserWallet($item->user,
+                            UserWallet::OPERATE_INCREASE,
+                            $item->amount,
+                            $data
+                        ));
+                    }
                 } else {
                     app('log')->info('订单金额退还失败, 订单号 ' . $item->order_sn . '的支付类型: ' . $item->payment_type . ', 不在处理范围内');
                     $item->status = Order::ORDER_STATUS_UNTREATED;

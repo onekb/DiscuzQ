@@ -27,6 +27,7 @@ use App\Models\Group;
 use App\Models\GroupUser;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Models\Thread;
 use App\Models\User;
 use App\Models\UserWechat;
 use App\Repositories\UserRepository;
@@ -80,10 +81,10 @@ class ProfileController extends DzqController
         $user->paid = ! in_array(Group::UNPAID, $this->user->groups->pluck('id')->toArray());
         if (!$this->user->isAdmin()) {
             $order = Order::query()->where([
-                'type' => Order::ORDER_TYPE_REGISTER,
+//                'type' => Order::ORDER_TYPE_REGISTER,
                 'status' => Order::ORDER_STATUS_PAID,
                 'user_id' => $user->id
-            ])->orderByDesc('id')->first();
+            ])->whereIn('type', [Order::ORDER_TYPE_REGISTER, Order::ORDER_TYPE_RENEW])->orderByDesc('id')->first();
             //付费模式
             $settings = app(SettingsRepository::class);
             $siteMode = $settings->get('site_mode');
@@ -124,6 +125,16 @@ class ProfileController extends DzqController
                 $query->select()->where('action', 'ban');
             }]);
         }
+
+        //如果是当前用户，计算出审核中和已忽略的数量
+        if ($user_id == $this->user->id) {
+            $user->thread_count = Thread::query()
+                ->where('user_id', $user_id)
+                ->whereNull('deleted_at')
+                ->where('is_draft',Thread::IS_NOT_DRAFT)
+                ->count();
+        }
+
         $data = $user_serialize->getDefaultAttributes($user);
         $grounUser = [$user_id];
         $groups = GroupUser::instance()->getGroupInfo($grounUser);

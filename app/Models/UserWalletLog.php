@@ -63,7 +63,7 @@ class UserWalletLog extends Model
 
     const TYPE_CASH_SUCCESS = 11; //提现成功
 
-    const TYPE_CASH_THAW = 12; //提现解冻
+    const TYPE_CASH_THAW = 12; //提现解冻，提现失败
 
     const TYPE_INCOME_REGISTER = 30; //注册收入
 
@@ -98,6 +98,8 @@ class UserWalletLog extends Model
     const TYPE_INCOME_ATTACHMENT = 63; //付费附件收入
 
     const TYPE_INCOME_SCALE_ATTACHMENT = 64; //付费附件分成收入
+
+    const TYPE_EXPEND_REGISTER = 70; //站点注册支出
 
     const TYPE_EXPEND_RENEW = 71; //站点续费支出
 

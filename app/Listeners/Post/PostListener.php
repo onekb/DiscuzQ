@@ -288,7 +288,10 @@ class PostListener
      */
     public function threadTopic(Saved $event)
     {
-        ThreadTopic::setThreadTopic($event->post);
+        $inputData = $event->data;
+        if(!isset($inputData['attributes']['isLiked'])){
+            ThreadTopic::setThreadTopic($event->post);
+        }
     }
 
     /**

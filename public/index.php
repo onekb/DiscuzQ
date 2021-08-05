@@ -17,7 +17,7 @@
  */
 
 define('DISCUZ_START', microtime(true));
-$mysql_time = 0;
+
 require __DIR__ . '/../vendor/autoload.php';
 
 $app = new Discuz\Foundation\Application(dirname(__DIR__));

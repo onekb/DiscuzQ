@@ -65,10 +65,10 @@ class OrderSubscriber
         // 续费站点的订单，支付成功后修改用户信息
         if ($order->type == Order::ORDER_TYPE_RENEW && $order->status == Order::ORDER_STATUS_PAID) {
             $day = app()->make(SettingsRepository::class)->get('site_expire');
-            // 修改用户过期时间、订单过期时间,如果没有有效期，订单过期时间设置为null
-            $days = $order->user->expired_at->modify("+{$day} days");
-            $order->user->expired_at = $days;
-            $order->expired_at = $days;
+            // 如果没有设置有效期，则设置有效期为 99 年
+            if(empty($day))     $day = 365 * 99;
+            $order->user->expired_at = Carbon::now()->addDays($day);
+            $order->expired_at = Carbon::now()->addDays($day);
             $order->user->save();
             $order->save();
         }

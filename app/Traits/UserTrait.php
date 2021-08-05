@@ -47,21 +47,28 @@ trait UserTrait
 
         // 用户名
         if ($username = Arr::get($filter, 'username')) {
-            // 多个用户名用逗号隔开
-            $username = explode(',', $username);
-
-            $query->where(function ($query) use ($username) {
-                foreach ($username as $name) {
-                    // 用户名前后存在星号（*）则使用模糊查询
-                    if (Str::startsWith($name, '*') || Str::endsWith($name, '*')) {
-                        $name = Str::replaceLast('*', '%', Str::replaceFirst('*', '%', $name));
-
-                        $query->orWhere('username', 'like', $name);
-                    } else {
-                        $query->orWhere('username', $name);
+            if(strpos($username,',') !== false){
+                $usernames = explode(',',$username);
+                $query->whereIn('users.username', $usernames);
+                foreach ($usernames as $un){
+                    if (Str::startsWith($un, '*') || Str::endsWith($un, '*')) {
+                        $un = Str::replaceLast('*', '%', Str::replaceFirst('*', '%', $un));
+                        $query->orWhere('username', 'like', $un);
                     }
                 }
-            });
+            }else{
+                if (Str::startsWith($username, '*') || Str::endsWith($username, '*')) {
+                    $username = Str::replaceLast('*', '%', Str::replaceFirst('*', '%', $username));
+                    $query->orWhere('username', 'like', $username);
+                }else{
+                    $query->where('users.username', 'like','%'.$username.'%');
+                }
+            }
+        }
+
+        // 昵称搜索
+        if ($nickname = Arr::get($filter, 'nickname')) {
+            $query->where('users.nickname', 'like', '%' . $nickname . '%');
         }
 
         // 手机号
