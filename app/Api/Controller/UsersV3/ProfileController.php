@@ -30,6 +30,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserWechat;
 use App\Repositories\UserRepository;
+use App\Settings\SettingsRepository;
 use Carbon\Carbon;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Base\DzqController;
@@ -78,19 +79,25 @@ class ProfileController extends DzqController
         // 付费模式是否过期
         $user->paid = ! in_array(Group::UNPAID, $this->user->groups->pluck('id')->toArray());
         if (!$this->user->isAdmin()) {
-            $order = Order::query()->where('type',Order::ORDER_TYPE_REGISTER)->where('status',Order::ORDER_STATUS_PAID)->first();
+            $order = Order::query()->where([
+                'type' => Order::ORDER_TYPE_REGISTER,
+                'status' => Order::ORDER_STATUS_PAID,
+                'user_id' => $user->id
+            ])->orderByDesc('id')->first();
             //付费模式
-            $siteMode = Setting::getValue('site_mode');
-            if ($siteMode == 'pay' && !empty($user->expired_at) && $order) {
-                $t1 = strtotime($user->expired_at);
-                $t2 = time();
-                $diffTime = abs($t1 - $t2);
-                if ($diffTime >= 3600 && $t1 < $t2) {
+            $settings = app(SettingsRepository::class);
+            $siteMode = $settings->get('site_mode');
+            $userExpire = strtotime($user->expired_at);
+            $now = time();
+            if (empty($order)) {
+                if ($siteMode == 'pay' && $userExpire && $userExpire < $now) {
                     $user->paid = false;
-                    //兜底逻辑,防止异常情况下判断错误
                 }
-            }else{
-                $user->paid = false;
+            } else {
+                $orderExpire = strtotime($order->expired_at);
+                if ($siteMode == 'pay' && $orderExpire && $orderExpire < $now) {
+                    $user->paid = false;
+                }
             }
         }
         $key = array_search('dialog', $include);

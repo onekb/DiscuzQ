@@ -106,7 +106,7 @@ class ListUserWalletCashController extends DzqController
         });
 
         $query->when(!is_null($cash_status), function ($query) use ($cash_status) {
-            $query->where('cash_status', $cash_status);
+            $query->whereIn('cash_status', (array) $cash_status);
         });
 
         $query->when(!is_null($cash_type), function ($query) use ($cash_type) {

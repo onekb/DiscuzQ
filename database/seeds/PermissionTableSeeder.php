@@ -39,8 +39,8 @@ class PermissionTableSeeder extends Seeder
         PermissionKey::USER_FOLLOW_CREATE           => [10],    // 关注/取关用户
 
         // 内容发布权限
-        PermissionKey::CREATE_THREAD                => [10],    // 发布帖子
-        'switch.'.PermissionKey::CREATE_THREAD      => [10],    // 发布帖子-全局
+        'switch.'.PermissionKey::CREATE_THREAD      => [10],    // 发布帖子-左侧勾选按钮
+        PermissionKey::CREATE_THREAD                => [10],    // 发布帖子-生效范围-全局
         PermissionKey::THREAD_INSERT_IMAGE          => [10,6],  // 插入图片
 //        PermissionKey::THREAD_INSERT_VIDEO          => [],    // 插入视频
 //        PermissionKey::THREAD_INSERT_AUDIO          => [],    // 插入语音
@@ -52,20 +52,20 @@ class PermissionTableSeeder extends Seeder
         PermissionKey::THREAD_INSERT_POSITION       => [10],    // 插入位置
         PermissionKey::THREAD_ALLOW_ANONYMOUS       => [10],    // 允许匿名
         PermissionKey::DIALOG_CREATE                => [10],    // 发布私信
-        'switch.'.PermissionKey::THREAD_REPLY       => [10],    // 回复主题
-        PermissionKey::THREAD_REPLY                 => [10],    // 回复主题-全局
+        'switch.'.PermissionKey::THREAD_REPLY       => [10],    // 回复主题-左侧勾选按钮
+        PermissionKey::THREAD_REPLY                 => [10],    // 回复主题-生效范围-全局
 
         //查看权限
-        'switch.'.PermissionKey::VIEW_THREADS       => [10,7],  // 查看主题列表
-        PermissionKey::VIEW_THREADS                 => [10,7],  // 查看主题列表-全局
-        'switch.'.PermissionKey::THREAD_VIEW_POSTS  => [10,7],  // 查看主题详情
-        PermissionKey::THREAD_VIEW_POSTS            => [10,7],  // 查看主题详情-全局
+        'switch.'.PermissionKey::VIEW_THREADS       => [10,7],  // 查看主题列表-左侧勾选按钮
+        PermissionKey::VIEW_THREADS                 => [10,7],  // 查看主题列表-生效范围-全局
+        'switch.'.PermissionKey::THREAD_VIEW_POSTS  => [10,7],  // 查看主题详情-左侧勾选按钮
+        PermissionKey::THREAD_VIEW_POSTS            => [10,7],  // 查看主题详情-生效范围-全局
 
         //管理权限
-        PermissionKey::THREAD_EDIT_OWN              => [10],    // 编辑自己的主题
-        'switch.'.PermissionKey::THREAD_EDIT_OWN    => [10],    // 编辑自己的主题-全局
-        PermissionKey::THREAD_HIDE_OWN              => [10],    // 删除自己的主题或回复
-        'switch.'.PermissionKey::THREAD_HIDE_OWN    => [10],    // 删除自己的主题或回复-全局
+        'switch.'.PermissionKey::THREAD_EDIT_OWN    => [10],    // 编辑自己的主题-左侧勾选按钮
+        PermissionKey::THREAD_EDIT_OWN              => [10],    // 编辑自己的主题-生效范围-全局
+        'switch.'.PermissionKey::THREAD_HIDE_OWN    => [10],    // 删除自己的主题或回复-左侧勾选按钮
+        PermissionKey::THREAD_HIDE_OWN              => [10],    // 删除自己的主题或回复-生效范围-全局
 
     ];
 

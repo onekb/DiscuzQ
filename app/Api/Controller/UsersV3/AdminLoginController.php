@@ -74,7 +74,7 @@ class AdminLoginController extends DzqController
             if ((int)$e->getMessage() > 0) {
                 return $this->outPut(ResponseCode::LOGIN_FAILED,'登录失败，您还可以尝试'.(int)$e->getMessage().'次');
             } else {
-                return $this->outPut(ResponseCode::LOGIN_FAILED,'登录次数超出限制');
+                return $this->outPut(ResponseCode::LOGIN_FAILED,'登录错误次数超出限制');
             }
         }
 

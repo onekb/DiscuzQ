@@ -39,7 +39,7 @@ class ThreadLikedUsersController extends DzqController
         if (!$this->thread) {
             $this->outPut(ResponseCode::RESOURCE_NOT_FOUND);
         }
-        return $userRepo->canViewThreadDetail($this->user, $this->thread);
+        return $userRepo->canViewUser($this->user);
     }
 
     public function main()

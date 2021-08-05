@@ -79,7 +79,7 @@ class Order extends DzqModel
 
     const ORDER_TYPE_ATTACHMENT = 7; //付费附件
 
-    const ORDER_TYPE_RENEW = 8; //站点付费
+    const ORDER_TYPE_RENEW = 8; //站点续费
 
     const ORDER_TYPE_REDPACKET = 9; //红包
 

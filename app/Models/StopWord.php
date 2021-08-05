@@ -36,6 +36,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $replacement
  * @property Carbon $created_at
  * @property Carbon $updated_at
+ * @property mixed|string nickname
  */
 class StopWord extends Model
 {
@@ -75,7 +76,7 @@ class StopWord extends Model
     /**
      * @var array
      */
-    protected $fillable = ['user_id', 'ugc', 'username', 'signature', 'dialog', 'find', 'replacement'];
+    protected $fillable = ['user_id', 'ugc', 'username', 'signature', 'dialog', 'nickname', 'find', 'replacement'];
 
     /**
      * Create a new stop word.
@@ -84,12 +85,13 @@ class StopWord extends Model
      * @param string $username
      * @param string $signature
      * @param string $dialog
+     * @param string $nickname
      * @param string $find
      * @param string $replacement
      * @param User $user
      * @return static
      */
-    public static function build($ugc, $username, $signature, $dialog, $find, $replacement, $user)
+    public static function build($ugc, $username, $signature, $dialog, $nickname, $find, $replacement, $user)
     {
         $stopWord = new static;
 
@@ -98,6 +100,7 @@ class StopWord extends Model
         $stopWord->username = $username;
         $stopWord->signature = $signature;
         $stopWord->dialog = $dialog;
+        $stopWord->nickname = $nickname;
         $stopWord->find = $find;
         $stopWord->replacement = $replacement;
 

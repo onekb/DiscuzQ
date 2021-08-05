@@ -39,11 +39,11 @@ class UpgradeOldPermissionDataCommand extends AbstractCommand
         'canBeAsked'                        , // 允许被提问
         'canBeOnlooker'                     , // 设置围观
 
-//        'createThread'                      , // 发布主题(被用于创建帖子，不删除)
-        'switch.createThread'               , // 发布主题
+//        'switch.createThread'               , // 发布主题-左侧勾选按钮
+//        'createThread'                      , // 发布主题-生效范围-全局
 
-        'thread.canBeReward'                , // 允许被打赏
         'switch.thread.canBeReward'         , // 允许被打赏
+        'thread.canBeReward'                , // 允许被打赏
 
         'switch.thread.freeViewPosts.2'     , // 免费查看付费视频
         'thread.freeViewPosts.2'            , // 免费查看付费视频

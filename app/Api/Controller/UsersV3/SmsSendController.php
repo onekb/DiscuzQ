@@ -182,10 +182,10 @@ class SmsSendController extends AuthBaseController
                     'errMsg' => $errMsg,
                     'getExceptions' => $e->getExceptions()
                 ], $e->getMessage());
-                $this->outPut(ResponseCode::NET_ERROR, '手机号日频率限制');
+                $this->outPut(ResponseCode::NET_ERROR, $errMsg);
             }
-            DzqLog::error('手机号发送接口异常', $paramData, $e->getMessage());
-            $this->outPut(ResponseCode::INTERNAL_ERROR, '手机号发送接口异常');
+            DzqLog::error('sms_send_error', $paramData, $e->getMessage());
+            $this->outPut(ResponseCode::INTERNAL_ERROR, '短信发送接口异常');
         }
     }
 }

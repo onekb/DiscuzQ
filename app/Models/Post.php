@@ -698,18 +698,21 @@ class Post extends DzqModel
     }
 
 
-    public function getPosts($threadIds)
+    public function getPosts($threadIds, $isApproved = true)
     {
-        return self::query()
+        $query = self::query()
             ->whereIn('thread_id', $threadIds)
             ->whereNull('reply_user_id')
             ->whereNull('deleted_at')
             ->where([
                 'is_first' => self::FIRST_YES,
-                'is_comment' => self::COMMENT_NO,
-                'is_approved' => self::APPROVED_YES
-            ])
-            ->get()->toArray();
+                'is_comment' => self::COMMENT_NO
+            ]);
+        if ($isApproved){
+            $query->where('is_approved',  self::APPROVED_YES);
+        }
+        return $query->get()->toArray();
+
     }
 
     public function getContentSummary($post, &$postId = false)

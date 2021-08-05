@@ -360,11 +360,13 @@ trait ThreadTrait
             if (!empty($body)) {
                 $attachments_body = $body;
                 $attachments = array_combine(array_column($attachments_body, 'id'), array_column($attachments_body, 'url'));
+                $isset_attachment_ids = [];
                 $xml = preg_replace_callback(
                     '<img src="(.*?)" alt="(.*?)" title="(\d+)">',
-                    function ($m) use ($attachments) {
+                    function ($m) use ($attachments, &$isset_attachment_ids) {
                         if (!empty($m)) {
                             $id = trim($m[3], '"');
+                            $isset_attachment_ids[] = $id;
                             return 'img src="' . $attachments[$id] . '" alt="' . $m[2] . '" title="' . $id . '"';
                         }
                     },
@@ -373,6 +375,11 @@ trait ThreadTrait
                 //针对图文混排的情况，这里要去掉外部图片展示
 //                if (!empty($tom_image_key)) unset($content['indexes'][$tom_image_key]);
                 $content['text'] = $xml;
+                if(!empty($isset_attachment_ids)){
+                    foreach ($content['indexes'][TomConfig::TOM_IMAGE]['body'] as $k => $v){
+                        if(in_array($v['id'], $isset_attachment_ids))       unset($content['indexes'][TomConfig::TOM_IMAGE]['body'][$k]);
+                    }
+                }
             }
         }
 
@@ -633,7 +640,7 @@ trait ThreadTrait
             return $item;
         })->toArray();
         foreach ($ats as $val) {
-            $text = preg_replace("/{$val['username']}/", "{$val['html']}", $text, 1);
+            $text = str_replace($val['username'], $val['html'], $text);
         }
         return $text;
     }

@@ -79,6 +79,7 @@ class CreateStopWord
             Arr::get($this->data, 'attributes.username'),
             Arr::get($this->data, 'attributes.signature'),
             Arr::get($this->data, 'attributes.dialog'),
+            Arr::get($this->data, 'attributes.nickname'),
             Arr::get($this->data, 'attributes.find'),
             Arr::get($this->data, 'attributes.replacement'),
             $this->actor

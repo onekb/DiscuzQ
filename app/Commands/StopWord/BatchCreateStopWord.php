@@ -142,8 +142,9 @@ class BatchCreateStopWord
                 $username = StopWord::IGNORE;
                 $signature = StopWord::IGNORE;
                 $dialog = StopWord::IGNORE;
+                $nickname = StopWord::IGNORE;
             } else {
-                list($ugc, $username, $signature, $dialog) = array_map('trim', explode('|', $replacement));
+                list($ugc, $username, $signature, $dialog, $nickname) = array_map('trim', explode('|', $replacement));
 
                 if (! in_array($ugc, StopWord::$allowTypes)) {
                     $replacement = $ugc;
@@ -157,11 +158,15 @@ class BatchCreateStopWord
                 $signature = $signature === StopWord::BANNED ? StopWord::BANNED : StopWord::IGNORE;
                 $dialog = $dialog === StopWord::BANNED ? StopWord::BANNED : StopWord::IGNORE;
 
+                if (! in_array($nickname, [StopWord::IGNORE, StopWord::REPLACE])) {
+                    $nickname = StopWord::BANNED;
+                }
+
                 $replacement = strpos($replacement, '|') === false ? $replacement : '**';
             }
 
             // 返回一组可用数据
-            return compact('ugc', 'username', 'signature', 'dialog', 'find', 'replacement');
+            return compact('ugc', 'username', 'signature', 'dialog', 'nickname', 'find', 'replacement');
         } else {
             return [];
         }

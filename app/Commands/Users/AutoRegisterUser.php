@@ -20,10 +20,13 @@ namespace App\Commands\Users;
 
 use App\Censor\Censor;
 use App\Censor\CensorNotPassedException;
+use App\Common\ResponseCode;
 use App\Events\Users\Registered;
 use App\Events\Users\Saving;
 use App\Models\User;
 use Carbon\Carbon;
+use Discuz\Base\DzqLog;
+use Discuz\Common\Utils;
 use Discuz\Contracts\Setting\SettingsRepository;
 use Discuz\Foundation\EventsDispatchTrait;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -63,8 +66,18 @@ class AutoRegisterUser
         //自动注册没有密码，后续用户可以设置密码
         $this->data['password'] = '';
 
+        DzqLog::info('begin_auto_register_user_process_checkText', ['data' => $this->data] ,DzqLog::LOG_LOGIN);
         // 敏感词校验
-        $username = $censor->checkText(Arr::get($this->data, 'username'), 'username');
+        try {
+            $username = $censor->checkText(Arr::get($this->data, 'username'), 'username');
+        } catch (\Exception $e) {
+            DzqLog::error('checkText_error', [
+                'username'   => Arr::get($this->data, 'username')
+            ], $e->getMessage());
+            Utils::outPut(ResponseCode::NET_ERROR, '敏感词检测异常');
+        }
+
+        DzqLog::info('end_auto_register_user_process_checkText', ['data' => $this->data] ,DzqLog::LOG_LOGIN);
         $username = preg_replace('/\s/ui', '', $username);
         $exists = User::where('username', $username)->exists();
         if ($exists) {
@@ -72,7 +85,7 @@ class AutoRegisterUser
         } else {
             $this->data['username'] = $username;
         }
-
+        DzqLog::info('auto_register_user_process', ['data' => $this->data] ,DzqLog::LOG_LOGIN);
         $this->data['nickname'] = $censor->checkText(Arr::get($this->data, 'nickname'), 'nickname');
 
         // 审核模式，设置注册为审核状态

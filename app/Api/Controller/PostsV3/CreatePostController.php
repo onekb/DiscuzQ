@@ -70,8 +70,7 @@ class CreatePostController extends DzqController
         AttachmentSerializer $attachmentSerializer,
         Gate $gate,
         Dispatcher $bus
-    )
-    {
+    ) {
         $this->postSerializer = $postSerializer;
         $this->attachmentSerializer = $attachmentSerializer;
         $this->gate = $gate;
@@ -100,7 +99,7 @@ class CreatePostController extends DzqController
         if (!$thread) {
             $this->outPut(ResponseCode::RESOURCE_NOT_FOUND);
         }
-        return $userRepo->canViewThreadDetail($this->user, $thread->category_id) && $userRepo->canReplyThread($this->user, $thread->category_id);
+        return $userRepo->canViewThreadDetail($this->user, $thread) && $userRepo->canReplyThread($this->user, $thread->category_id);
     }
 
     public function prefixClearCache($user)
@@ -132,7 +131,7 @@ class CreatePostController extends DzqController
         }
 
         //针对创建评论，前端不传标签的情况，转化 \n 为  <p></p>  实现换行
-        if(strpos($data['content'], "\n") !== false){
+        if (strpos($data['content'], "\n") !== false) {
             $data['content'] = preg_replace('/(.*)(\\n)/U', "<p>$1</p>", $data['content']);
         }
         //转换 @ #
@@ -187,7 +186,6 @@ class CreatePostController extends DzqController
         $data['content'] = str_replace($searches, $replaces, $content);
 
         return $this->outPut(ResponseCode::SUCCESS, '', $data);
-
     }
 
 
@@ -246,7 +244,6 @@ class CreatePostController extends DzqController
 
         if (!empty($post->commentUser)) {
             $data['commentUser'] = $this->getUser($post->commentUser);
-
         }
 
         if (!empty($post->replyUser)) {
@@ -303,5 +300,4 @@ class CreatePostController extends DzqController
             'isDisplay' => $group['groups']['is_display']
         ];
     }
-
 }

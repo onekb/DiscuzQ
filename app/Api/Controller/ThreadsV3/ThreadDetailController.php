@@ -49,7 +49,11 @@ class ThreadDetailController extends DzqController
         if (empty($this->thread)) {
             $this->outPut(ResponseCode::RESOURCE_NOT_FOUND);
         }
-        return $userRepo->canViewThreadDetail($this->user, $this->thread);
+        $hasPermission = $userRepo->canViewThreadDetail($this->user, $this->thread);
+        if (! $hasPermission && $this->user->isGuest()) {
+            $this->outPut(ResponseCode::JUMP_TO_LOGIN);
+        }
+        return $hasPermission;
     }
 
     public function main()

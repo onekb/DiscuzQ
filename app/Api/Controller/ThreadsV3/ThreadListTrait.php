@@ -47,7 +47,7 @@ trait ThreadListTrait
         }, 'id');
         $threadIds = array_column($threads, 'id');
         $posts = DzqCache::hMGet(CacheKey::LIST_THREADS_V3_POSTS, $threadIds, function ($threadIds) {
-            return Post::instance()->getPosts($threadIds);
+            return Post::instance()->getPosts($threadIds, false);
         }, 'thread_id');
         $postIds = array_column($posts, 'id');
         $toms = DzqCache::hMGet(CacheKey::LIST_THREADS_V3_TOMS, $threadIds, function ($threadIds) {
