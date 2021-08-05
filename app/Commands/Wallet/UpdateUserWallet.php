@@ -72,7 +72,7 @@ class UpdateUserWallet
         $operate_reason = Arr::get($this->data, 'operateReason', '');
         $operate_reason = trim($operate_reason);
         $wallet_status  = Arr::get($this->data, 'walletStatus');
-        if (!is_null($operate_type)) {
+        if (!empty($operate_type)) {
             if (!in_array($operate_type, [UserWallet::OPERATE_INCREASE, UserWallet::OPERATE_DECREASE])) {
                 throw new WalletException(trans('wallet.operate_type_error'));
             }

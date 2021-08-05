@@ -23,7 +23,6 @@ use App\Models\Order;
 use App\Models\UserWallet;
 use App\Models\UserWalletCash;
 use App\Repositories\UserRepository;
-use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Base\DzqController;
 use Illuminate\Support\Arr;
 
@@ -56,22 +55,18 @@ class FinanceProfileController extends DzqController
 
     protected function checkRequestPermissions(UserRepository $userRepo)
     {
-        if (!$this->user->isAdmin()) {
-            throw new PermissionDeniedException('没有权限');
-        }
-        return true;
+        return $this->user->isAdmin();
     }
 
     public function main()
     {
         $financeProfile = call_user_func([$this, '__invoke']);
 
-        return $this->outPut(ResponseCode::SUCCESS,'',$financeProfile);
+        return $this->outPut(ResponseCode::SUCCESS, '', $financeProfile);
     }
 
     /**
      * @return mixed
-     * @throws PermissionDeniedException
      */
     public function __invoke()
     {
@@ -80,13 +75,13 @@ class FinanceProfileController extends DzqController
         data_set(
             $financeProfile,
             'totalIncome',
-            $this->order::where('status', $this->order::ORDER_STATUS_PAID)->sum('amount')
+            round($this->order::where('status', $this->order::ORDER_STATUS_PAID)->sum('amount'), 2)
         );
         //用户总提现
         data_set(
             $financeProfile,
             'totalWithdrawal',
-            $this->userWalletCash::where('cash_status', $this->userWalletCash::STATUS_PAID)->sum('cash_apply_amount')
+            round($this->userWalletCash::where('cash_status', $this->userWalletCash::STATUS_PAID)->sum('cash_apply_amount'), 2)
         );
         //用户钱包总金额
         $userWallet = $this->userWallet::selectRaw('SUM(available_amount) as available_amount')
@@ -96,25 +91,25 @@ class FinanceProfileController extends DzqController
         data_set(
             $financeProfile,
             'totalWallet',
-            $userWallet['available_amount'] + $userWallet['freeze_amount']
+            round($userWallet['available_amount'] + $userWallet['freeze_amount'], 2)
         );
         //提现手续费收入
         data_set(
             $financeProfile,
             'withdrawalProfit',
-            $this->userWalletCash::where('cash_status', $this->userWalletCash::STATUS_PAID)->sum('cash_charge')
+            round($this->userWalletCash::where('cash_status', $this->userWalletCash::STATUS_PAID)->sum('cash_charge'), 2)
         );
         //打赏提成收入
         data_set(
             $financeProfile,
             'orderRoyalty',
-            $this->order::where('status', $this->order::ORDER_STATUS_PAID)->sum('master_amount')
+            round($this->order::where('status', $this->order::ORDER_STATUS_PAID)->sum('master_amount'), 2)
         );
         //注册加入收入
         data_set(
             $financeProfile,
             'totalRegisterProfit',
-            $this->order::where('type', 1)->where('status', $this->order::ORDER_STATUS_PAID)->sum('amount')
+            round($this->order::where('type', $this->order::ORDER_TYPE_REGISTER)->where('status', $this->order::ORDER_STATUS_PAID)->sum('amount'), 2)
         );
         //平台总盈利：注册加入收入+打赏提成收入+提现手续费收入
         data_set(

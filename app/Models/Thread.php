@@ -176,6 +176,8 @@ class Thread extends DzqModel
 
     const CREATE_CRAWLER_DATA_LIMIT_MINUTE_TIME = 60;
 
+    const PRICE_LIMIT = 100000;
+
     /**
      * {@inheritdoc}
      */

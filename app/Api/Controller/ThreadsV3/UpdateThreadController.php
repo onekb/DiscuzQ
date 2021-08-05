@@ -162,9 +162,11 @@ class UpdateThreadController extends DzqController
                 }
                 $this->outPut(ResponseCode::INVALID_PARAMETER, '包含红包/悬赏帖，需要创建对应的订单');
             }
-
         }
 
+        if ($price > 0 || $attachmentPrice > 0) {
+            $this->checkThreadPrice($price, $attachmentPrice);
+        }
 
         $thread->title = $title;
         !empty($categoryId) && $thread->category_id = $categoryId;

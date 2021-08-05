@@ -52,17 +52,18 @@ class NicknameSettingController extends AuthBaseController
             ], [
                 'nickname'      => 'required',
             ]);
-            $this->censor->checkText($nickname);
+            $checkController = app(CheckController::class);
+            $checkController->checkIsRepeat('nickname', $nickname);
             $user = $this->user;
             $user->changeNickname($nickname);
             $user->save();
 
-            return $this->outPut(ResponseCode::SUCCESS);
+            $this->outPut(ResponseCode::SUCCESS);
         } catch (\Exception $e) {
             DzqLog::error('nickname_setting_api_error', [
                 'nickname' => $this->inPut('nickname')
             ], $e->getMessage());
-            return $this->outPut(ResponseCode::INTERNAL_ERROR, '昵称设置接口异常');
+            $this->outPut(ResponseCode::INTERNAL_ERROR, '昵称设置接口异常');
         }
     }
 

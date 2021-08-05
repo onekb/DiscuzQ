@@ -72,7 +72,7 @@ class CheckImage
 
             $image = $isRemote ? $uploader->getUrl() : storage_path('app/' . $attachment->thumb_path);
 
-            $this->censor->checkImage($image, $isRemote);
+            $this->censor->checkImage($image, $isRemote,$uploader->file->getPathname());
 
             if ($this->censor->isMod) {
                 $event->attachment->is_approved = Attachment::UNAPPROVED;

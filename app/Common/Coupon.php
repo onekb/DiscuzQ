@@ -74,10 +74,12 @@ class Coupon
      */
     public function handle()
     {
+        $this->amount = floatval(sprintf('%.2f', $this->amount));
+        $validAmount = floatval(sprintf('%.2f', $this->coupon_min * $this->num));
+
         // A. 验证
-        if ($this->amount < $validAmount = $this->coupon_min * $this->num) {
-//            throw new ErrorException('红包总金额必须≥'.$validAmount.'元');
-            throw new TradeErrorException('红包总金额必须≥'.$validAmount.'元', 500);
+        if ($this->amount < $validAmount) {
+            throw new TradeErrorException('红包总金额必须≥' . $validAmount . '元', 500);
         }
 
         // B. 分配红包
