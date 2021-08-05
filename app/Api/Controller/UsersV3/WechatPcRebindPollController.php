@@ -42,7 +42,7 @@ class WechatPcRebindPollController extends AuthBaseController
 
             $this->outPut(ResponseCode::PC_REBIND_ERROR);
         } catch (\Exception $e) {
-            DzqLog::error('PC端H5换绑接口异常', [
+            DzqLog::error('wechat_pc_rebind_poll_api_error', [
                 'sessionToken' => $this->inPut('sessionToken')
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, 'PC端H5换绑接口异常');

@@ -44,7 +44,7 @@ class WechatPcBindPollController extends AuthBaseController
 
             $this->outPut(ResponseCode::PC_BIND_ERROR, '请刷新二维码重新绑定');
         } catch (\Exception $e) {
-            DzqLog::error('pc、H5轮询绑定接口异常', [
+            DzqLog::error('wechat_pc_bind_poll_api_error', [
                 'sessionToken' => $this->inPut('sessionToken')
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, 'pc、H5轮询绑定接口异常');

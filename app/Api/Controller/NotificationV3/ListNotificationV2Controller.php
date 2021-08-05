@@ -206,8 +206,8 @@ class ListNotificationV2Controller extends DzqController
         if(!empty($result['replyPostContent']) && mb_strlen($result['replyPostContent']) > Thread::NOTICE_CONTENT_LENGTH) {
             $result['replyPostContent'] = $this->getThreadTitleOrContent($result['replyPostContent'], Thread::NOTICE_CONTENT_LENGTH);
         }
-        if(!empty($result['content']) && mb_strlen($result['content']) > Thread::NOTICE_CONTENT_LENGTH) {
-            $result['content'] = $this->getThreadTitleOrContent($result['content'], Thread::NOTICE_CONTENT_LENGTH);
+        if(!empty($result['content']) && mb_strlen($result['content']) > Thread::MORE_NOTICE_CONTENT_LENGTH) {
+            $result['content'] = $this->getThreadTitleOrContent($result['content'], Thread::MORE_NOTICE_CONTENT_LENGTH);
         }
 
         // 默认必须要有的字段
@@ -264,7 +264,7 @@ class ListNotificationV2Controller extends DzqController
 
     private function getThreadTitleOrContent($titleOrContent, $length)
     {
-        $titleOrContent = Str::substr(strip_tags($titleOrContent), 0, $length);
+        $titleOrContent = Str::substr(strip_tags($titleOrContent), 0, $length) . '...';
         return $titleOrContent;
     }
 }

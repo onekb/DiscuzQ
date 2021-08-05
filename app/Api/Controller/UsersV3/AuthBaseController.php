@@ -227,7 +227,7 @@ abstract class AuthBaseController extends DzqController
         //获取小程序登陆session key
         $authSession = $app->auth->session($jsCode);
         if (isset($authSession['errcode']) && $authSession['errcode'] != 0) {
-            DzqLog::error('获取小程序用户失败', [
+            DzqLog::error('failed_to_get_mini_wechat_user', [
                 'jsCode'        => $jsCode,
                 'iv'            => $iv,
                 'encryptedData' => $encryptedData

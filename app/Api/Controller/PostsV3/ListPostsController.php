@@ -174,22 +174,28 @@ class ListPostsController extends DzqController
             ->whereNull('deleted_at')
             ->where('is_first', false)
             ->where('is_comment', true)
-            ->where('is_approved', Post::APPROVED)
             ->orderBy('updated_at', 'desc')
-            ->get()
-            ->map(function (Post $post) {
-                $content = Str::of($post->content);
-                if ($content->length() > Post::SUMMARY_LENGTH) {
-                    $post->content = $content->substr(0, Post::SUMMARY_LENGTH)->finish(Post::SUMMARY_END_WITH);
-                }
-
-                return $post;
-            });
+            ->get();
+//            ->map(function (Post $post) {
+//                $content = Str::of($post->content);
+//                if ($content->length() > Post::SUMMARY_LENGTH) {
+//                    $post->content = $content->substr(0, Post::SUMMARY_LENGTH)->finish(Post::SUMMARY_END_WITH);
+//                }
+//
+//                return $post;
+//            });
 
         $posts = array_map(function ($post) use ($allLastThreeComments) {
-            $post['lastThreeComments'] = $allLastThreeComments->where('reply_post_id', $post['id'])->take(3)->map(function ($post) {
-                return $this->getPost($post, false);
-            })->values()->toArray();
+            $twoPosts =  $allLastThreeComments->where('reply_post_id', $post['id'])->take(3)->values();
+            $lastThreeComments = [];
+            //触发审核只有管理员和自己能看到
+            foreach ($twoPosts as $posts) {
+                if ($posts['is_approved'] != Post::APPROVED && $this->user->id != $posts['user_id'] && !$this->user->isAdmin()) {
+                    continue;
+                }
+                $lastThreeComments[] =  $this->getPost($posts, false);
+            }
+            $post['lastThreeComments'] = $lastThreeComments;
             return $post;
         }, $posts);
 
@@ -200,6 +206,17 @@ class ListPostsController extends DzqController
     {
 
         $userRepo = app(UserRepository::class);
+
+        if ($getRedPacketAmount && !$this->user->isGuest()) {
+            $auditCount = Post::query()
+                ->where('reply_post_id',$post['id'])
+                ->where('is_approved' , '<>' , Post::APPROVED);
+            if (!$this->user->isAdmin()) {
+                $auditCount->where('user_id',$this->user->id);
+            }
+            $auditCount = $auditCount->count();
+            $post['reply_count'] = intval($post['reply_count'] + $auditCount);
+        }
 
         $data = [
             'id' => $post['id'],

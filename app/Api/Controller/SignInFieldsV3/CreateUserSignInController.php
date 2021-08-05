@@ -85,7 +85,7 @@ class CreateUserSignInController extends AuthBaseController
             $result = $this->userSaveUserSignInFields($actor->id,$data);
             $this->outPut(ResponseCode::SUCCESS, '', $this->camelData($result));
         } catch (\Exception $e) {
-            DzqLog::error('创建扩展字段接口异常', $data, $e->getMessage());
+            DzqLog::error('create_user_sign_in_api_error', $data, $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '创建扩展字段接口异常');
         }
     }

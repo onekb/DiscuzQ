@@ -72,10 +72,12 @@ class UploadAvatarController extends DzqController
         $result = $this->bus->dispatch(
             new UploadAvatar($id, $file, $actor)
         );
+        $originalAvatar = $result->getOriginalAvatarPath();
         $result = [
             'id' => $result->id,
             'username' => $result->username,
             'avatarUrl' => $result->avatar,
+            'originalAvatarUrl'=>$originalAvatar,
             'updatedAt' => optional($result->updated_at)->format('Y-m-d H:i:s'),
             'createdAt' => optional($result->created_at)->format('Y-m-d H:i:s'),
         ];

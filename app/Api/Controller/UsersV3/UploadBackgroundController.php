@@ -74,11 +74,12 @@ class UploadBackgroundController extends DzqController
         $result = $this->bus->dispatch(
             new UploadBackground($id, $file, $actor)
         );
-
+        $originalBackGround = $result->getOriginalBackGroundPath();
         $result = [
             'id' => $result->id,
             'username' => $result->username,
             'backgroundUrl' => $result->background,
+            'originalBackGroundUrl' => $originalBackGround,
             'updatedAt' => optional($result->updated_at)->format('Y-m-d H:i:s'),
             'createdAt' => optional($result->created_at)->format('Y-m-d H:i:s'),
         ];

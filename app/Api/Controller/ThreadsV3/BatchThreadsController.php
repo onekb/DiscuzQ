@@ -18,9 +18,11 @@
 namespace App\Api\Controller\ThreadsV3;
 
 use App\Commands\Thread\AdminBatchEditThreads;
+use App\Common\CacheKey;
 use App\Common\ResponseCode;
 use App\Repositories\UserRepository;
 use Discuz\Auth\Exception\PermissionDeniedException;
+use Discuz\Base\DzqCache;
 use Discuz\Base\DzqController;
 use Illuminate\Contracts\Bus\Dispatcher;
 
@@ -94,5 +96,13 @@ class BatchThreadsController extends DzqController
         );
         $result = $this->camelData($result);
         return $this->outPut(ResponseCode::SUCCESS,'', $result);
+    }
+    public function prefixClearCache($user)
+    {
+        $ids = $this->inPut('ids');
+        if(empty($ids)){
+            return $this->outPut(ResponseCode::INVALID_PARAMETER);
+        }
+        CacheKey::delListCache();
     }
 }

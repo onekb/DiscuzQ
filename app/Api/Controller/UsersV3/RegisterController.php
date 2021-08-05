@@ -107,6 +107,8 @@ class RegisterController extends AuthBaseController
             }
 
             // 密码为空的时候，不验证密码，允许创建密码为空的用户(但无法登录，只能用其它方法登录)
+            $password = $data['password'];
+            $password_confirmation = $data['password_confirmation'];
             $attrs_to_validate = array_merge($data, compact('password', 'password_confirmation', 'captcha'));
             if ($data['password'] === '') {
                 unset($attrs_to_validate['password']);
@@ -120,7 +122,7 @@ class RegisterController extends AuthBaseController
                 $this->outPut(ResponseCode::INVALID_PARAMETER, $error_message);
             }
         } catch (\Exception $e) {
-            DzqLog::error('用户名注册接口异常', $data, $e->getMessage());
+            DzqLog::error('username_register_api_error', $data, $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常');
         }
 
@@ -166,7 +168,7 @@ class RegisterController extends AuthBaseController
                                  $this->camelData($this->addUserInfo($user, $accessToken))
             );
         } catch (\Exception $e) {
-            DzqLog::error('用户名注册接口异常', $data, $e->getMessage());
+            DzqLog::error('username_register_api_error', $data, $e->getMessage());
             $this->connection->rollback();
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常');
         }

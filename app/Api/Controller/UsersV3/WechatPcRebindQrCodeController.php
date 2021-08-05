@@ -103,7 +103,7 @@ class WechatPcRebindQrCodeController extends AuthBaseController
 
             $this->outPut(ResponseCode::SUCCESS, '', $data);
         } catch (\Exception $e) {
-            DzqLog::error('pc换绑二维码生成接口异常', [
+            DzqLog::error('wechat_pc_rebind_qr_code_api_error', [
                 'redirectUri' => $this->inPut('redirectUri')
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, 'pc换绑二维码生成接口异常');

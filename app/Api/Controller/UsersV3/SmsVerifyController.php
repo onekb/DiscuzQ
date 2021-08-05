@@ -40,7 +40,7 @@ class SmsVerifyController extends AuthBaseController
 
             $this->outPut(ResponseCode::NOT_FOUND_USER);
         } catch (\Exception $e) {
-            DzqLog::error('手机号验证接口异常', [
+            DzqLog::error('sms_verify_api_error', [
                 'mobile'    => $this->inPut('mobile'),
                 'code'      => $this->inPut('code')
             ], $e->getMessage());

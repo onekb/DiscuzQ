@@ -143,7 +143,7 @@ class LoginController extends AuthBaseController
             }
             $this->outPut(ResponseCode::SUCCESS, '', $this->addUserInfo($user,$this->camelData($accessToken)));
         } catch (\Exception $e) {
-            DzqLog::error('用户名登录接口异常', $paramData, $e->getMessage());
+            DzqLog::error('username_login_api_error', $paramData, $e->getMessage());
             $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名登录接口异常');
         }
 

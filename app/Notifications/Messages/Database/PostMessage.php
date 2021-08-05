@@ -49,12 +49,13 @@ class PostMessage extends SimpleMessage
 
     public function contentReplaceVars($data)
     {
-        $message = Arr::get($data, 'message', '');
+
+        $post = Arr::get($data, 'post', '');
 
         return [
             $this->post->user->username,
-            $message,
-            Arr::get($data, 'refuse', '无'),
+            $post->content ?: '[图片]',
+            Arr::get($data, 'refuse', '无')
         ];
     }
 

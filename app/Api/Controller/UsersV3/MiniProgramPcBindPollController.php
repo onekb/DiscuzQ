@@ -44,7 +44,7 @@ class MiniProgramPcBindPollController extends AuthBaseController
 
             $this->outPut(ResponseCode::PC_BIND_ERROR, '请刷新二维码重新绑定');
         } catch (\Exception $e) {
-            DzqLog::error('pc端小程序绑定轮询接口异常', [
+            DzqLog::error('mini_program_pc_bind_poll_api_error', [
                 'sessionToken' => $this->inPut('sessionToken')
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, 'pc端小程序绑定轮询接口异常');

@@ -65,7 +65,7 @@ class WechatH5RebindController extends AuthBaseController
             $token          = SessionToken::get($sessionToken);
             $actor          = !empty($token->user) ? $token->user : $this->user;
         } catch (Exception $e) {
-            DzqLog::error('H5换绑获取wx用户接口异常', [], $e->getMessage());
+            DzqLog::error('wechat_h5_rebind_api_error', [], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, 'H5换绑获取wx用户接口异常');
         }
 
@@ -119,7 +119,7 @@ class WechatH5RebindController extends AuthBaseController
                 $this->outPut(ResponseCode::ACCOUNT_HAS_BEEN_BOUND, '微信号已绑定其他账户');
             }
         } catch (Exception $e) {
-            DzqLog::error('H5换绑接口异常', [
+            DzqLog::error('wechat_h5_rebind_api_error', [
                 'sessionToken' => $this->inPut('sessionToken')
             ], $e->getMessage());
             $this->db->rollBack();

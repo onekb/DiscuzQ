@@ -144,7 +144,7 @@ class WechatTransitionBindSmsController extends AuthBaseController
             $this->connection->commit();
             $this->outPut(ResponseCode::SUCCESS, '', $result);
         } catch (\Exception $e) {
-            DzqLog::error('过渡阶段微信绑定手机号接口异常', [
+            DzqLog::error('wechat_transition_bind_sms_api_error', [
                 'mobile'        => $this->inPut('mobile'),
                 'code'          => $this->inPut('code'),
                 'sessionToken'  => $this->inPut('sessionToken'),

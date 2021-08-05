@@ -58,7 +58,7 @@ class MiniProgramPcLoginPollController extends AuthBaseController
 
             $this->outPut(ResponseCode::SUCCESS, '', $result);
         } catch (\Exception $e) {
-            DzqLog::error('pc端小程序登录轮询接口异常', [
+            DzqLog::error('mini_program_pc_login_poll_api_error', [
                 'sessionToken' => $this->inPut('sessionToken')
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, 'pc端小程序登录轮询接口异常');

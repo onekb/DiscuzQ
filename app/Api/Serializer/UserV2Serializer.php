@@ -76,7 +76,9 @@ class UserV2Serializer extends AbstractSerializer
             'id'                => (int) $model->id,
             'username'          => $model->username,
             'avatarUrl'         => $model->avatar,
+            'originalAvatarUrl' => $this->getOriginalAvatar($model),
             'backgroundUrl'     => $model->background,
+            'originalBackGroundUrl'     => $this->getOriginalBackGround($model),
             'isReal'            => $this->getIsReal($model),
             'threadCount'       => (int) $model->thread_count,
             'followCount'       => (int) $model->follow_count,
@@ -195,6 +197,49 @@ class UserV2Serializer extends AbstractSerializer
         }
 
         return $attributes;
+    }
+
+    public function getOriginalAvatar($model){
+        $uid = sprintf('%09d', $model->id);
+        $dir1 = substr($uid, 0, 3);
+        $dir2 = substr($uid, 3, 2);
+        $dir3 = substr($uid, 5, 2);
+        $originalAvatar = $dir1.'/'.$dir2.'/'.$dir3.'/original_'.substr($uid, -2).'.png';
+        $avatar = $model->getRawOriginal('avatar');
+        $originalAvatarUrl = $model->getOriginalAvatarPath();
+        if (strpos($avatar, '://') === false) {
+            if(!file_exists(storage_path('app/public/avatars/' . $originalAvatar))){
+                $originalAvatarUrl = $model->avatar;
+            }
+        }else{
+            $fileData = @file_get_contents($originalAvatarUrl,false, stream_context_create(['ssl'=>['verify_peer'=>false, 'verify_peer_name'=>false]]));
+            if(!$fileData){
+                $originalAvatarUrl = $model->avatar;
+            }
+        }
+        return $originalAvatarUrl;
+    }
+
+    public function getOriginalBackGround($model){
+        $uid = sprintf('%09d', $model->id);
+        $dir1 = substr($uid, 0, 3);
+        $dir2 = substr($uid, 3, 2);
+        $dir3 = substr($uid, 5, 2);
+
+        $background = $model->getRawOriginal('background');
+        $originalBackGroundUrl = $model->getOriginalBackGroundPath();
+        if (strpos($background, '://') === false) {
+            $backUrl = str_replace($dir1.'/'.$dir2.'/'.$dir3.'/',$dir1.'/'.$dir2.'/'.$dir3.'/'.'original_',$background);
+            if(!file_exists(storage_path('app/public/background/' . $backUrl))){
+                $originalBackGroundUrl = $model->background;
+            }
+        }else{
+            $fileData = @file_get_contents($originalBackGroundUrl,false, stream_context_create(['ssl'=>['verify_peer'=>false, 'verify_peer_name'=>false]]));
+            if(!$fileData){
+                $originalBackGroundUrl = $model->background;
+            }
+        }
+        return $originalBackGroundUrl;
     }
 
     /**

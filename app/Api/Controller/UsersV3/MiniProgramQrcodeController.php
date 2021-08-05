@@ -118,7 +118,7 @@ class MiniProgramQrcodeController extends AuthBaseController
 
             $this->outPut(ResponseCode::SUCCESS, '', $data);
         } catch (\Exception $e) {
-            DzqLog::error('小程序二维码生成接口异常', [
+            DzqLog::error('mini_program_qrcode_api_error', [
                 'type' => $this->inPut('type')
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '小程序二维码生成接口异常');

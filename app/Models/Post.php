@@ -324,8 +324,10 @@ class Post extends DzqModel
             'content' => '',
             'first_content' => '',
         ];
+        if ($substr && mb_strlen($this->content) > $substr) {
+            $this->content = Str::substr(strip_tags($this->content), 0, $substr) . '...';
+        }
 
-        $this->content = $substr ? Str::of($this->content)->substr(0, $substr) : $this->content;
         if(is_object($this->content)){
             $this->content = (string)$this->content;
         }
@@ -698,18 +700,20 @@ class Post extends DzqModel
     }
 
 
-    public function getPosts($threadIds, $isApproved = true)
+    public function getPosts($threadIds, $isApproved = true, $deletedAt = true)
     {
         $query = self::query()
             ->whereIn('thread_id', $threadIds)
             ->whereNull('reply_user_id')
-            ->whereNull('deleted_at')
             ->where([
                 'is_first' => self::FIRST_YES,
                 'is_comment' => self::COMMENT_NO
             ]);
         if ($isApproved){
             $query->where('is_approved',  self::APPROVED_YES);
+        }
+        if ($deletedAt) {
+            $query->whereNull('deleted_at');
         }
         return $query->get()->toArray();
 
@@ -735,10 +739,14 @@ class Post extends DzqModel
         return $content;
     }
 
-    public static function getOneActivePost($threadId)
+    public static function getOneActivePost($threadId, $is_draft = Thread::BOOL_NO)
     {
+        $arr = ['thread_id' => $threadId, 'is_first' => Post::FIRST_YES, 'is_approved' => Post::APPROVED];
+        if ($is_draft === Thread::BOOL_YES) {
+            unset($arr['is_approved']);
+        }
         return self::query()
-            ->where(['thread_id' => $threadId, 'is_first' => Post::FIRST_YES, 'is_approved' => Post::APPROVED])
+            ->where($arr)
             ->whereNull('deleted_at')
             ->first();
     }

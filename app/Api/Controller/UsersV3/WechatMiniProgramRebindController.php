@@ -73,7 +73,7 @@ class WechatMiniProgramRebindController extends AuthBaseController
             $token          = SessionToken::get($sessionToken);
             $actor          = !empty($token->user) ? $token->user : $this->user;
         } catch (Exception $e) {
-            DzqLog::error('小程序参数换绑接口异常', [
+            DzqLog::error('wechat_mini_program_rebind_api_error', [
                 'sessionToken'  => $this->inPut('sessionToken')
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '小程序参数换绑接口异常');
@@ -128,7 +128,7 @@ class WechatMiniProgramRebindController extends AuthBaseController
                 $this->outPut(ResponseCode::ACCOUNT_HAS_BEEN_BOUND, '微信号已绑定其他账户');
             }
         } catch (Exception $e) {
-            DzqLog::error('小程序参数换绑接口异常', [
+            DzqLog::error('wechat_mini_program_rebind_api_error', [
                 'sessionToken'  => $this->inPut('sessionToken')
             ], $e->getMessage());
             $this->db->rollBack();

@@ -451,7 +451,6 @@ class User extends DzqModel
         if (empty($value)) {
             return $value;
         }
-
         if (strpos($value, '://') === false) {
             return app(UrlGenerator::class)->to('/storage/avatars/' . $value)
                 . '?' . Carbon::parse($this->avatar_at)->timestamp;
@@ -461,6 +460,36 @@ class User extends DzqModel
         $settings = app(SettingsRepository::class);
 
         $path = 'public/avatar/' . Str::after($value, '://');
+
+        if ($settings->get('qcloud_cos_sign_url', 'qcloud', true)) {
+            return app(Filesystem::class)->disk('avatar_cos')->temporaryUrl($path, Carbon::now()->addDay());
+        } else {
+            return app(Filesystem::class)->disk('avatar_cos')->url($path)
+                . '?' . Carbon::parse($this->avatar_at)->timestamp;
+        }
+    }
+
+    public function getOriginalAvatarPath()
+    {
+        $uid = sprintf('%09d', $this->id);
+        $dir1 = substr($uid, 0, 3);
+        $dir2 = substr($uid, 3, 2);
+        $dir3 = substr($uid, 5, 2);
+        $originalAvatar = $dir1.'/'.$dir2.'/'.$dir3.'/original_'.substr($uid, -2).'.png';
+
+        $value = $this->getRawOriginal('avatar');
+        if (empty($value)) {
+            return $value;
+        }
+        if (strpos($value, '://') === false) {
+            return app(UrlGenerator::class)->to('/storage/avatars/' . $originalAvatar)
+                . '?' . Carbon::parse($this->avatar_at)->timestamp;
+        }
+
+        /** @var SettingsRepository $settings */
+        $settings = app(SettingsRepository::class);
+
+        $path = 'public/avatar/' . $originalAvatar;
 
         if ($settings->get('qcloud_cos_sign_url', 'qcloud', true)) {
             return app(Filesystem::class)->disk('avatar_cos')->temporaryUrl($path, Carbon::now()->addDay());
@@ -489,6 +518,35 @@ class User extends DzqModel
         $settings = app(SettingsRepository::class);
 
         $path = 'public/background/' . Str::after($value, '://');
+
+        if ($settings->get('qcloud_cos_sign_url', 'qcloud', true)) {
+            return app(Filesystem::class)->disk('background_cos')->temporaryUrl($path, Carbon::now()->addDay());
+        } else {
+            return app(Filesystem::class)->disk('background_cos')->url($path);
+        }
+    }
+
+    public function getOriginalBackGroundPath()
+    {
+        $uid = sprintf('%09d', $this->id);
+        $dir1 = substr($uid, 0, 3);
+        $dir2 = substr($uid, 3, 2);
+        $dir3 = substr($uid, 5, 2);
+
+        $value = $this->getRawOriginal('background');
+        if (empty($value)) {
+            return $value;
+        }
+        $backUrl = str_replace($dir1.'/'.$dir2.'/'.$dir3.'/',$dir1.'/'.$dir2.'/'.$dir3.'/'.'original_',$value);
+        if (strpos($value, '://') === false) {
+            return app(UrlGenerator::class)->to('/storage/background/' . $backUrl);
+        }
+        $originalBackground = str_replace('cos://','',$backUrl);
+
+        /** @var SettingsRepository $settings */
+        $settings = app(SettingsRepository::class);
+
+        $path = 'public/background/' . $originalBackground;
 
         if ($settings->get('qcloud_cos_sign_url', 'qcloud', true)) {
             return app(Filesystem::class)->disk('background_cos')->temporaryUrl($path, Carbon::now()->addDay());

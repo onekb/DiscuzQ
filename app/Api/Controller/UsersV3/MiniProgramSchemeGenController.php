@@ -52,7 +52,7 @@ class MiniProgramSchemeGenController extends AuthBaseController
             $globalAccessToken = $app->access_token->getToken(true);
             if(! isset($globalAccessToken['access_token'])) {
                 //todo 记录错误日志
-                DzqLog::error('小程序SchemeGen接口异常', [
+                DzqLog::error('mini_program_scheme_gen_api_error', [
                     'globalAccessToken' => $globalAccessToken
                 ]);
                 return $this->outPut(ResponseCode::MINI_PROGRAM_GET_ACCESS_TOKEN_ERROR);
@@ -65,7 +65,7 @@ class MiniProgramSchemeGenController extends AuthBaseController
             $data['openLink'] = $miniProgramScheme;
             $this->outPut(ResponseCode::SUCCESS, '', $data);
         } catch (\Exception $e) {
-            DzqLog::error('小程序SchemeGen接口异常', [
+            DzqLog::error('mini_program_scheme_gen_api_error', [
                 'globalAccessToken' => $globalAccessToken
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '小程序SchemeGen接口异常');

@@ -59,7 +59,7 @@ class NicknameSettingController extends AuthBaseController
 
             return $this->outPut(ResponseCode::SUCCESS);
         } catch (\Exception $e) {
-            DzqLog::error('昵称设置接口异常', [
+            DzqLog::error('nickname_setting_api_error', [
                 'nickname' => $this->inPut('nickname')
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '昵称设置接口异常');

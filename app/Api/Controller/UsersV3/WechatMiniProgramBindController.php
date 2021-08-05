@@ -76,7 +76,7 @@ class WechatMiniProgramBindController extends AuthBaseController
             $type           = $this->inPut('type');//用于区分sessionToken来源于pc还是h5
             $actor          = !empty($token->user) ? $token->user : $this->user;
         } catch (Exception $e) {
-            DzqLog::error('小程序绑定参数获取接口异常', [
+            DzqLog::error('wechat_mini_program_bind_api_error', [
                 'sessionToken'  => $this->inPut('sessionToken'),
                 'type'          => $this->inPut('type')
             ], $e->getMessage());
@@ -165,7 +165,7 @@ class WechatMiniProgramBindController extends AuthBaseController
                 $this->outPut(ResponseCode::ACCOUNT_HAS_BEEN_BOUND, '微信号已绑定其他账户');
             }
         } catch (Exception $e) {
-            DzqLog::error('小程序绑定参数获取接口异常', [
+            DzqLog::error('wechat_mini_program_bind_api_error', [
                 'sessionToken'  => $this->inPut('sessionToken'),
                 'type'          => $this->inPut('type')
             ], $e->getMessage());

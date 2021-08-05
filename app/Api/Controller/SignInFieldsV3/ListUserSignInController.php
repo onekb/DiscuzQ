@@ -61,7 +61,7 @@ class ListUserSignInController extends AuthBaseController
 
             $this->outPut(ResponseCode::SUCCESS, '', $this->camelData($result));
         } catch (\Exception $e) {
-            DzqLog::error('扩展字段查询接口异常', [], $e->getMessage());
+            DzqLog::error('list_user_sign_in_api_error', [], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '扩展字段查询接口异常');
         }
     }

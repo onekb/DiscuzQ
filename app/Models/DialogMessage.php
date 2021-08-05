@@ -21,6 +21,7 @@ namespace App\Models;
 use App\Formatter\DialogMessageFormatter;
 use Carbon\Carbon;
 use Discuz\Contracts\Setting\SettingsRepository;
+use Illuminate\Contracts\Filesystem\Factory as Filesystem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
@@ -155,17 +156,25 @@ class DialogMessage extends Model
             $messageText = $message_text->image_url;
             if($messageText){
                 if(!empty($attachmentId)) {
-                   $attachmentRecord = Attachment::query()->where('id', $attachmentId)->first(["file_width", "file_height"])->toArray();
-                   if(!empty($attachmentRecord['file_width']) && !empty($attachmentRecord['file_height'])){
-                        $settings = app()->make(SettingsRepository::class);
+                    $attachmentRecord = Attachment::query()->find($attachmentId);
+                    $settings = app()->make(SettingsRepository::class);
+                    if ($attachmentRecord->is_remote) {
+                        $url = $settings->get('qcloud_cos_sign_url', 'qcloud', true)
+                            ? app()->make(Filesystem::class)->disk('attachment_cos')->temporaryUrl($attachmentRecord->full_path, Carbon::now()->addDay())
+                            : app()->make(Filesystem::class)->disk('attachment_cos')->url($attachmentRecord->full_path);
+                    } else {
+                        $url = app()->make(Filesystem::class)->disk('attachment')->url($attachmentRecord->full_path);
+                    }
+//                   $attachmentRecord = Attachment::query()->where('id', $attachmentId)->first(["file_width", "file_height"])->toArray();
+                   if(!empty($attachmentRecord->file_width) && !empty($attachmentRecord->file_height)){
                         if (strstr($messageText, $settings->get('qcloud_cos_bucket_name', 'qcloud'))) {
-                                if (substr($messageText, -1) == '&') {
-                                    $messageText = $messageText."width=".$attachmentRecord['file_width']."&"."height=".$attachmentRecord['file_height'];
-                                } else {
-                                    $messageText = $messageText."&width=".$attachmentRecord['file_width']."&"."height=".$attachmentRecord['file_height'];
-                                }
+                            if($settings->get('qcloud_cos_sign_url', 'qcloud', true)){          //开启了签名
+                                $messageText = $url."&width=".$attachmentRecord->file_width."&"."height=".$attachmentRecord->file_height;
+                            }else{
+                                $messageText = $url."?width=".$attachmentRecord->file_width."&"."height=".$attachmentRecord->file_height;
+                            }
                         } else {
-                            $messageText = $messageText."?width=".$attachmentRecord['file_width']."&"."height=".$attachmentRecord['file_height'];
+                            $messageText = $url."?width=".$attachmentRecord->file_width."&"."height=".$attachmentRecord->file_height;
                         }
                     }
                 }

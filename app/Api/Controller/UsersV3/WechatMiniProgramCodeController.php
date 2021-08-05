@@ -99,7 +99,7 @@ class WechatMiniProgramCodeController extends DzqController
             ];
             return $this->outPut(ResponseCode::SUCCESS, '', $data);
         } catch (\Exception $e) {
-            DzqLog::error('生成小程序二维码接口异常', $paramData, $e->getMessage());
+            DzqLog::error('wechat_mini_program_code_api_error', $paramData, $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '生成小程序二维码接口异常');
         }
     }

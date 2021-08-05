@@ -68,7 +68,7 @@ class CheckController extends DzqController
 
             return $this->outPut(ResponseCode::SUCCESS);
         } catch (\Exception $e) {
-            DzqLog::error('用户昵称检测接口异常', [
+            DzqLog::error('user_nickname_check_api_error', [
                 'username' => $this->inPut('username')
             ], $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, '用户昵称检测接口异常');

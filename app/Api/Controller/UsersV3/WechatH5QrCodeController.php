@@ -148,7 +148,7 @@ class WechatH5QrCodeController extends AuthBaseController
 
             $this->outPut(ResponseCode::SUCCESS, '', $data);
         } catch (\Exception $e) {
-            DzqLog::error('h5二维码生成接口异常', $this->paramData, $e->getMessage());
+            DzqLog::error('wechat_h5_qr_code_api_error', $this->paramData, $e->getMessage());
             return $this->outPut(ResponseCode::INTERNAL_ERROR, 'h5二维码生成接口异常');
         }
 

@@ -80,7 +80,7 @@ class UpdatePostController extends DzqController
             if (!$post->thread) {
                 $this->outPut(ResponseCode::RESOURCE_NOT_FOUND);
             }
-            return $userRepo->canLikePosts($this->user) && ($userRepo->canViewThreads($this->user, $post->thread->category_id) || $userRepo->canViewThreadDetail($this->user, $thread));
+            return $userRepo->canLikePosts($this->user) && ($userRepo->canViewThreads($this->user, $post->thread->category_id) || $userRepo->canViewThreadDetail($this->user, $post->thread));
         }
 
         return $userRepo->canViewThreads($this->user, $post->thread->category_id);

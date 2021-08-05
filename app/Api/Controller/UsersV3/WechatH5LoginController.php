@@ -85,7 +85,7 @@ class WechatH5LoginController extends AuthBaseController
             $sessionToken   = $this->inPut('sessionToken');//PC扫码使用，非必须存在
             $actor          = $this->user;
         } catch (Exception $e) {
-            DzqLog::error('H5登录获取wx用户接口异常', [], $e->getMessage());
+            DzqLog::error('wechat_h5_login_api_error', [], $e->getMessage());
             $this->outPut(ResponseCode::INTERNAL_ERROR, 'H5登录获取wx用户接口异常');
         }
 
@@ -265,7 +265,7 @@ class WechatH5LoginController extends AuthBaseController
             $result = $this->addUserInfo($wechatUser->user, $result);
             $this->outPut(ResponseCode::SUCCESS, '', $result);
         } catch (Exception $e) {
-            DzqLog::error('H5登录接口异常', [
+            DzqLog::error('wechat_h5_login_api_error', [
                 'mp_openid'     => $wxuser->getId(),
                 'unionid'       => Arr::get($wxuser->getRaw(), 'unionid'),
                 'inviteCode'    => $this->inPut('inviteCode'),
@@ -418,7 +418,7 @@ class WechatH5LoginController extends AuthBaseController
             $this->db->commit();
             $this->outPut(ResponseCode::SUCCESS, '', $result);
         } catch (\Exception $e) {
-            DzqLog::error('H5过渡阶段登录异常', [
+            DzqLog::error('wechat_transition_login_error', [
                 'mp_openid'     => $wxuser->getId(),
                 'inviteCode'    => $this->inPut('inviteCode'),
                 'sessionToken'  => $this->inPut('sessionToken')

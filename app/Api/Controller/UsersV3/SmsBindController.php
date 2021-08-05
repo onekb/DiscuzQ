@@ -120,7 +120,7 @@ class SmsBindController extends AuthBaseController
             $this->outPut(ResponseCode::SUCCESS, '', []);
 
         } catch (Exception $e) {
-            DzqLog::error('手机号绑定接口异常', $paramData, $e->getMessage());
+            DzqLog::error('sms_bind_api_error', $paramData, $e->getMessage());
             $this->connection->rollback();
             $this->outPut(ResponseCode::INTERNAL_ERROR, '手机号绑定接口异常');
         }

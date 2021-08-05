@@ -51,7 +51,7 @@ class UpdateThreadController extends DzqController
             ->whereNull('deleted_at')
             ->first();
         if (!$this->thread) {
-            $this->outPut(ResponseCode::RESOURCE_NOT_FOUND);
+            $this->outPut(ResponseCode::RESOURCE_NOT_FOUND, '帖子不存在');
         }
         //编辑前验证手机，验证码，实名
         $this->userVerify($this->user);
@@ -62,9 +62,12 @@ class UpdateThreadController extends DzqController
     {
         $threadId = $this->inPut('threadId');
         $thread = $this->thread;
-        $post = Post::getOneActivePost($threadId);
+        $post = Post::query()
+            ->where(['thread_id' => $threadId, 'is_first' => Post::FIRST_YES])
+            ->whereNull('deleted_at')
+            ->first();
         if (empty($post)) {
-            $this->outPut(ResponseCode::RESOURCE_NOT_FOUND);
+            $this->outPut(ResponseCode::RESOURCE_NOT_FOUND, '帖子详情不存在');
         }
         $oldContent = $post->content;
         $result = $this->updateThread($thread, $post);

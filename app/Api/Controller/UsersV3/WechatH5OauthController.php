@@ -49,7 +49,7 @@ class WechatH5OauthController implements RequestHandlerInterface
             $this->socialite->setRequest($request);
             return $this->socialite->driver($this->type)->redirect();
         } catch (\Exception $e) {
-            DzqLog::error('H5授权接口异常', [
+            DzqLog::error('wechat_h5_oauth_api_error', [
                 'request'   =>  $request
             ], $e->getMessage());
             \Discuz\Common\Utils::outPut(ResponseCode::INTERNAL_ERROR, 'H5授权接口异常');

@@ -93,7 +93,7 @@ class SmsRebindController extends AuthBaseController
             $this->connection->commit();
             $this->outPut(ResponseCode::SUCCESS, '', []);
         } catch (Exception $e) {
-            DzqLog::error('手机号换绑接口异常', [
+            DzqLog::error('sms_rebind_api_error', [
                 'mobile'  => $this->inPut('mobile'),
                 'code'    => $this->inPut('code')
             ], $e->getMessage());

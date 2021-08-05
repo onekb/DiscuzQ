@@ -67,8 +67,7 @@ class BackgroundUploader
         /*if (extension_loaded('exif')) {
             $image->orientate();
         }*/
-
-        $encodedImage = $image->fit(1200, 800)->encode('png')->save();
+        $oldEncodedImage = $image->encode('png')->save();
 
         // 检测敏感图
         $this->censor->checkImage($image->dirname .'/'. $image->basename);
@@ -78,13 +77,21 @@ class BackgroundUploader
         }
 
         $backgroundPath = $this->getBackgroundPath($user);
+        $uid = sprintf('%09d', $user->id);
+        $dir1 = substr($uid, 0, 3);
+        $dir2 = substr($uid, 3, 2);
+        $dir3 = substr($uid, 5, 2);
+        $oldBackGroundPath = str_replace($dir1.'/'.$dir2.'/'.$dir3.'/',$dir1.'/'.$dir2.'/'.$dir3.'/'.'original_',$backgroundPath);
         // 判断是否开启云储存
         if ($this->settings->get('qcloud_cos', 'qcloud')) {
             $user->changeBackground($backgroundPath, true);
             $backgroundPath = 'public/background/' . $backgroundPath;
+            $oldBackGroundPath = 'public/background/' . $oldBackGroundPath;
         } else {
             $user->changeBackground($backgroundPath);
         }
+        $this->filesystem->put($oldBackGroundPath, $oldEncodedImage);
+        $encodedImage = $image->fit(1200, 800)->encode('png')->save();
         $this->filesystem->put($backgroundPath, $encodedImage);
     }
 
@@ -125,19 +132,6 @@ class BackgroundUploader
                 app(Factory::class)->disk('background_cos')->delete($cosPath);
             }
         }
-    }
-
-    /**
-     * @param User $user
-     * @return string
-     */
-    public function getAvatarPath(User $user)
-    {
-        $uid = sprintf('%09d', $user->id);
-        $dir1 = substr($uid, 0, 3);
-        $dir2 = substr($uid, 3, 2);
-        $dir3 = substr($uid, 5, 2);
-        return $dir1.'/'.$dir2.'/'.$dir3.'/'.substr($uid, -2).'.png';
     }
 
     public function getBackgroundPath(User $user)

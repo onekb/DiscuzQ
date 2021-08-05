@@ -67,8 +67,7 @@ class AvatarUploader
         /*if (extension_loaded('exif')) {
             $image->orientate();
         }*/
-
-        $encodedImage = $image->fit(500, 500)->encode('png')->save();
+        $oldEncodedImage = $image->encode('png')->save();
 
         // 检测敏感图
         $this->censor->checkImage($image->dirname .'/'. $image->basename);
@@ -76,19 +75,20 @@ class AvatarUploader
         if ($this->censor->isMod) {
             \Discuz\Common\Utils::outPut(ResponseCode::NOT_ALLOW_CENSOR_IMAGE);
         }
-
         $avatarPath = $this->getAvatarPath($user);
-
+        $oldAvatarPath = $this->getOriginalAvatarPath($user);
         // 判断是否开启云储存
         if ($this->settings->get('qcloud_cos', 'qcloud')) {
             $user->changeAvatar($avatarPath, true);
-
             $avatarPath = 'public/avatar/' . $avatarPath;
+            $oldAvatarPath = 'public/avatar/' . $oldAvatarPath;
         } else {
             $user->changeAvatar($avatarPath);
         }
-
+        $this->filesystem->put($oldAvatarPath, $oldEncodedImage);
+        $encodedImage = $image->fit(500, 500)->encode('png')->save();
         $this->filesystem->put($avatarPath, $encodedImage);
+
     }
 
     /**
@@ -142,4 +142,15 @@ class AvatarUploader
         $dir3 = substr($uid, 5, 2);
         return $dir1.'/'.$dir2.'/'.$dir3.'/'.substr($uid, -2).'.png';
     }
+
+    public function getOriginalAvatarPath(User $user)
+    {
+        $uid = sprintf('%09d', $user->id);
+        $dir1 = substr($uid, 0, 3);
+        $dir2 = substr($uid, 3, 2);
+        $dir3 = substr($uid, 5, 2);
+        return $dir1.'/'.$dir2.'/'.$dir3.'/original_'.substr($uid, -2).'.png';
+    }
+
+
 }

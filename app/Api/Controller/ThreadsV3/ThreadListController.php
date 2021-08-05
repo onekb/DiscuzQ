@@ -59,6 +59,7 @@ class ThreadListController extends DzqController
         $filter = $this->inPut('filter') ?: [];
         $categoryIds = $filter['categoryids'] ?? [];
         $complex = $filter['complex'] ?? null;
+        $user = $this->user;
         $this->viewHotList();
 
         $this->categoryIds = Category::instance()->getValidCategoryIds($this->user, $categoryIds);
@@ -67,8 +68,17 @@ class ThreadListController extends DzqController
 //            if ($this->user->isGuest() && !$this->categoryIds) {
 //                $this->outPut(ResponseCode::JUMP_TO_LOGIN);
 //            }
-            if (!$this->categoryIds && empty($complex)) {
-                throw new PermissionDeniedException('没有浏览权限');
+            if (!$this->categoryIds) {
+                if (empty($complex) ||
+                    $complex == Thread::MY_LIKE_THREAD ||
+                    $complex == Thread::MY_COLLECT_THREAD ||
+                    ($complex == Thread::MY_OR_HIS_THREAD && $user->id !== $filter['toUserId'])) {
+                    throw new PermissionDeniedException('没有浏览权限');
+                }
+            }
+            //去除购买帖子的分类控制
+            if ($complex == Thread::MY_BUY_THREAD) {
+                $this->categoryIds = array();
             }
         }
         return true;
@@ -283,7 +293,7 @@ class ThreadListController extends DzqController
         if (!empty($complex)) {
             switch ($complex) {
                 case Thread::MY_DRAFT_THREAD:
-                    $threads = $this->getBaseThreadsBuilder(Thread::IS_DRAFT)
+                    $threads = $this->getBaseThreadsBuilder(Thread::IS_DRAFT,false)
                         ->where('th.user_id', $loginUserId)
                         ->orderByDesc('th.id');
                     $threads = $threads->join('posts as post', 'post.thread_id', '=', 'th.id');

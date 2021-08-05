@@ -375,7 +375,7 @@ trait ThreadTrait
                 //针对图文混排的情况，这里要去掉外部图片展示
 //                if (!empty($tom_image_key)) unset($content['indexes'][$tom_image_key]);
                 $content['text'] = $xml;
-                if(!empty($isset_attachment_ids)){
+                if(!empty($isset_attachment_ids) && isset($content['indexes'][TomConfig::TOM_IMAGE]['body'])){
                     foreach ($content['indexes'][TomConfig::TOM_IMAGE]['body'] as $k => $v){
                         if(in_array($v['id'], $isset_attachment_ids))       unset($content['indexes'][TomConfig::TOM_IMAGE]['body'][$k]);
                     }

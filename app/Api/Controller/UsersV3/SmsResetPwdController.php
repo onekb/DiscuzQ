@@ -71,7 +71,7 @@ class SmsResetPwdController extends AuthBaseController
 
             $this->outPut(ResponseCode::NET_ERROR);
         } catch (\Exception $e) {
-            DzqLog::error('手机号重置密码接口异常', [
+            DzqLog::error('sms_reset_pwd_api_error', [
                 'mobile'    => $this->inPut('mobile'),
                 'code'      => $this->inPut('code'),
             ], $e->getMessage());

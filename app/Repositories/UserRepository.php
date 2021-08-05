@@ -321,14 +321,28 @@ class UserRepository extends AbstractRepository
             return false;
         }
 
-        // 作者本人，且（有编辑自己帖子的权限或者是草稿）
-        if (
-            $thread['user_id'] == $user->id
-            && ($this->checkCategoryPermission($user, PermissionKey::THREAD_EDIT_OWN, $thread['category_id']) || Arr::get($thread, 'is_draft'))) {
-            return true;
+        if ($thread['is_draft'] == Thread::BOOL_YES) {
+            if ($thread['user_id'] == $user->id) {
+                return true;
+            }
+            if ($thread['is_approved'] == Thread::BOOL_NO && $user->isAdmin()) {
+                return true;
+            }
+        } else {
+            if ($user->isAdmin()) {
+                return true;
+            }
+            if ($thread['user_id'] == $user->id) {
+                if ($this->checkCategoryPermission($user, PermissionKey::THREAD_EDIT_OWN, $thread['category_id']) || 
+                    $this->checkCategoryPermission($user, PermissionKey::THREAD_EDIT, $thread['category_id'])) {
+                    return true;
+                }
+            } else {
+                return $thread['is_approved'] == Thread::BOOL_YES && $this->checkCategoryPermission($user, PermissionKey::THREAD_EDIT, $thread['category_id']);
+            }
         }
 
-        return $this->checkCategoryPermission($user, PermissionKey::THREAD_EDIT, $thread['category_id']);
+        return false;
     }
 
     /**
@@ -395,10 +409,13 @@ class UserRepository extends AbstractRepository
             return false;
         }
 
-        // 是本人，且已审核，且（没有删除或者是自己删除的）
-        if (
-            $thread['user_id'] == $user->id
-            && Arr::get($thread, 'is_approved') == Thread::APPROVED
+        // 审核状态下，作者本人与管理员可见
+        if (Arr::get($thread, 'is_approved') == Thread::UNAPPROVED) {
+            return $thread['user_id'] == $user->id || $user->isAdmin();
+        }
+
+        // 是本人，且（没有删除或者是自己删除的）
+        if ($thread['user_id'] == $user->id
             && (!Arr::get($thread, 'deleted_at') || Arr::get($thread, 'deleted_user_id') == $user->id)
         ) {
             return true;

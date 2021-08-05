@@ -194,3 +194,5 @@ $route->get('/offiaccount/jssdk', 'offiaccount.jssdk', ApiController\WechatV3\Of
 $route->get('/thread.test', 'thread.test', ApiController\ThreadsV3\TestController::class);
 
 $route->post('/open.api.log', 'open.api.log', ApiController\SettingsV3\OpenApiLogController::class);
+
+$route->get('/view.count', 'view.count', ApiController\ThreadsV3\ViewCountController::class);
