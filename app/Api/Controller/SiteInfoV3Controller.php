@@ -74,7 +74,9 @@ class SiteInfoV3Controller extends DzqController
         $masterAmount = Order::query()->where('status', Order::ORDER_STATUS_PAID)->sum('master_amount');
 
         // 待审核用户数
-        $unapprovedUsers = User::where('status', 2)->count();
+        $user = User::query();
+        $user->join('group_user', 'users.id', '=', 'group_user.user_id');
+        $unapprovedUsers = $user->where('status', 2)->count();
 
         // 待审核主题数
         $unapprovedThreads = Thread::where('is_approved', Thread::UNAPPROVED)

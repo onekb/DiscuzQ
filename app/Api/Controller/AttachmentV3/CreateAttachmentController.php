@@ -95,6 +95,21 @@ class CreateAttachmentController extends DzqController
         return call_user_func_array($typeMethodMap[$type], [$this->user]);
     }
 
+    public function http_get_data($url) {
+
+        $ch = curl_init ();
+        curl_setopt ( $ch, CURLOPT_CUSTOMREQUEST, 'GET' );
+        curl_setopt ( $ch, CURLOPT_SSL_VERIFYPEER, false );
+        curl_setopt ( $ch, CURLOPT_URL, $url );
+        ob_start ();
+        curl_exec ( $ch );
+        $return_content = ob_get_contents ();
+        ob_end_clean ();
+
+        $return_code = curl_getinfo ( $ch, CURLINFO_HTTP_CODE );
+        return $return_content;
+    }
+
     public function main()
     {
         $actor = $this->user;
@@ -105,6 +120,7 @@ class CreateAttachmentController extends DzqController
         $order = (int) Arr::get($this->request->getParsedBody(), 'order', 0);
         $ipAddress = ip($this->request->getServerParams());
         $mediaId = Arr::get($this->request->getParsedBody(), 'mediaId', '');
+        $fileUrl = Arr::get($this->request->getParsedBody(), 'fileUrl', '');
 
         ini_set('memory_limit',-1);
 
@@ -121,12 +137,28 @@ class CreateAttachmentController extends DzqController
                 $fileSize = filesize($tmpFileWithExt);
             }
         } else {
-            $fileName = $file->getClientFilename();
-            $fileSize = $file->getSize();
-            $fileType = $file->getClientMediaType();
-            $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-            $tmpFile = tempnam(storage_path('/tmp'), 'attachment');
-            $tmpFileWithExt = $tmpFile . ($ext ? ".$ext" : '');
+            //URL链接图处理
+            if (!empty($fileUrl)) {
+                $return_content = $this->http_get_data($fileUrl);
+                if (empty($return_content)) {
+                    return $this->outPut(ResponseCode::RESOURCE_NOT_FOUND, 'URL有误');
+                }
+                $fileName = basename($fileUrl);
+                $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+                $file = $tmpFileWithExt = storage_path('/tmp') .'/' . $fileName;
+                $fp = @fopen($tmpFileWithExt,"a"); //将文件绑定到流
+                fwrite($fp,$return_content); //写入文件
+                $imageSize = getimagesize($tmpFileWithExt);
+                $fileType = $imageSize['mime'];
+                $fileSize = filesize($tmpFileWithExt);
+            } else {
+                $fileName = $file->getClientFilename();
+                $fileSize = $file->getSize();
+                $fileType = $file->getClientMediaType();
+                $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+                $tmpFile = tempnam(storage_path('/tmp'), 'attachment');
+                $tmpFileWithExt = $tmpFile . ($ext ? ".$ext" : '');
+            }
         }
 
         //上传临时目录之前验证
@@ -137,12 +169,12 @@ class CreateAttachmentController extends DzqController
             'ext' => strtolower($ext),
         ]);
         // 从微信下载的文件不需要再移动
-        if (!$mediaId)  {
+        if (!$mediaId && !$fileUrl)  {
             $file->moveTo($tmpFileWithExt);
         }
 
         try {
-            if (!$mediaId)  {
+            if (!$mediaId && !$fileUrl)  {
                 $file = new UploadedFile(
                     $tmpFileWithExt,
                     $fileName,

@@ -71,7 +71,8 @@ class WechatPcRebindQrCodeController extends AuthBaseController
     //        if (true) {
                 //获取小程序全局token
                 $app = $this->miniProgram();
-                $optional['path'] = 'subPages/user/wx-rebind-action/index';
+                $optional['page'] = 'subPages/user/wx-rebind-action/index';
+//                $optional['page'] = 'subPages/user/wx-bind/index';
                 $wxqrcodeResponse = $app->app_code->getUnlimit($sessionToken, $optional);
                 if(is_array($wxqrcodeResponse) && isset($wxqrcodeResponse['errcode']) && isset($wxqrcodeResponse['errmsg'])) {
                     //todo 日志记录

@@ -28,6 +28,12 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\ConnectionInterface;
 use Discuz\Qcloud\QcloudStatisticsTrait;
+use TencentCloud\Common\Credential;
+use TencentCloud\Common\Profile\ClientProfile;
+use TencentCloud\Common\Profile\HttpProfile;
+use TencentCloud\Vod\V20180717\Models\ProcessMediaRequest;
+use TencentCloud\Vod\V20180717\VodClient;
+
 
 class TranscodeVideoCommand extends AbstractCommand
 {
@@ -43,6 +49,8 @@ class TranscodeVideoCommand extends AbstractCommand
      * @var ConnectionInterface
      */
     protected $threadVideo;
+
+    protected $url = 'vod.tencentcloudapi.com';
 
     /**
      * AvatarCleanCommand constructor.
@@ -89,7 +97,8 @@ class TranscodeVideoCommand extends AbstractCommand
 
         if($threadVideos){
             $settingRepo = app(SettingsRepository::class);
-            $threadVideos->map(function ($item) use ($settingRepo,$newThreadVideos) {
+            $log = app('log');
+            $threadVideos->map(function ($item) use ($settingRepo,$newThreadVideos,$log) {
                 try {
                     if (!empty($newThreadVideos[$item->id])) {
                         //转码
@@ -102,14 +111,47 @@ class TranscodeVideoCommand extends AbstractCommand
                         if($resTranscode){
                             $item->status = ThreadVideo::VIDEO_STATUS_SUCCESS;
                             $item->save();
+                            $log->info('普通转码成功,videoId为'.$item->id.",taskId为".$resTranscode->TaskId);
                         }
                     }
                 } catch (Exception $e) {
-                    app('log')->info('转码失败,videoId:'.$item->id);
+                    if (!empty($newThreadVideos[$item->id])) {
+                        $fileId = $item->file_id;
+                        $resp = $this->processMedia($fileId,$settingRepo);
+                        if(empty($resp['TaskId'])){
+                            $log->info('转码任务未执行,videoId为'.$item->id);
+                            return;
+                        }
+                        $item->status = ThreadVideo::VIDEO_STATUS_SUCCESS;
+                        $item->save();
+                        $log->info('sdk上传视频转码成功,videoId为'.$item->id.",taskId为".$resp['TaskId']);
+                    }
                 }
             });
         }
         $this->info('转码脚本执行 [结束]');
+    }
 
+    //兼容sdk上传视频转码
+    public function ProcessMedia($fileId,$settingRepo){
+        $secretId = $settingRepo->get('qcloud_secret_id', 'qcloud');
+        $secretKey = $settingRepo->get('qcloud_secret_key', 'qcloud');
+
+        $cred = new Credential($secretId, $secretKey);
+        $httpProfile = new HttpProfile();
+        $httpProfile->setEndpoint($this->url);
+
+        $clientProfile = new ClientProfile();
+        $clientProfile->setHttpProfile($httpProfile);
+        $client = new VodClient($cred, "", $clientProfile);
+        $req = new ProcessMediaRequest();
+        $params = array(
+            'FileId'=>$fileId
+        );
+
+        $req->fromJsonString(json_encode($params));
+        $resp = $client->ProcessMedia($req);
+        $resp = json_decode($resp->toJsonString(),true);
+        return $resp;
     }
 }

@@ -16,10 +16,7 @@ class UsersOrderLogsListController extends DzqController
 {
     protected function checkRequestPermissions(UserRepository $userRepo)
     {
-        if (!$this->user->isAdmin()) {
-            throw new PermissionDeniedException('没有权限');
-        }
-        return true;
+        return $this->user->isAdmin();
     }
 
     public function main()
@@ -93,12 +90,16 @@ class UsersOrderLogsListController extends DzqController
         $threadData = array_column($threadData, null, 'threadId');
         foreach ($orders as $key => $value) {
             $orders[$key]['payeeNickname'] = $payeeUserDatas[$value['payee_id']]['nickname'] ?? '';
-            $orders[$key]['thread'] = $threadData[$value['thread_id']] ?? ['title' => '该订单暂无对应帖子'];
+            $orders[$key]['thread'] = $threadData[$value['thread_id']] ?? ['title' => '暂无订单商品内容'];
             if(empty($orders[$key]['thread']['title'])){
-                if(Str::length($orders['threads']['content']) > Thread::ORDER_TITLE_LENGTH ){
-                    $orders[$key]['thread']['title'] = Str::finish(Str::substr(strip_tags($orders[$key]['content']), 0, Thread::ORDER_TITLE_LENGTH), Thread::ORDER_TITLE_END_WITH);
-                }else{
-                    $orders[$key]['thread']['title'] = strip_tags($orders[$key]['thread']['content']);
+                if (isset($orders[$key]['thread']['content']) && !empty($orders[$key]['thread']['content'])) {
+                    if(mb_strlen($orders[$key]['thread']['content']) > Thread::ORDER_TITLE_LENGTH){
+                        $orders[$key]['thread']['title'] = Str::substr(strip_tags($orders[$key]['thread']['content']), 0, Thread::ORDER_TITLE_LENGTH) . '...';
+                    }else{
+                        $orders[$key]['thread']['title'] = strip_tags($orders[$key]['thread']['content']) ?: '暂无订单商品内容';
+                    }
+                } else {
+                    $orders[$key]['thread']['title'] = '暂无订单商品内容';
                 }
             }
         }
