@@ -20,9 +20,9 @@ namespace App\Api\Controller\SettingsV3;
 
 use App\Models\Sequence;
 use App\Common\ResponseCode;
-use App\Models\Thread;
 use App\Models\User;
 use App\Repositories\UserRepository;
+use Discuz\Base\DzqCache;
 use Discuz\Contracts\Setting\SettingsRepository;
 use Discuz\Base\DzqController;
 
@@ -67,5 +67,9 @@ class UpdateSequenceController extends DzqController
         Sequence::query()->delete();
         Sequence::query()->insert($data);
         return $this->outPut(ResponseCode::SUCCESS);
+    }
+    public function suffixClearCache($user)
+    {
+        DzqCache::clear();
     }
 }

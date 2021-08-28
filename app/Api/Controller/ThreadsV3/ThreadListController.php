@@ -220,7 +220,12 @@ class ThreadListController extends DzqController
 
     private function filterKey($perPage, $filter, $withLoginUser = false)
     {
-        $serialize = ['perPage' => $perPage, 'filter' => $filter, 'group' => $this->user->toArray()];
+        $groups =  $this->user->groups->toArray();
+        $groupId = '';
+        if(!empty($groups)){
+            $groupId = $groups[0]['id'];
+        }
+        $serialize = ['perPage' => $perPage, 'filter' => $filter, 'group' => $groupId];
         $withLoginUser && $serialize['user'] = $this->user->id;
         return md5(serialize($serialize));
     }

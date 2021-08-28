@@ -128,7 +128,7 @@ class ForumSettingSerializerV2 extends AbstractSerializer
                 'site_background_image' => $backgroundImage ?: '',
                 'site_url' => $siteUrl,
                 'site_stat' => $this->settings->get('site_stat') ?: '',
-                'site_author' => User::query()->where('id', $this->settings->get('site_author'))->first(['id', 'username', 'avatar']),
+                'site_author' => User::query()->where('id', $this->settings->get('site_author'))->first(['id', 'username', 'avatar','nickname']),
                 'site_install' => $this->settings->get('site_install'), // 安装时间
                 'site_record' => $this->settings->get('site_record'),
                 'site_cover' => $this->settings->get('site_cover') ?: '',
@@ -186,6 +186,9 @@ class ForumSettingSerializerV2 extends AbstractSerializer
                 'qcloud_sms' => (bool)$this->settings->get('qcloud_sms', 'qcloud'),
                 'qcloud_vod' => (bool)$this->settings->get('qcloud_vod', 'qcloud'),
                 'qcloud_cos_doc_preview' => (bool)$this->settings->get('qcloud_cos_doc_preview', 'qcloud'),
+                'qcloud_cos_bucket_name' => $this->settings->get('qcloud_cos_bucket_name', 'qcloud'),
+                'qcloud_cos_bucket_area' => $this->settings->get('qcloud_cos_bucket_area', 'qcloud'),
+                'qcloud_cos_sign_url' => (bool)$this->settings->get('qcloud_cos_sign_url', 'qcloud')
             ],
 
             // 提现设置

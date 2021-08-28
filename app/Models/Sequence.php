@@ -27,12 +27,6 @@ use Discuz\Base\DzqModel;
  */
 class Sequence extends DzqModel
 {
-    protected function clearCache()
-    {
-        DzqCache::delKey(CacheKey::LIST_THREADS_V3_SEQUENCE);
-        DzqCache::delKey(CacheKey::SEQUENCE);
-    }
-
     public static function getSequence()
     {
         $cache = app('cache');

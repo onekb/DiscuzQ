@@ -18,102 +18,118 @@
 
 namespace App\Api\Controller\AttachmentV3;
 
-use App\Common\CacheKey;
+use App\Censor\Censor;
 use App\Common\ResponseCode;
 use App\Models\Attachment;
 use App\Repositories\UserRepository;
-use Discuz\Base\DzqCache;
+use App\Validators\AttachmentValidator;
 use Discuz\Base\DzqController;
 use Illuminate\Support\Str;
+use League\Flysystem\Util;
+use Symfony\Component\HttpFoundation\File\UploadedFile as AttachmentUploadedFile;
 
 class RelationAttachmentController extends DzqController
 {
+    use AttachmentTrait;
+
+    protected $censor;
+
+    protected $settings;
 
     protected function checkRequestPermissions(UserRepository $userRepo)
     {
-        if ($this->user->isGuest()) {
-            $this->outPut(ResponseCode::JUMP_TO_LOGIN);
-        }
+        $type = (int) $this->inPut('type'); //0 附件 1图片 2视频 3音频 4消息图片
+        $this->checkUploadAttachmentPermissions($type, $this->user, $userRepo);
         return true;
+    }
+
+    public function __construct(Censor $censor, AttachmentValidator $attachmentValidator)
+    {
+        $this->censor = $censor;
+        $this->attachmentValidator = $attachmentValidator;
     }
 
     public function main()
     {
-        $user = $this->user;
         $data = [
-            'typeId' => (int) $this->inPut('typeId'),
-            'order' => (int) $this->inPut('order'),
-            'type' => (int) $this->inPut('type'),
-            'filePath' => $this->inPut('filePath'),
-            'fileName' => $this->inPut('fileName'),
-            'fileSize' => (int) $this->inPut('fileSize'),
-            'fileWidth' => (int) $this->inPut('fileWidth'),
-            'fileHeight' => (int) $this->inPut('fileHeight'),
-            'fileType' => $this->inPut('fileType'),
-            'requestId' => $this->inPut('requestId')
+            'cosUrl' => $this->inPut('cosUrl'),
+            'type' => (int)$this->inPut('type'),
+            'fileName' => $this->inPut('fileName')
         ];
 
-        $this->dzqValidate($data,[
+        $this->dzqValidate($data, [
+                'cosUrl' => 'required',
                 'type' => 'required|integer|in:0,1,2,3,4',
-                'filePath' => 'required',
-                'fileName' => 'required|max:200',
-                'fileType' => 'required',
-                'requestId' => 'required',
+                'fileName' => 'required|max:200'
             ]
         );
+        $cosUrl = $data['cosUrl'];
 
-        $fileName = explode('.',$data['fileName']);
-        if (!isset($fileName[1])) {
-            $this->outPut(ResponseCode::INVALID_PARAMETER,'fileNamec参数格式不正确');
+        set_time_limit(0);
+        $file = @file_get_contents($cosUrl, false, stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false]]));
+        $fileSize = strlen($file);
+        if (!$file) {
+            $this->outPut(ResponseCode::INVALID_PARAMETER, '未获取到文件信息');
         }
 
-        $get = DzqCache::get(CacheKey::IMG_UPLOAD_TMP_DETECT);
-        if (!isset($get[$user->id][$data['requestId']])) {
-            $this->outPut(ResponseCode::INVALID_PARAMETER,'requestId参数无效');
+        $fileData = parse_url($cosUrl);
+        $fileData = pathinfo($fileData['path']);
+        $this->checkAttachmentSize($fileSize);
+        $this->checkAttachmentExt($data['type'], $fileData['basename']);
+
+        ini_set('memory_limit', -1);
+        $tmpFile = tempnam(storage_path('/tmp'), 'attachment');
+        $ext = $fileData['extension'];
+        $ext = $ext ? ".$ext" : '';
+        $tmpFileWithExt = $tmpFile . $ext;
+        $putResult = @file_put_contents($tmpFileWithExt, $file);
+
+        if (!$putResult) {
+            $this->outPut(ResponseCode::INVALID_PARAMETER, '文件拉取失败！');
+        }
+        if (in_array($data['type'], [Attachment::TYPE_OF_IMAGE, Attachment::TYPE_OF_DIALOG_MESSAGE])) {
+            $this->censor->checkImage($cosUrl, true, $tmpFileWithExt);
+            if ($this->censor->isMod) {
+                $this->outPut(ResponseCode::NOT_ALLOW_CENSOR_IMAGE);
+            }
         }
 
-        $userCache = $get[$user->id][$data['requestId']];
-        if ($userCache['createdAt'] < time()-1800) {
-            $this->outPut(ResponseCode::INVALID_PARAMETER,'requestId参数过期');
-        }
+        $mimeType = Util\MimeType::detectByFilename($tmpFileWithExt);
+        //上传临时目录之前验证
+        $this->attachmentValidator->valid([
+            'type' => $data['type'],
+            'file' => $file,
+            'size' => $fileSize,
+            'ext' => $fileData['extension'],
+        ]);
+        $imageFile = new AttachmentUploadedFile(
+            $tmpFileWithExt,
+            $fileData['basename'],
+            $mimeType,
+            0,
+            true
+        );
 
+        list($width, $height) = getimagesize($tmpFileWithExt);
         $attachment = new Attachment();
         $attachment->uuid = Str::uuid();
-        $attachment->user_id = $user->id;
-        $attachment->type_id = $data['typeId'];
-        $attachment->order = $data['order'];
+        $attachment->user_id = $this->user->id;
         $attachment->type = $data['type'];
         $attachment->is_approved = Attachment::APPROVED;
-        $attachment->attachment = Str::random(40) . $fileName[1];
-        $attachment->file_path = $data['filePath'];
+        $attachment->attachment = urldecode($fileData['basename']);
+        $attachment->file_path = substr_replace($fileData['dirname'], '', strpos($fileData['dirname'], '/'), strlen('/')) . '/';
         $attachment->file_name = $data['fileName'];
-        $attachment->file_size = $data['fileSize'];
-        $attachment->file_width = $data['fileWidth'];
-        $attachment->file_height = $data['fileHeight'];
-        $attachment->file_type = $data['fileType'];
+        $attachment->file_size = $fileSize;
+        $attachment->file_width = $width;
+        $attachment->file_height = $height;
+        $attachment->file_type = $mimeType;
         $attachment->is_remote = Attachment::YES_REMOTE;
         $attachment->ip = ip($this->request->getServerParams());
         $attachment->save();
+        @unlink($tmpFile);
+        @unlink($tmpFileWithExt);
+        $attachment->url = $attachment->thumbUrl = $cosUrl;
 
-        $this->outPut(ResponseCode::SUCCESS,'',$attachment);
+        $this->outPut(ResponseCode::SUCCESS, '', $this->camelData($attachment));
     }
-
-    //替换缓存
-    public function suffixClearCache($user)
-    {
-        $requestId = $this->inPut('requestId');
-        $get = DzqCache::get(CacheKey::IMG_UPLOAD_TMP_DETECT);
-        foreach ($get as $key=>$val) {
-            unset($get[$key][$requestId]);
-            foreach ($val as $k => $v) {
-                if ($v['createdAt'] < time()-1800) {
-                    unset($get[$key][$k]);
-                }
-            }
-        }
-        if (DzqCache::CACHE_TTL) {
-            app('cache')->put(CacheKey::IMG_UPLOAD_TMP_DETECT, $get);
-        }
-    }
-
 }

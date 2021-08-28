@@ -151,19 +151,8 @@ trait ThreadQueryTrait
         }
         $categoryIds = [];
         !empty($sequence['category_ids']) && $categoryIds = explode(',', $sequence['category_ids']);
-        $categoryIds = Category::instance()->getValidCategoryIds($this->user, $categoryIds);
         $categoryIds = array_map('intval', $categoryIds);
-        $contidition = "orWhere";
-        if(!empty($sequence['category_ids']) || !empty($filter['categoryids'])){
-            if(!empty($filter['categoryids']) && empty($sequence['category_ids'])){
-                $categoryIds = array_map('intval', $filter['categoryids']);
-            }
-            if(!empty($sequence['category_ids']) && !empty($filter['categoryids'])){
-                $categoryIds = array_unique($categoryIds = array_merge($categoryIds,array_map('intval', $filter['categoryids'])));
-            }
-        }else{
-            $contidition = "where";
-        }
+        $allowCategoryIds = Category::instance()->getValidCategoryIds($this->user);
         if (empty($filter)) $filter = [];
         isset($filter['types']) && $types = $filter['types'];
         $groupIds = [];
@@ -188,77 +177,52 @@ trait ThreadQueryTrait
             $query->leftJoin('thread_tag as tag', 'tag.thread_id', '=', 'th.id')
                 ->whereIn('tag.tag', $types);
         }
-
-        if (!empty($categoryIds)) {
-            $query->whereIn('th.category_id', $categoryIds);
+        if (!empty($allowCategoryIds)) {
+            $query->whereIn('th.category_id', $allowCategoryIds);
         }
-
-        //需剔除的threadId
-        $removeThreadId = [];
-        if (!empty($blockUserIds)) {
-            $query->whereNotIn('th.user_id', $blockUserIds);
-        }
-        if (!empty($blockThreadIds)) {
-            $query->whereNotIn('th.id', $blockThreadIds);
-            $removeThreadId = array_merge($removeThreadId,$blockThreadIds);
-        }
-        if (!empty($blockTopicIds)) {
-            $thIds = ThreadTopic::query()->distinct(true)->whereIn('topic_id',$blockTopicIds)->get("thread_id")->toArray();
-            $thIds = array_column($thIds,'thread_id');
-            $query->whereNotIn('th.id', $thIds);
-            $removeThreadId = array_merge($removeThreadId,$thIds);
-        }
-
-        $query->$contidition(function($query)use ($groupIds,$userIds,$threadIds,$topicIds,$blockUserIds,$blockThreadIds,$blockTopicIds,$categoryIds,$removeThreadId) {
-            if(!empty($groupIds) || !empty($userIds) || !empty($threadIds) || !empty($topicIds) || !empty($blockUserIds) || !empty($blockThreadIds) || !empty($categoryIds)){
-                $query->whereNull('th.deleted_at')
-                    ->whereNotNull('th.user_id')
-                    ->where('th.is_draft', Thread::IS_NOT_DRAFT)
-                    ->where('th.is_display', Thread::BOOL_YES)
-                    ->where('th.is_approved', Thread::BOOL_YES);
-                $query->where(function ($query) use ($groupIds,$userIds,$threadIds,$topicIds,$blockUserIds,$blockThreadIds,$blockTopicIds,$categoryIds,$removeThreadId) {
-                    if (!empty($groupIds)) {
-                        $query->orWhereIn('g1.group_id', $groupIds);
-                    }
-                    if (!empty($userIds)) {
-                        if(!empty($blockUserIds)){
-                            $userIds = array_diff($userIds,$blockUserIds);
-                        }
-                        if(!empty($userIds)){
-                            $query->orWhereIn('th.user_id', $userIds);
-                        }
-                    }
-                    if (!empty($threadIds)) {
-                        if(!empty($removeThreadId)){
-                            $threadIds = array_diff($threadIds,$removeThreadId);
-                        }
-                        if(!empty($threadIds)){
-                            $query->orWhereIn('th.id', $threadIds);
-                        }
-                    }
-                    if (!empty($topicIds)) {
-                        $query->orWhereIn('topic.topic_id', $topicIds);
-                    }
-                    if(empty($groupIds) && empty($userIds) && empty($threadIds) && empty($topicIds)){
-                        if (!empty($categoryIds)) {
-                            $query->whereIn('th.category_id', $categoryIds);
-                        }
-                    }
-                });
+        //并集threadId
+        if(!empty($categoryIds)|| !empty($groupIds) || !empty($userIds) || !empty($threadIds) || !empty($topicIds)){
+            $queryMerge = Thread::query()->select('th.id')->from('threads as th')
+                ->leftJoin('group_user as g1', 'g1.user_id', '=', 'th.user_id')
+                ->leftJoin('thread_topic as topic', 'topic.thread_id', '=', 'th.id');
+            if (!empty($categoryIds)) {
+                $queryMerge->orWhereIn('th.category_id', $categoryIds);
             }
-        });
-        if (!empty($blockUserIds)) {
-            $query->whereNotIn('th.user_id', $blockUserIds);
+            if (!empty($groupIds)) {
+                $queryMerge->orWhereIn('g1.group_id', $groupIds);
+            }
+            if(!empty($userIds)){
+                $queryMerge->orWhereIn('th.user_id', $userIds);
+            }
+            if(!empty($threadIds)){
+                $queryMerge->orWhereIn('th.id', $threadIds);
+            }
+            if (!empty($topicIds)) {
+                $queryMerge->orWhereIn('topic.topic_id', $topicIds);
+            }
+            $mergeIds = array_column($queryMerge->get()->toArray(),'id');
+            $query->whereIn('th.id',$mergeIds);
         }
-        if (!empty($blockThreadIds)) {
-            $query->whereNotIn('th.id', $blockThreadIds);
+        //需剔除的threadId
+        if(!empty($blockUserIds) || !empty($blockThreadIds) || !empty($blockTopicIds)){
+            $queryRemove = Thread::query()->select('threads.id');
+            if (!empty($blockUserIds)) {
+                $queryRemove->orWhereIn('threads.user_id', $blockUserIds);
+            }
+            if (!empty($blockThreadIds)) {
+                $queryRemove->orWhereIn('threads.id', $blockThreadIds);
+            }
+            if (!empty($blockTopicIds)) {
+                $thIds = ThreadTopic::query()->distinct(true)->whereIn('topic_id',$blockTopicIds)->get("thread_id")->toArray();
+                $thIds = array_column($thIds,'thread_id');
+                $queryRemove->orWhereIn('threads.id', $thIds);
+            }
+            $removeIds = array_column($queryRemove->get()->toArray(),'id');
+            $query->whereNotIn('th.id',$removeIds);
         }
-        if (!empty($blockTopicIds)) {
-            $thIds = ThreadTopic::query()->distinct(true)->whereIn('topic_id',$blockTopicIds)->get("thread_id")->toArray();
-            $thIds = array_column($thIds,'thread_id');
-            $query->whereNotIn('th.id', $thIds);
+        if(!empty($filter['categoryids'])){
+            $query->whereIn('th.category_id', $filter['categoryids']);
         }
-
         $query->orderBy('th.created_at', 'desc');
         $query->distinct(true);
         return $query;

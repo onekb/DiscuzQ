@@ -1,0 +1,23 @@
+{
+  "id": "2692600",
+  "name": "icon",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "5387382",
+      "name": "导入",
+      "font_class": "daoru",
+      "unicode": "eabf",
+      "unicode_decimal": 60095
+    },
+    {
+      "icon_id": "15685683",
+      "name": "导入",
+      "font_class": "daoru1",
+      "unicode": "e6f7",
+      "unicode_decimal": 59127
+    }
+  ]
+}

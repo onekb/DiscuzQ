@@ -41,12 +41,14 @@ use Psr\Http\Message\ServerRequestInterface;
 
 class SetSettingsController extends DzqController
 {
+    use CosTrait;
+
+    use QcloudTrait;
+
     public function suffixClearCache($user)
     {
         DzqCache::delKey(CacheKey::SETTINGS);
     }
-
-    use QcloudTrait;
 
     protected function checkRequestPermissions(UserRepository $userRepo)
     {
@@ -176,6 +178,11 @@ class SetSettingsController extends DzqController
             $this->settings->set($key, $value, $tag);
             return $setting;
         });
+
+        if (isset($settings['qcloud_qcloud_cos']) && $settings['qcloud_qcloud_cos']['value']) {
+            $this->putBucketCors();
+        }
+
         $action_desc = "";
         if (!empty($settings['cash_cash_interval_time']['key'])) {
             if ($settings['cash_cash_interval_time']['key'] == 'cash_interval_time') {

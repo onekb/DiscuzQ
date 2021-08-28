@@ -63,6 +63,7 @@ class InviteUsersListController extends DzqController
         $registOrderDatas = array_column($registOrderDatas, null, 'user_id');
         foreach ($inviteData as $key => $value) {
             $inviteData[$key]['nickname'] = $users[$value['user_id']]['nickname'] ?? '';
+            $inviteData[$key]['avatar'] = !empty($inviteData[$key]['avatar']) ? User::instance()->getAvatarAttribute($inviteData[$key]['avatar']) : '';
             $inviteData[$key]['bounty'] = 0;
             if (isset($registOrderDatas[$value['user_id']])) {
                 $inviteData[$key]['bounty'] = floatval($registOrderDatas[$value['user_id']]['third_party_amount']);

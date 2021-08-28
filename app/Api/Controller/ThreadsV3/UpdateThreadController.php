@@ -115,9 +115,9 @@ class UpdateThreadController extends DzqController
         $this->saveThread($thread, $content);
         //插入话题
         $content = $this->saveTopic($thread, $content);
-        $parsedContent = $post->content;
         //更新post数据
         $this->savePost($post, $content);
+        $parsedContent = $post->content;
         //发帖@用户
         $this->sendNews($thread, $post);
         //更新tom数据

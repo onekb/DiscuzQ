@@ -1,0 +1,23 @@
+@font-face {
+  font-family: "iconfont"; /* Project id 2692600 */
+  src: url('iconfont.woff2?t=1627437973494') format('woff2'),
+       url('iconfont.woff?t=1627437973494') format('woff'),
+       url('iconfont.ttf?t=1627437973494') format('truetype');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-daoru:before {
+  content: "\eabf";
+}
+
+.icon-daoru1:before {
+  content: "\e6f7";
+}
+

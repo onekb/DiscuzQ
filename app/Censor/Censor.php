@@ -370,6 +370,8 @@ class Censor
         }
 
         if ($this->isMod == true) {
+            //打印敏感日志
+            app('log')->info('图片敏感信息：', [$result]);
             Utils::outPut(ResponseCode::NOT_ALLOW_CENSOR_IMAGE);
         }
     }

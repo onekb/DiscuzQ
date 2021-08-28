@@ -139,18 +139,37 @@ class CreateAttachmentController extends DzqController
         } else {
             //URL链接图处理
             if (!empty($fileUrl)) {
+                /*
                 $return_content = $this->http_get_data($fileUrl);
                 if (empty($return_content)) {
-                    return $this->outPut(ResponseCode::RESOURCE_NOT_FOUND, 'URL有误');
+                    return $this->outPut(ResponseCode::INVALID_PARAMETER, 'URL有误');
                 }
                 $fileName = basename($fileUrl);
                 $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-                $file = $tmpFileWithExt = storage_path('/tmp') .'/' . $fileName;
+                $file = $tmpFileWithExt = storage_path('/tmp') .'/' . $fileName.'_'.uniqid();
                 $fp = @fopen($tmpFileWithExt,"a"); //将文件绑定到流
                 fwrite($fp,$return_content); //写入文件
                 $imageSize = getimagesize($tmpFileWithExt);
                 $fileType = $imageSize['mime'];
                 $fileSize = filesize($tmpFileWithExt);
+                */
+//                $url_content = file_get_contents($fileUrl);
+                $url_content = $this->http_get_data($fileUrl);
+                $fileName = basename($fileUrl);
+                $file_basename = explode('.', $fileName);
+                $ext = $file_basename[1] ?? '';
+                $tmp_file_path = storage_path('tmp').'/'.$file_basename[0].'_'.uniqid().'.'.$ext;
+                while (file_exists($tmp_file_path)){
+                    $tmp_file_path = storage_path('tmp').'/'.$file_basename[0].'_'.uniqid().'.'.$ext;
+                }
+                $tmp_file = fopen($tmp_file_path, 'w');
+                $file = $tmpFileWithExt = $real_file_path = realpath($tmp_file_path);
+//                file_put_contents($real_file_path, $url_content);
+                fwrite($tmp_file, $url_content);
+                fclose($tmp_file);
+                $fileType = mime_content_type($real_file_path);
+                $fileSize = filesize($real_file_path);
+
             } else {
                 $fileName = $file->getClientFilename();
                 $fileSize = $file->getSize();
@@ -261,7 +280,7 @@ class CreateAttachmentController extends DzqController
                 $dialogMessage = DialogMessage::query()->where('id', $dialogMessageId)->first();
                 $dialog = Dialog::query()->where('id', $dialogMessage->dialog_id)->first();
                 $lastDialogMessage = DialogMessage::query()->where('id', $dialog->dialog_message_id)->first();
-                if ($dialog->dialog_message_id == 0 || 
+                if ($dialog->dialog_message_id == 0 ||
                    (isset($lastDialogMessage['created_at']) && ($lastDialogMessage['created_at'] < $dialogMessage['created_at']))) {
                     $updateDialogResult = Dialog::query()
                         ->where('id', $dialogMessage->dialog_id)
