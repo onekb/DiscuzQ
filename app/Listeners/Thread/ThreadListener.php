@@ -30,6 +30,7 @@ use App\Models\Post;
 use App\Models\PostMod;
 use App\Models\Thread;
 use App\Models\ThreadTopic;
+use App\Models\User;
 use App\Models\UserActionLogs;
 use App\Traits\PostNoticesTrait;
 use App\Traits\ThreadNoticesTrait;
@@ -89,8 +90,8 @@ class ThreadListener
             PostMod::query()->where('post_id', $firstPost->id)->delete();
 
             // 创建话题和关系
-            $firstPost->setContentAttribute($firstPost->content);
-            $firstPost->save();
+            //$firstPost->setContentAttribute($firstPost->content);
+            //$firstPost->save();
 
             ThreadTopic::setThreadTopic($firstPost);
         }
@@ -99,6 +100,10 @@ class ThreadListener
 
         // 通知
         $this->threadNotices($thread, $event->actor, 'isApproved', $event->data['message'] ?? '');
+
+        // @通知
+        $threadUser = User::query()->where('id', $thread->user_id)->first();
+        $this->sendRelated($firstPost, $threadUser);
 
         // 日志
         $action = UserActionLogs::$behavior[$thread->is_approved] ?? ('unknown' . $thread->is_approved);

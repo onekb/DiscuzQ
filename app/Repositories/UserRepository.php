@@ -18,11 +18,15 @@
 
 namespace App\Repositories;
 
+use App\Api\Controller\ThreadsV3\ThreadTrait;
 use App\Common\PermissionKey;
+use App\Common\ResponseCode;
 use App\Models\Attachment;
 use App\Models\Group;
 use App\Models\Thread;
 use App\Models\User;
+use App\Settings\SettingsRepository;
+use Discuz\Common\Utils;
 use Discuz\Foundation\AbstractRepository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -30,6 +34,7 @@ use Illuminate\Support\Arr;
 
 class UserRepository extends AbstractRepository
 {
+    use ThreadTrait;
     /**
      * Get a new query builder for the users table.
      *
@@ -333,7 +338,7 @@ class UserRepository extends AbstractRepository
                 return true;
             }
             if ($thread['user_id'] == $user->id) {
-                if ($this->checkCategoryPermission($user, PermissionKey::THREAD_EDIT_OWN, $thread['category_id']) || 
+                if ($this->checkCategoryPermission($user, PermissionKey::THREAD_EDIT_OWN, $thread['category_id']) ||
                     $this->checkCategoryPermission($user, PermissionKey::THREAD_EDIT, $thread['category_id'])) {
                     return true;
                 }
@@ -596,17 +601,47 @@ class UserRepository extends AbstractRepository
     }
 
     /**
-     * 发布内容是否需要绑定手机
+     * 发布内容是否需要绑定手机或微信
      */
     public function canCreateThreadNeedBindPhone(User $user)
     {
-        if ($user->isAdmin() || !empty($user->mobile)) {
+        if ($user->isAdmin()) {
             return false;
         } else {
             return $user->hasPermission(PermissionKey::PUBLISH_NEED_BIND_PHONE);
         }
     }
 
+    /**
+     * 检查当前用户发帖权限
+     */
+    public function checkPublishPermission(User $user)
+    {
+        if ($user->hasPermission(PermissionKey::PUBLISH_NEED_BIND_PHONE)) {
+            $settings   = app(SettingsRepository::class);
+            $wechat     = (bool)$settings->get('offiaccount_close', 'wx_offiaccount');
+            $miniWechat = (bool)$settings->get('miniprogram_close', 'wx_miniprogram');
+            $sms        = (bool)$settings->get('qcloud_sms', 'qcloud');
+            if ($user->isAdmin()) {
+                return true;
+            }
+            if (($wechat || $miniWechat) && !$sms && empty($user->wechat)) {
+                Utils::outPut(ResponseCode::NEED_BIND_WECHAT, '请先绑定微信');
+            }
+            if (($wechat || $miniWechat) && $sms && empty($user->wechat) && empty($user->mobile)) {
+                Utils::outPut(ResponseCode::NEED_BIND_WECHAT, '请先绑定微信');
+            }
+            if (!($wechat || $miniWechat) && $sms) {
+                if (empty($user->mobile)) {
+                    Utils::outPut(ResponseCode::NEED_BIND_PHONE, '请先绑定手机号');
+                } else {
+                    if(preg_match("/^1[3-9]\d{9}$/", $user->getRawOriginal('mobile')) !== 1){
+                        Utils::outPut(ResponseCode::MOBILE_FORMAT_ERROR);
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * 上传头像与删除权限

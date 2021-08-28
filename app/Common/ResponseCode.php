@@ -126,6 +126,7 @@ class ResponseCode
     const NOT_ALLOW_CENSOR_IMAGE = -7075;
     const CATEGORY_NOT_FOUNF = -7076;
     const CURRENT_IS_PAY_SITE = -7077;
+    const MOBILE_FORMAT_ERROR = -7078;
 
 
     const NEED_BIND_WECHAT = -8000;
@@ -236,7 +237,8 @@ class ResponseCode
         self::NOT_ALLOW_CENSOR_IMAGE => '不允许上传敏感图',
         self::CATEGORY_NOT_FOUNF =>"分类不存在",
         self::INVALID_TOKEN => '无效token',
-        self::CURRENT_IS_PAY_SITE =>'当前站点是付费模式'
+        self::CURRENT_IS_PAY_SITE =>'当前站点是付费模式',
+        self::MOBILE_FORMAT_ERROR =>'手机号格式错误'
 
     ];
 }

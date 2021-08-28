@@ -24,8 +24,6 @@ use App\Common\ResponseCode;
 use App\Models\Attachment;
 use App\Traits\PostNoticesTrait;
 use Discuz\Base\DzqCache;
-use App\Formatter\Formatter;
-use App\Notifications\Related;
 use App\Models\Category;
 use App\Models\MobileCode;
 use App\Models\Order;
@@ -79,6 +77,7 @@ trait ThreadTrait
             'isApproved' => $thread['is_approved'],
             'isStick' => $thread['is_sticky'],
             'isDraft' => boolval($thread['is_draft']),
+            'isSite'=>boolval($thread['is_site']),
             'isAnonymous' => $thread['is_anonymous'],
             'isFavorite' => $this->getFavoriteField($thread['id'], $loginUser),
             'price' => floatval($thread['price']),
@@ -117,14 +116,15 @@ trait ThreadTrait
     {
         $settingRepo = app(SettingsRepository::class);
         $mobileCodeRepo = app(MobileCodeRepository::class);
-        if ((bool)$settingRepo->get('qcloud_sms')) {
+        if ((bool)$settingRepo->get('qcloud_sms', 'qcloud')) {
+            $request = app('request');
             $realMobile = $user->getRawOriginal('mobile');
             if (empty($realMobile)) {
                 $this->outPut(ResponseCode::USER_MOBILE_NOT_ALLOW_NULL);
             }
             //校验手机号和验证码
             $type = "thread_verify";
-            $ip = ip($this->request->getServerParams());
+            $ip = ip($request->getServerParams());
             $mobileCode = $mobileCodeRepo->getSmsCode($realMobile, $type);
             if (!is_null($mobileCode) && $mobileCode->exists) {
                 $mobileCode = $mobileCode->refrecode(MobileCode::CODE_EXCEPTION, $ip);
@@ -142,6 +142,7 @@ trait ThreadTrait
             $mobileCode->save();
         }
         if ((bool)$settingRepo->get('qcloud_faceid')) {
+            // 该功能暂无需求
             $realName = $user->getRawOriginal('realname');
             $identity = $user->getRawOriginal('identity');
             if (empty($realName)) {
@@ -376,7 +377,9 @@ trait ThreadTrait
                     if(!empty($content_attachments)){
                         $serializer = $this->app->make(AttachmentSerializer::class);
                         foreach ($content_attachments as $val){
-                            $attachments[$val->id] = $serializer->getImgUrl($val);
+                            if($val->is_remote){
+                                $attachments[$val->id] = $serializer->getImgUrl($val);
+                            }
                         }
                     }
                 }
@@ -384,9 +387,11 @@ trait ThreadTrait
                     $xml = preg_replace_callback(
                         '<img src="(.*)" alt="attachmentId-(\d+)" />',
                         function ($m) use ($attachments) {
-                            if (!empty($m)) {
-                                $id = trim($m[2], '"');
+                            $id = trim($m[2], '"');
+                            if (!empty($m) && in_array($id, array_keys($attachments))) {
                                 return 'img src="' . $attachments[$id] . '" alt="attachmentId-' . $id . '"';
+                            }else{
+                                return 'img src="' . $m[1] . '" alt="attachmentId-' . $id . '"';
                             }
                         },
                         $xml

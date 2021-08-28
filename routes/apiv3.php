@@ -120,6 +120,7 @@ $route->post('/posts.update', 'posts.update', ApiController\PostsV3\UpdatePostCo
 $route->post('/posts', 'posts', ApiController\PostsV3\CreatePostController::class);
 $route->get('/posts.detail', 'posts.resource', ApiController\PostsV3\ResourcePostController::class);
 $route->get('/posts.reply', 'posts.reply', ApiController\PostsV3\ResourcePostReplyController::class);
+$route->get('/posts.postion', 'posts.postion', ApiController\PostsV3\PositionPostsController::class);
 
 //用户
 $route->post('/users/real', 'users.real', ApiController\UsersV3\RealUserController::class);
@@ -196,3 +197,8 @@ $route->get('/test', 'thread.test', ApiController\ThreadsV3\TestController::clas
 $route->post('/open.api.log', 'open.api.log', ApiController\SettingsV3\OpenApiLogController::class);
 
 $route->get('/view.count', 'view.count', ApiController\ThreadsV3\ViewCountController::class);
+
+//上传文件临时参数
+$route->post('/coskey', 'coskey', ApiController\AttachmentV3\CoskeyAttachmentController::class);
+//记录前端上传文件的参数
+$route->post('/attachment.relation', 'attachment.relation', ApiController\AttachmentV3\RelationAttachmentController::class);

@@ -115,9 +115,7 @@ class FinanceProfileController extends DzqController
         data_set(
             $financeProfile,
             'totalProfit',
-            Arr::get($financeProfile, 'totalRegisterProfit') +
-            Arr::get($financeProfile, 'orderRoyalty') +
-            Arr::get($financeProfile, 'withdrawalProfit')
+            round($financeProfile['totalRegisterProfit'] + $financeProfile['orderRoyalty'] + $financeProfile['withdrawalProfit'], 2)
         );
         //用户订单总数
         data_set(

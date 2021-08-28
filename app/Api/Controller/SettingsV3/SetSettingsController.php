@@ -90,8 +90,10 @@ class SetSettingsController extends DzqController
         $actor = $this->user;
         $user_id = $actor->id;
 
+        $data = $this->inPut('data');
+        $data = $this->filterHideSetting($data);
         // 转换为以 tag + key 为键的集合，即可去重又方便取用
-        $settings = collect($this->inPut('data'))
+        $settings = collect($data)
             ->map(function ($item) {
                 $item['tag'] = $item['tag'] ?? 'default';
                 return $item;
@@ -204,7 +206,7 @@ class SetSettingsController extends DzqController
         }
 
         $this->events->dispatch(new Saved($settings));
-        return $this->outPut(ResponseCode::SUCCESS, '', $settings);
+        $this->outPut(ResponseCode::SUCCESS, '', $settings);
     }
 
     /**
@@ -227,5 +229,18 @@ class SetSettingsController extends DzqController
             'value' => $siteMasterScale,
             'tag' => 'default',
         ]);
+    }
+
+    private function filterHideSetting($settingData)
+    {
+        foreach ($settingData as &$item) {
+            $key = $item['key'];
+            $value = $item['value'];
+            $tag = $item['tag'];
+            if (preg_match('/^\*+$/', $value)) {
+                $item['value'] = $this->settings->get($key, $tag);
+            }
+        }
+        return $settingData;
     }
 }

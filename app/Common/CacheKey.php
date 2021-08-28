@@ -76,6 +76,14 @@ class CacheKey
     const LIST_THREADS_V3_CREATE_TIME = 'list_threads_v3_create_time';//filterId->pageId
     //智能排序，不参与筛选
     const LIST_THREADS_V3_SEQUENCE = 'list_threads_v3_sequence';//filterId->pageId
+
+    //搜索发现页
+    const LIST_THREADS_V3_SEARCH = 'list_threads_v3_search';//filterId->pageId
+
+    //付费首页
+    const LIST_THREADS_V3_PAID_HOMEPAGE = 'list_threads_v3_paid_homepage';//filterId->pageId
+
+
     //浏览数排序
     const LIST_THREADS_V3_VIEW_COUNT = 'list_threads_v3_view_count';//filterId->pageId
     //评论时间排序
@@ -104,6 +112,8 @@ class CacheKey
 
     const MONITOR_SYSTEM_TASK = 'monitor_system_task:';//监听系统定时任务是否启动
 
+    const IMG_UPLOAD_TMP_DETECT = 'img_upload_tmp_detect:';//检测临时文件是否为当前用户上传
+
     const  CRAWLER_SPLQUEUE_INPUT_DATA = 'crawler_splqueue_input_data:'; // 数据抓取/内容导入-入参缓存
 
     public static $fileStore = [
@@ -115,6 +125,8 @@ class CacheKey
         DzqCache::delKey(CacheKey::CATEGORIES);
         DzqCache::delKey(CacheKey::LIST_THREADS_V3_CREATE_TIME);
         DzqCache::delKey(CacheKey::LIST_THREADS_V3_SEQUENCE);
+        DzqCache::delKey(CacheKey::LIST_THREADS_V3_SEARCH);
+        DzqCache::delKey(CacheKey::LIST_THREADS_V3_PAID_HOMEPAGE);
         DzqCache::delKey(CacheKey::LIST_THREADS_V3_VIEW_COUNT);
         DzqCache::delKey(CacheKey::LIST_THREADS_V3_POST_TIME);
         DzqCache::delKey(CacheKey::LIST_THREADS_V3_COMPLEX);

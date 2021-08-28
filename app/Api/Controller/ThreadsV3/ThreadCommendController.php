@@ -22,7 +22,6 @@ use App\Models\Category;
 use App\Models\Post;
 use App\Models\Thread;
 use App\Models\ThreadTag;
-use App\Modules\ThreadTom\TomConfig;
 use App\Repositories\UserRepository;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Base\DzqController;
@@ -66,12 +65,15 @@ class ThreadCommendController extends DzqController
 
         //获取主题标签
         $tags = [];
-        ThreadTag::query()->whereIn('thread_id', $threadIds)->get()->each(function ($item) use (&$tags) {
-            $tags[$item['thread_id']][] = $item->toArray();
+        $newTags = [];
+        ThreadTag::query()->whereIn('thread_id', $threadIds)->get()->each(function ($item) use (&$tags, &$newTags) {
+            $itemData = $item->toArray();
+            $tags[$item['thread_id']][] = $itemData;
+            $newTags[$item['thread_id']][$item['tag']][] = $itemData;
         });
 
         $data = [];
-        $linkString = '';
+        // $linkString = '';
         foreach ($threads as $thread) {
             $title = $thread['title'];
             $threadid = $thread['id'];
@@ -80,9 +82,23 @@ class ThreadCommendController extends DzqController
                     $title = Post::instance()->getContentSummary($posts[$threadid]);
                 }
             }
-            $linkString .= $title;
+            // $linkString .= $title;
             $threadTags = [];
             isset($tags[$threadid]) && $threadTags = $tags[$threadid];
+            if (isset($newTags[$threadid])) {
+                if (isset($newTags[$threadid][ThreadTag::IMAGE])) {
+                    $title = $title . '[图片]';
+                }
+                if (isset($newTags[$threadid][ThreadTag::VIDEO])) {
+                    $title = $title . '[视频]';
+                }
+                if (isset($newTags[$threadid][ThreadTag::DOC])) {
+                    $title = $title . '[附件]';
+                }
+                if (isset($newTags[$threadid][ThreadTag::VOICE])) {
+                    $title = $title . '[语音条]';
+                }
+            }
             $data [] = [
                 'threadId' => $thread['id'],
                 'categoryId' => $thread['category_id'],

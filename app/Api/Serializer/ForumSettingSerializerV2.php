@@ -21,6 +21,7 @@ namespace App\Api\Serializer;
 use App\Common\AuthUtils;
 use App\Common\PermissionKey;
 use App\Common\SettingCache;
+use App\Models\Category;
 use App\Models\User;
 use App\Settings\ForumSettingField;
 use App\Repositories\UserRepository;
@@ -91,6 +92,22 @@ class ForumSettingSerializerV2 extends AbstractSerializer
                 $usernameLoginIsdisplay = true;
             }
         }
+        //分类帖子总数计算
+        $categories = Category::query()
+            ->select([
+                'id as pid', 'name', 'description', 'icon', 'sort', 'property', 'thread_count as threadCount', 'parentid'
+            ])
+            ->orderBy('parentid', 'asc')
+            ->orderBy('sort')
+            ->get()->toArray();
+
+        $categoriesFather = [];
+        foreach ($categories as $category) {
+            if ($category['parentid'] == 0 && $this->userRepo->canViewThreads($actor, $category['pid'])) {
+                $categoriesFather[] = $category;
+            }
+        }
+        $threadCount = array_sum(array_column($categoriesFather,'threadCount'));
 
         $attributes = [
             // 站点设置
@@ -180,7 +197,7 @@ class ForumSettingSerializerV2 extends AbstractSerializer
             // 其它信息(非setting中的信息)
             'other' => [
                 // 基础信息
-                'count_threads' => (int) $this->settings->get('thread_count'),          // 站点主题数
+                'count_threads' => (int) $threadCount,          // 站点主题数
                 'count_posts' => (int) $this->settings->get('post_count'),              // 站点回复数
                 'count_users' => (int) $this->settings->get('user_count'),              // 站点用户数
 
@@ -214,7 +231,7 @@ class ForumSettingSerializerV2 extends AbstractSerializer
                 // 其他
                 'initialized_pay_password'   => (bool) $actor->pay_password,                              // 是否初始化支付密码
                 'create_thread_with_captcha' => $this->userRepo->canCreateThreadWithCaptcha($actor),      // 发布内容需要验证码
-                'publish_need_bind_phone'    => $this->userRepo->canCreateThreadNeedBindPhone($actor),    // 发布内容需要绑定手机
+                'publish_need_bind_phone'    => $this->userRepo->canCreateThreadNeedBindPhone($actor),    // 发布内容需要绑定手机或微信
             ],
 
             'lbs' => [

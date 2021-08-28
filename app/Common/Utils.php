@@ -165,4 +165,13 @@ class Utils
     public static function compareMath($leftM, $rightM){
         return  intval($leftM * 100) != intval($rightM * 100);
     }
+
+    public static function hideStr($str)
+    {
+        if ($str == false) {
+            return $str;
+        }
+        return preg_replace('/.+?/i', '*', $str);
+    }
+
 }

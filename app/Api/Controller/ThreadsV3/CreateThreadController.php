@@ -29,6 +29,7 @@ use App\Models\ThreadTom;
 use App\Models\User;
 use App\Modules\ThreadTom\TomConfig;
 use App\Repositories\UserRepository;
+use App\Settings\SettingsRepository;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Base\DzqCache;
 use Discuz\Base\DzqController;
@@ -42,6 +43,7 @@ class CreateThreadController extends DzqController
 
     protected function checkRequestPermissions(UserRepository $userRepo)
     {
+        $settings   = app(SettingsRepository::class);
         $categoryId = $this->inPut('categoryId');
         $user = $this->user;
 
@@ -75,11 +77,7 @@ class CreateThreadController extends DzqController
         ) {
             throw new PermissionDeniedException('没有插入【位置信息】权限');
         }
-        if ($userRepo->canCreateThreadNeedBindPhone($user)) {
-            throw new PermissionDeniedException('请先绑定手机号');
-        }
-        //发帖前验证手机，验证码，实名
-        $this->userVerify($user);
+        $userRepo->checkPublishPermission($user);
         return true;
     }
 

@@ -53,7 +53,7 @@ class NicknameSettingController extends AuthBaseController
                 'nickname'      => 'required',
             ]);
             $checkController = app(CheckController::class);
-            $checkController->checkIsRepeat('nickname', $nickname);
+            $checkController->checkName('nickname', $nickname);
             $user = $this->user;
             $user->changeNickname($nickname);
             $user->save();

@@ -21,6 +21,7 @@ namespace App\Listeners\User;
 use App\Common\ResponseCode;
 use App\Events\Post\Saving as PostSaving;
 use App\Events\Thread\Saving as ThreadSaving;
+use App\Repositories\UserRepository;
 use Discuz\Auth\AssertPermissionTrait;
 use Illuminate\Contracts\Validation\Factory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,6 +48,7 @@ class CheckPublish
      */
     public function handle($event)
     {
+        $userRepository = app(UserRepository::class);
         // 发布内容是否需要验证
         if ($event instanceof ThreadSaving && ! $event->thread->exists) {
             $needValidate = true;
@@ -62,10 +64,8 @@ class CheckPublish
 
             // 发布内容需先绑定手机
             if (! $event->actor->isAdmin() && $event->actor->can('publishNeedBindPhone')) {
-                $rules['user'][] = function ($attribute, $value, $fail) use ($event) {
-                    if (! $event->actor->mobile) {
-                        \Discuz\Common\Utils::outPut(ResponseCode::INVALID_PARAMETER, '请先绑定手机号');
-                    }
+                $rules['user'][] = function ($attribute, $value, $fail) use ($event, $userRepository) {
+                    $userRepository->checkPublishPermission($event->actor);
                 };
             }
 

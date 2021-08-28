@@ -20,6 +20,7 @@ namespace App\Api\Controller\AdminV3;
 use App\Common\CacheKey;
 use App\Events\Post\PostWasApproved;
 use App\Events\Post\Saved;
+use App\Events\Thread\ThreadWasApproved;
 use App\Models\AdminActionLog;
 use App\Models\Category;
 use App\Models\Post;
@@ -115,6 +116,7 @@ class ManageSubmitReview extends DzqController
                     Category::refreshThreadCountV3($v->category_id);
                     //发送@用户消息
                     $threadIds[] = $v->id;
+                    $this->threadSendMiddleware($v);
                 } else {
                     $action_desc = $threadTitle.',被忽略';
                 }
@@ -408,4 +410,13 @@ class ManageSubmitReview extends DzqController
         $this->dispatchEventsFor($post, $actor);
     }
 
+    // 帖子审核消息处理
+    public function threadSendMiddleware($thread)
+    {
+        $this->events = app()->make(Dispatcher::class);
+        $thread->raise(
+            new ThreadWasApproved($thread, $this->user, ['message' => ''])
+        );
+        $this->dispatchEventsFor($thread, $this->user);
+    }
 }

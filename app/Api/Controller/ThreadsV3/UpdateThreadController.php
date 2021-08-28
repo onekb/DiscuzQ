@@ -53,8 +53,7 @@ class UpdateThreadController extends DzqController
         if (!$this->thread) {
             $this->outPut(ResponseCode::RESOURCE_NOT_FOUND, '帖子不存在');
         }
-        //编辑前验证手机，验证码，实名
-        $this->userVerify($this->user);
+        $userRepo->checkPublishPermission($this->user);
         return $userRepo->canEditThread($this->user, $this->thread);
     }
 
@@ -139,9 +138,11 @@ class UpdateThreadController extends DzqController
         $isAnonymous = $this->inPut('anonymous');
         $isDraft = $this->inPut('draft');
         //如果原帖是已发布的情况下，update 不允许在将帖子状态存为草稿
+        /*
         if($thread->is_draft == Thread::IS_NOT_DRAFT && !empty($isDraft)){
             $this->outPut(ResponseCode::INVALID_PARAMETER, '该帖已发布，不允许再存为草稿');
         }
+        */
 
         // 包含 红包 的帖子在已发布的情况下，再次编辑；条件：存在对应的 order 为 已支付的情况
         empty($content['indexes']) && $content['indexes'] = [];

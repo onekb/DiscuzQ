@@ -128,8 +128,7 @@ class RegisterController extends AuthBaseController
 
         $this->connection->beginTransaction();
         try {
-            $this->checkName('username', $data);
-
+            $this->checkName('username', $data['username']);
             //密码校验
             $result = strpos($data['password'],' ');
             if ($result !== false) {
@@ -137,7 +136,7 @@ class RegisterController extends AuthBaseController
                 $this->outPut(ResponseCode::PASSWORD_NOT_ALLOW_HAS_SPACE);
             }
 
-            $this->checkName('nickname', $data);
+            $this->checkName('nickname', $data['nickname']);
 
             $user = $this->bus->dispatch(
                 new RegisterUser($this->request->getAttribute('actor'), $data)
@@ -161,20 +160,30 @@ class RegisterController extends AuthBaseController
         }
     }
 
-    private function checkName($name = 'username', $data = []){
-        $preMsg = $name == 'username' ? '用户名' : '昵称';
-        $result = strpos($data[$name],' ');
+    private function checkName($name = '', $content = '')
+    {
+        $msg = $name == 'username' ? '用户名' : '昵称';
+        $result = strpos($content, ' ');
         if ($result !== false) {
             $this->connection->rollback();
-            $this->outPut(ResponseCode::USERNAME_NOT_ALLOW_HAS_SPACE, $preMsg.'不允许包含空格');
-        }
-        //重名校验
-        $user = User::query()->where($name,$data[$name])->lockForUpdate()->first();
-        if (!empty($user)) {
-            $this->connection->rollback();
-            $this->outPut(ResponseCode::USERNAME_HAD_EXIST, $preMsg.'已经存在');
+            $this->outPut(ResponseCode::USERNAME_NOT_ALLOW_HAS_SPACE, $msg.'不允许包含空格');
         }
         //敏感词检测
-        $this->censor->checkText($data[$name], $name);
+        $this->censor->checkText($content, $name);
+        //长度检查
+        if (strlen($content) == 0) {
+            $this->connection->rollback();
+            $this->outPut(ResponseCode::USERNAME_NOT_NULL, $msg.'不能为空');
+        }
+        if (mb_strlen($content, 'UTF8') > 15) {
+            $this->connection->rollback();
+            $this->outPut(ResponseCode::NAME_LENGTH_ERROR, $msg.'长度超过15个字符');
+        }
+        //重名校验
+        $user = User::query()->where($name, $content)->lockForUpdate()->first();
+        if (!empty($user)) {
+            $this->connection->rollback();
+            $this->outPut(ResponseCode::USERNAME_HAD_EXIST, $msg.'已经存在');
+        }
     }
 }

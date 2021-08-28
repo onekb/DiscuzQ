@@ -76,12 +76,14 @@ class ManageThemeList extends DzqController
         $sort = $this->inPut('sort') ? $this->inPut('sort') : '-updated_at';     //排序
 
         $query = Thread::query()
+            ->join('posts', 'posts.thread_id', '=', 'threads.id')
             ->select(
                 'threads.*'
             );
 
         //是否审核and是否草稿
         $query->where('threads.is_draft', Thread::IS_NOT_DRAFT);
+        $query->where('posts.is_first', Post::FIRST_YES);
 
         //浏览次数
         if ($viewCountGt !== '') {
@@ -132,6 +134,7 @@ class ManageThemeList extends DzqController
         //内容筛选
         if (!empty($q)) {
             $query->where('threads.title','like','%'.$q.'%');
+            $query->orWhere('posts.content', 'like', '%'.$q.'%');
         }
 
         // 回收站
@@ -161,7 +164,7 @@ class ManageThemeList extends DzqController
 
         //发帖时间筛选
         if (!empty($createdAtBegin) && !empty($createdAtEnd)) {
-            $query->whereBetween('threads.updated_at', [$createdAtBegin, $createdAtEnd]);
+            $query->whereBetween('threads.created_at', [$createdAtBegin, $createdAtEnd]);
         }
 
         //发帖删除时间筛选
@@ -190,6 +193,7 @@ class ManageThemeList extends DzqController
         $query = $query->orderBy('threads.'.$sortDetect,
             Str::startsWith($sort, '-') ? 'desc' : 'asc');
 
+        $query->distinct(true);
         //分页
         $pagination = $this->pagination($page, $perPage, $query);
 

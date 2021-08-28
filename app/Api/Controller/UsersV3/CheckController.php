@@ -51,10 +51,10 @@ class CheckController extends DzqController
             $username = $this->inPut('username');
             $nickname = $this->inPut('nickname');
             if (!empty($username)) {
-                $this->checkIsRepeat('username', $username);
+                $this->checkName('username', $username);
             }
             if (!empty($nickname)) {
-                $this->checkIsRepeat('nickname', $nickname);
+                $this->checkName('nickname', $nickname);
             }
             $this->outPut(ResponseCode::SUCCESS);
         } catch (\Exception $e) {
@@ -66,24 +66,24 @@ class CheckController extends DzqController
         }
     }
 
-    public function checkIsRepeat($fieled = '', $fieledVal = ''){
-        $msg = $fieled == 'username' ? '用户名' : '昵称';
+    public function checkName($name = '', $content = '')
+    {
+        $msg = $name == 'username' ? '用户名' : '昵称';
         //去除字符串中空格
-        $fieledVal = str_replace(' ', '', $fieledVal);
-        //敏感词检查
-        $this->censor->checkText($fieledVal, $fieled);
-        if(strlen($fieledVal) == 0) {
+        $content = str_replace(' ', '', $content);
+        //敏感词检测
+        $this->censor->checkText($content, $name);
+        //长度检查
+        if (strlen($content) == 0) {
             $this->outPut(ResponseCode::USERNAME_NOT_NULL, $msg.'不能为空');
         }
-        //长度检查
-        if(mb_strlen($fieledVal,'UTF8') > 15){
+        if (mb_strlen($content, 'UTF8') > 15) {
             $this->outPut(ResponseCode::NAME_LENGTH_ERROR, $msg.'长度超过15个字符');
         }
-        //重名检查
-        $userNameCount = User::query()->where($fieled, $fieledVal)->count('id');
-        if($userNameCount > 0){
+        //重名校验
+        $exists = User::query()->where($name, $content)->exists();
+        if (!empty($exists)) {
             $this->outPut(ResponseCode::USERNAME_HAD_EXIST, $msg.'已经存在');
         }
     }
-
 }

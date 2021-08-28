@@ -19,6 +19,7 @@ namespace App\Api\Controller\SettingsV3;
 
 use App\Api\Serializer\ForumSettingSerializerV2;
 use App\Common\ResponseCode;
+use App\Common\Utils;
 use App\Settings\SettingsRepository;
 use App\Repositories\UserRepository;
 use Discuz\Base\DzqController;
@@ -52,9 +53,19 @@ class ForumSettingsController extends DzqController
             'register' => (bool) ($agreement['register'] ?? false),
             'register_content' => $agreement['register_content'] ?? '',
         ];
-//        }
-
+        $this->hideSensitive($data);
         $data = $this->camelData($data);
         return $this->outPut(ResponseCode::SUCCESS,'', $data);
+    }
+
+    private function hideSensitive(&$data)
+    {
+        isset($data['qcloud']['qcloud_secret_key']) && $data['qcloud']['qcloud_secret_key'] = Utils::hideStr($data['qcloud']['qcloud_secret_key']);
+        isset($data['qcloud']['qcloud_sms_app_key']) && $data['qcloud']['qcloud_sms_app_key'] = Utils::hideStr($data['qcloud']['qcloud_sms_app_key']);
+        isset($data['qcloud']['qcloud_captcha_secret_key']) && $data['qcloud']['qcloud_captcha_secret_key'] = Utils::hideStr($data['qcloud']['qcloud_captcha_secret_key']);
+        isset($data['qcloud']['qcloud_vod_url_key']) && $data['qcloud']['qcloud_vod_url_key'] = Utils::hideStr($data['qcloud']['qcloud_vod_url_key']);
+        isset($data['passport']['offiaccount_app_secret']) && $data['passport']['offiaccount_app_secret'] = Utils::hideStr($data['passport']['offiaccount_app_secret']);
+        isset($data['passport']['miniprogram_app_secret']) && $data['passport']['miniprogram_app_secret'] = Utils::hideStr($data['passport']['miniprogram_app_secret']);
+        isset($data['paycenter']['api_key']) && $data['paycenter']['api_key'] = Utils::hideStr($data['paycenter']['api_key']);
     }
 }
