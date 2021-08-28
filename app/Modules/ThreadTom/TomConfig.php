@@ -61,11 +61,6 @@ class TomConfig
             'authorize'=>'switch.insertGoods',
             'service' => \App\Modules\ThreadTom\Busi\GoodsBusi::class
         ],
-//        self::TOM_QA => [
-//            'enName' => 'QA',
-//            'desc' => '问答',
-//            'service' => \App\Modules\ThreadTom\Busi\QABusi::class
-//        ],
         self::TOM_REDPACK => [
             'enName' => 'REDPACK',
             'desc' => '红包',
@@ -91,10 +86,4 @@ class TomConfig
             'service' => \App\Modules\ThreadTom\Busi\VoteBusi::class
         ]
     ];
-
-    //扩展属性
-    const AUTHORIZE_PAY = 'switch.insertPay';
-    const AUTHORIZE_POSITION = 'switch.insertPosition';
-
-
 }

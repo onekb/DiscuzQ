@@ -186,7 +186,7 @@ class CreatePostController extends DzqController
 //        $data['content'] = str_replace($searches, $replaces, $content);
         $data['content'] = $content;
 
-        return $this->outPut(ResponseCode::SUCCESS, '', $data);
+        $this->outPut(ResponseCode::SUCCESS, '', $data);
     }
 
 

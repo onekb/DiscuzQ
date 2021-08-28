@@ -60,10 +60,11 @@ class CreateCrawlerDataController extends DzqController
         if (file_exists($lockPath)) {
             $lockFileContent = $this->getLockFileContent($lockPath);
             if ($lockFileContent['runtime'] < Thread::CREATE_CRAWLER_DATA_LIMIT_MINUTE_TIME && $lockFileContent['status'] == Thread::IMPORT_PROCESSING) {
-                $this->outPut(ResponseCode::RESOURCE_IN_USE, '当前正在导入内容，请勿重复操作！当前已执行' . $lockFileContent['runtime'] . '分钟。');
+                $this->outPut(ResponseCode::RESOURCE_IN_USE, "当前话题[{$lockFileContent['topic']}]正在导入，请勿重复操作！当前已执行" . $lockFileContent['runtime'] . "分钟。");
             } else if ($lockFileContent['runtime'] > Thread::CREATE_CRAWLER_DATA_LIMIT_MINUTE_TIME) {
                 app('cache')->clear();
-                $this->changeLockFileContent($lockPath, 0, Thread::PROCESS_OF_START_INSERT_CRAWLER_DATA, Thread::IMPORT_TIMEOUT_ENDING);
+                $this->changeLockFileContent($lockPath, 0, Thread::PROCESS_OF_START_INSERT_CRAWLER_DATA, Thread::IMPORT_TIMEOUT_ENDING, $lockFileContent['topic']);
+                $this->outPut(ResponseCode::INVALID_PARAMETER, "话题[{$lockFileContent['topic']}]导入时间过长，导入失败！");
             }
         }
 

@@ -83,18 +83,30 @@ trait TomTrait
                     $op = $tomJson['operation'];
                     $body = $tomJson['body'] ?? false;
                     if (isset($config[$tomId])) {
-                        try {
-                            $service = new \ReflectionClass($config[$tomId]['service']);
-                            if (empty($tomJson['threadId'])) {
-                                $service = $service->newInstanceArgs([$this->user, $threadId, $postId, $tomId, $key, $op, $body, $canViewTom]);
-                            } else {
-                                $service = $service->newInstanceArgs([$this->user, $tomJson['threadId'], $postId, $tomId, $key, $op, $body, $canViewTom]);
-                            }
-                            method_exists($service, $op) && $tomJsons[$key] = $service->$op();
-                        } catch (\ReflectionException $e) {
-                            Utils::outPut(ResponseCode::INTERNAL_ERROR, $e->getMessage());
-                        }
+                        $busiClass = $config[$tomId]['service'];
+                    } else {
+                        $busiClass = \App\Modules\ThreadTom\Busi\DefaultBusi::class;
                     }
+                    $service = new \ReflectionClass($busiClass);
+                    if (empty($tomJson['threadId'])) {
+                        $service = $service->newInstanceArgs([$this->user, $threadId, $postId, $tomId, $key, $op, $body, $canViewTom]);
+                    } else {
+                        $service = $service->newInstanceArgs([$this->user, $tomJson['threadId'], $postId, $tomId, $key, $op, $body, $canViewTom]);
+                    }
+                    method_exists($service, $op) && $tomJsons[$key] = $service->$op();
+//                    if (isset($config[$tomId])) {
+//                        try {
+//                            $service = new \ReflectionClass($config[$tomId]['service']);
+//                            if (empty($tomJson['threadId'])) {
+//                                $service = $service->newInstanceArgs([$this->user, $threadId, $postId, $tomId, $key, $op, $body, $canViewTom]);
+//                            } else {
+//                                $service = $service->newInstanceArgs([$this->user, $tomJson['threadId'], $postId, $tomId, $key, $op, $body, $canViewTom]);
+//                            }
+//                            method_exists($service, $op) && $tomJsons[$key] = $service->$op();
+//                        } catch (\ReflectionException $e) {
+//                            Utils::outPut(ResponseCode::INTERNAL_ERROR, $e->getMessage());
+//                        }
+//                    }
                 }
             }
         }

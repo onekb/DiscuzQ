@@ -99,7 +99,7 @@ $route->get('/monitor/system/task', 'monitor.system.task', ApiController\System\
 
 // 数据爬取
 $route->get('/create.crawler', 'create.crawler', ApiController\Crawler\CreateCrawlerDataController::class);
-$route->get('/check.crawler.process', 'check.crawler.process', ApiController\Crawler\CheckCrawlerProcess::class);
+$route->get('/check.crawler.process', 'check.crawler.process', ApiController\Crawler\CheckCrawlerProcessController::class);
 
 $route->post('/open.view.count', 'open.view.count', ApiController\SettingsV3\OpenViewCountController::class);
 

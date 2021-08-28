@@ -81,7 +81,7 @@ class AttachmentAttributeUpdateCommand extends AbstractCommand
                             $remoteServer = substr($remoteServer,0,strlen($remoteServer)-1);
                         }
                         $remoteUrl = $remoteServer."/".$image->full_path;
-                        $fileData = file_get_contents($remoteUrl,false, stream_context_create(['ssl'=>['verify_peer'=>false, 'verify_peer_name'=>false]]));
+                        $fileData = @file_get_contents($remoteUrl,false, stream_context_create(['ssl'=>['verify_peer'=>false, 'verify_peer_name'=>false]]));
                         if($fileData){
                             $extension =Str::afterLast($image['attachment'], '.');
                             $extensionSmall = strtolower($extension);
@@ -102,6 +102,9 @@ class AttachmentAttributeUpdateCommand extends AbstractCommand
                                 $log->info("附件图片更新失败 attachmentId：{$image->id}，只支持jpeg,jpg,png,gif格式");
                             }
                         }else{
+                            $image->file_width = 100;
+                            $image->file_height = 100;
+                            $image->save();
                             $log->info("附件图片不存在 attachmentId：{$image->id}");
                         }
                     } else {
@@ -121,6 +124,9 @@ class AttachmentAttributeUpdateCommand extends AbstractCommand
                                 $log->info("附件图片更新失败 attachmentId：{$image->id}，只支持jpeg,jpg,png,gif格式");
                             }
                         }else{
+                            $image->file_width = 100;
+                            $image->file_height = 100;
+                            $image->save();
                             $log->info("附件图片不存在 attachmentId：{$image->id}");
                         }
                     }

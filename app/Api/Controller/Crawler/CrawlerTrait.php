@@ -10,7 +10,7 @@ trait CrawlerTrait
     public function getLockFileContent($lockPath)
     {
         if (!file_exists($lockPath)) {
-            $lockFileContent = $this->changeLockFileContent($lockPath, 0, 0, Thread::IMPORT_WAITING);
+            $lockFileContent = $this->changeLockFileContent($lockPath, 0, 0, Thread::IMPORT_WAITING, '');
         } else {
             $lockFileContent = file_get_contents($lockPath);
             $lockFileContent = json_decode($lockFileContent, true);
@@ -20,7 +20,7 @@ trait CrawlerTrait
         return $lockFileContent;
     }
 
-    public function changeLockFileContent($lockPath, $startCrawlerTime, $progress, $status)
+    public function changeLockFileContent($lockPath, $startCrawlerTime, $progress, $status, $topic)
     {
         if (!file_exists($lockPath)) {
             touch($lockPath);
@@ -29,7 +29,8 @@ trait CrawlerTrait
             'status' => $status, // 0 未开始;1 进行中;2 正常结束;3 异常结束;4 超时
             'progress' => floor((string)$progress),
             'startCrawlerTime' => $startCrawlerTime,
-            'runtime' => 0
+            'runtime' => 0,
+            'topic' => $topic
         ];
         $writeCrawlerSplQueueLock = fopen($lockPath, 'w');
         fwrite($writeCrawlerSplQueueLock, json_encode($data));

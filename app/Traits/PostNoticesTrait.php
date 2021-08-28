@@ -73,10 +73,10 @@ trait PostNoticesTrait
         }
 
         $newsNameArr = [];
-        if ($post->is_first == Post::FIRST_YES) {
-            preg_match_all('/<span.*>(.*)<\/span>/isU', $post->content, $newsNameArr);
-            $newsNameArr = $newsNameArr[1];
-        } else {
+        preg_match_all('/<span.*>(.*)<\/span>/isU', $post->content, $newsNameArr);
+        $newsNameArr = $newsNameArr[1];
+
+        if (empty($newsNameArr)) {
             $usernameArray=explode(' ', $post->content);
             if (!empty($usernameArray)) {
                 foreach ($usernameArray as $value) {
@@ -99,7 +99,7 @@ trait PostNoticesTrait
             }
         }
 
-        $users = User::query()->whereIn('username', $newsNameArr2)->get();
+        $users = User::query()->whereIn('nickname', $newsNameArr2)->get();
         if (empty($users)) {
             return;
         }
@@ -115,7 +115,7 @@ trait PostNoticesTrait
             if ($post->is_approved == Post::UNAPPROVED) {
                 return;
             }
-            $user->notify(new Related($actor, $post));
+            $user->notify(new Related($user, $post));
         });
     }
 

@@ -22,10 +22,12 @@ use App\Common\AuthUtils;
 use App\Common\PermissionKey;
 use App\Common\SettingCache;
 use App\Models\Category;
+use App\Models\Group;
 use App\Models\User;
 use App\Settings\ForumSettingField;
 use App\Repositories\UserRepository;
 use Discuz\Api\Serializer\AbstractSerializer;
+use Discuz\Auth\Guest;
 use Discuz\Common\PubEnum;
 use App\Settings\SettingsRepository;
 use Discuz\Http\UrlGenerator;
@@ -103,8 +105,13 @@ class ForumSettingSerializerV2 extends AbstractSerializer
             ->get()->toArray();
 
         $categoriesFather = [];
+        $groupId = !empty($actor->groups->toArray()[0]['id']) ? $actor->groups->toArray()[0]['id'] : Group::GUEST_ID;
+        $subActor = $actor;
+        if ($groupId == Group::UNPAID) {
+            $subActor = new Guest();
+        }
         foreach ($categories as $category) {
-            if ($category['parentid'] == 0 && $this->userRepo->canViewThreads($actor, $category['pid'])) {
+            if ($category['parentid'] == 0 && $this->userRepo->canViewThreads($subActor, $category['pid'])) {
                 $categoriesFather[] = $category;
             }
         }
