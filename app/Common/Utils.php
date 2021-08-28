@@ -174,4 +174,13 @@ class Utils
         return preg_replace('/.+?/i', '*', $str);
     }
 
+    public static function getSiteUrl()
+    {
+        $request = app('request');
+        $url = $request->getUri();
+        $port = $url->getPort();
+        $port = $port == null ? '' : ':' . $port;
+        return $url->getScheme() . '://' . $url->getHost() . $port;
+    }
+
 }

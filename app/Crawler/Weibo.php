@@ -55,7 +55,7 @@ class Weibo
                 //帖子数据
                 $text = $this->dealText($value['mblog']['text']);
                 //帖子内容不全的情况下
-                if(empty($text['txet'])){
+                if(empty($text['text'])){
                     $text = $this->getForumTextDetail($value['mblog']['mid']);
                 }
                 //处理转发的情况

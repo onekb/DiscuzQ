@@ -102,6 +102,7 @@ class UserV2Serializer extends AbstractSerializer
             'canBeAsked'        => $model->id !== $this->actor->id && $model->can('canBeAsked'), // 是否允许被提问
             'hasPassword'       => !empty($model->password) ? true : false,
             'nickname'         => $model->nickname,
+            'isRenew'          => !empty($model->isRenew) ? true : false
         ];
         $whitelist = [
             '/api/follow/',

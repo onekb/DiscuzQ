@@ -284,9 +284,9 @@ class ManageThemeList extends DzqController
                 foreach ($replace as $val){
                     $content[$v['threadId']]['content'] = str_replace($val,'<span class="highlight">' . $val . '</span>',$content[$v['threadId']]['content']);
                 }
-                $pageData[$k]['content']['text'] = isset($content[$v['threadId']]['content']) ? $content[$v['threadId']]['content'] : null;
+//                $pageData[$k]['content']['text'] = isset($content[$v['threadId']]['content']) ? $content[$v['threadId']]['content'] : null;
             }
-            $pageData[$k]['content']['text'] = isset($content[$v['threadId']]['content']) ? $content[$v['threadId']]['content'] : null;
+//            $pageData[$k]['content']['text'] = isset($content[$v['threadId']]['content']) ? $content[$v['threadId']]['content'] : null;
         }
 
         $pagination['pageData'] = $pageData;

@@ -76,31 +76,21 @@ class ProfileController extends DzqController
             }
         }
 
+        // 付费模式是否过期 true：已付费，false：未付费
+        $userRepo = app(UserRepository::class);
+        $user->paid = $userRepo->isPaid($user);
 
-        // 付费模式是否过期
-        $user->paid = ! in_array(Group::UNPAID, $this->user->groups->pluck('id')->toArray());
-        if (!$this->user->isAdmin()) {
-            $order = Order::query()->where([
-//                'type' => Order::ORDER_TYPE_REGISTER,
-                'status' => Order::ORDER_STATUS_PAID,
-                'user_id' => $user->id
-            ])->whereIn('type', [Order::ORDER_TYPE_REGISTER, Order::ORDER_TYPE_RENEW])->orderByDesc('id')->first();
-            //付费模式
-            $settings = app(SettingsRepository::class);
-            $siteMode = $settings->get('site_mode');
-            $userExpire = strtotime($user->expired_at);
-            $now = time();
-            if (empty($order)) {
-                if ($siteMode == 'pay' && $userExpire && $userExpire < $now) {
-                    $user->paid = false;
-                }
-            } else {
-                $orderExpire = strtotime($order->expired_at);
-                if ($siteMode == 'pay' && $orderExpire && $orderExpire < $now) {
-                    $user->paid = false;
-                }
-            }
+        //isRenew：表示用户是否续过费，true：已续过费，false：未续过费
+        $user->isRenew = false;
+        $order = Order::query()->where([
+            'status' => Order::ORDER_STATUS_PAID,
+            'user_id' => $user->id
+        ])  ->whereIn('type', [Order::ORDER_TYPE_REGISTER, Order::ORDER_TYPE_RENEW])
+            ->exists();
+        if (!empty($order)) {
+            $user->isRenew = true;
         }
+
         $key = array_search('dialog', $include);
         if($key != false){
             if(!$isSelf){

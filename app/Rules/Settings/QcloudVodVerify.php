@@ -18,7 +18,9 @@
 
 namespace App\Rules\Settings;
 
+use App\Common\ResponseCode;
 use App\Exceptions\TranslatorException;
+use Discuz\Common\Utils;
 use Discuz\Qcloud\QcloudTrait;
 use TencentCloud\Common\Exception\TencentCloudSDKException;
 
@@ -70,8 +72,10 @@ class QcloudVodVerify extends BaseQcloud
             $this->describeStorageData($value);
         } catch (TencentCloudSDKException $e) {
             if ($e->getCode() == 'FailedOperation.InvalidVodUser') {
+                Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云点播子应用配置错误', [$e->getMessage()]);
                 throw new TranslatorException('tencent_vod_subappid_error', [$e->getErrorCode()]);
             } else {
+                Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云点播配置错误', [$e->getMessage()]);
                 throw new TranslatorException('tencent_vod_error', [$e->getCode()]);
             }
         }

@@ -18,7 +18,9 @@
 
 namespace App\Rules\Settings;
 
+use App\Common\ResponseCode;
 use App\Exceptions\TranslatorException;
+use Discuz\Common\Utils;
 use Discuz\Qcloud\QcloudTrait;
 use TencentCloud\Common\Exception\TencentCloudSDKException;
 
@@ -64,6 +66,7 @@ class QcloudTaskflowGifVerify extends BaseQcloud
         try {
             $res = $this->describeProcedureTemplates($value, $this->qcloudVodSubAppId);
         } catch (TencentCloudSDKException $e) {
+            Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云点播动图任务流配置错误', [$e->getMessage()]);
             if ($e->getCode() == 'InvalidParameterValue') {
                 throw new TranslatorException('InvalidParameterValue', [$e->getErrorCode()]);
             } else {
@@ -71,6 +74,7 @@ class QcloudTaskflowGifVerify extends BaseQcloud
             }
         }
         if ($res->TotalCount == 0) {
+            Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云点播动图任务流配置异常');
             throw new TencentCloudSDKException('tencent_vod_taskflow_gif_error');
         }
         return true;

@@ -18,7 +18,9 @@
 
 namespace App\Rules\Settings;
 
+use App\Common\ResponseCode;
 use App\Exceptions\TranslatorException;
+use Discuz\Common\Utils;
 use Discuz\Qcloud\QcloudTrait;
 use TencentCloud\Common\Exception\TencentCloudSDKException;
 
@@ -64,9 +66,11 @@ class QcloudVodCoverTemplateVerify extends BaseQcloud
         try {
             $res = $this->describeSnapshotByTimeOffsetTemplates($value, $this->qcloudVodSubAppId);
         } catch (TencentCloudSDKException $e) {
+            Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云点播封面图模板配置错误', [$e->getMessage()]);
             throw new TranslatorException('tencent_vod_error', [$e->getErrorCode()]);
         }
         if ($res->TotalCount == 0) {
+            Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云点播封面图模板未找到');
             throw new TencentCloudSDKException('qcloud_vod_cover_template_not_found');
         }
         return true;

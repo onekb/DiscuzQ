@@ -18,7 +18,9 @@
 
 namespace App\Rules\Settings;
 
+use App\Common\ResponseCode;
 use App\Exceptions\TranslatorException;
+use Discuz\Common\Utils;
 use Discuz\Validation\AbstractRule;
 use TencentCloud\Common\Credential;
 use TencentCloud\Common\Exception\TencentCloudSDKException;
@@ -77,6 +79,7 @@ class QcloudSecretVerify extends AbstractRule
             // Result data is string can print_r($str)
             $str = $resp->toJsonString();
         } catch (TencentCloudSDKException $e) {
+            Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云secret key配置错误', [$e->getMessage()]);
             throw new TranslatorException('tencent_secret_key_error', [$e->getErrorCode()]);
         }
 

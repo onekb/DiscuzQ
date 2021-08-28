@@ -18,7 +18,9 @@
 
 namespace App\Rules\Settings;
 
+use App\Common\ResponseCode;
 use App\Exceptions\TranslatorException;
+use Discuz\Common\Utils;
 use Discuz\Qcloud\QcloudTrait;
 use TencentCloud\Common\Exception\TencentCloudSDKException;
 
@@ -74,9 +76,11 @@ class QcloudVodTranscodeVerify extends BaseQcloud
 
             $res = $this->DescribeTranscodeTemplates($value, $this->qcloudVodSubAppId);
         } catch (TencentCloudSDKException $e) {
+            Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云点播转码模板配置错误', [$e->getMessage()]);
             throw new TranslatorException('tencent_vod_error', [$e->getErrorCode()]);
         }
         if ($res->TotalCount == 0) {
+            Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云点播转码模板异常');
             throw new TencentCloudSDKException('tencent_vod_transcode_error');
         }
         return true;

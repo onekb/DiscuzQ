@@ -75,7 +75,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('clear:question')->daily();
         $schedule->command('clear:thread_draft')->daily();
         $schedule->command('clear:session_token')->everyMinute();
-        $schedule->command('crawlerdata:create')->everyMinute()->withoutOverlapping();
+        $schedule->command('crawlerdata:create')->everyMinute();
 
         //监听定时任务
         $schedule->command('task:start')->everyMinute();

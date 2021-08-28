@@ -19,7 +19,7 @@ use App\Api\Controller as ApiController;
 //删除用户和微信用户接口，上线前需去除
 //$route->post('/user/delete', 'user.delete', ApiController\UsersV3\DeleteUserController::class);
 //$route->post('/user/delete/wechat', 'user.delete.wechat', ApiController\UsersV3\UnbindWechatController::class);
-$route->get('/models', 'models.get', ApiController\UsersV3\GetModelsController::class);
+//$route->get('/models', 'models.get', ApiController\UsersV3\GetModelsController::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +36,7 @@ $route->get('/users/pc/wechat/miniprogram.bind', 'pc.wechat.miniprogram.bind.pol
 $route->get('/users/pc/wechat/miniprogram.login', 'pc.wechat.miniprogram.login.poll', ApiController\UsersV3\MiniProgramPcLoginPollController::class);
 $route->get('/users/pc/wechat.rebind.poll', 'pc.wechat.rebind.poll', ApiController\UsersV3\WechatPcRebindPollController::class);
 $route->get('/users/mobilebrowser/wechat/miniprogram.genscheme', 'pc.wechat.miniprogram.login.poll', ApiController\UsersV3\MiniProgramSchemeGenController::class);
+$route->get('/users/mobilebrowser/wechat/miniprogram.genbindscheme', 'mobilebrowser.wechat.miniprogram.genbindscheme', ApiController\UsersV3\MiniProgramBindSchemeGenController::class);
 //登录
 $route->post('/users/username.login', 'username.login', ApiController\UsersV3\LoginController::class);
 //注册

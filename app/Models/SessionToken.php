@@ -47,6 +47,10 @@ class SessionToken extends Model
     const WECHAT_MOBILE_BIND = 'wechat_mobile_bind'; // 手机浏览器微信绑定
 
     const WECHAT_TRANSITION_LOGIN = 'wechat_transition_login';//过渡阶段微信登录
+
+    const WECHAT_MINIPROGRAM_SCHEME_BIND = 'wechat_miniprogram_scheme_bind'; // 微信小程序 scheme 绑定
+
+    const WECHAT_OFFIACCOUNT_QRCODE_BIND = 'wechat_offiaccount_qrcode_bind'; // 微信公众号二维码绑定
     /**
      * {@inheritdoc}
      */

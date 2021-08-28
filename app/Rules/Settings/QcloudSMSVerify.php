@@ -18,7 +18,9 @@
 
 namespace App\Rules\Settings;
 
+use App\Common\ResponseCode;
 use App\Exceptions\TranslatorException;
+use Discuz\Common\Utils;
 use Discuz\Contracts\Setting\SettingsRepository;
 use TencentCloud\Common\Credential;
 use TencentCloud\Common\Exception\TencentCloudSDKException;
@@ -101,6 +103,7 @@ class QcloudSMSVerify extends BaseQcloud
             // Result data is string can print_r($str)
             $str = $resp->toJsonString();
         } catch (TencentCloudSDKException $e) {
+            Utils::outPut(ResponseCode::EXTERNAL_API_ERROR, '腾讯云短信配置错误', [$e->getMessage()]);
             throw new TranslatorException('tencent_qcloud_sms_app_error', [$e->getErrorCode()]);
         }
 

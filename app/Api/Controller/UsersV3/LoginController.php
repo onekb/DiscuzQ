@@ -99,9 +99,10 @@ class LoginController extends AuthBaseController
                 'wechat'        =>  $wechat,
                 'miniWechat'    =>  $miniWechat
             ]);
+            $userLoginToken = $this->addUserInfo($user, $this->camelData($accessToken));
             //短信，微信，小程序均未开启
-            if(! $sms && !$wechat && !$miniWechat ) {
-                $this->outPut(ResponseCode::SUCCESS, '', $this->addUserInfo($user,$this->camelData($accessToken)));
+            if (! $sms && !$wechat && !$miniWechat) {
+                $this->outPut(ResponseCode::SUCCESS, '', $userLoginToken);
             }
 
             //过渡时期微信绑定用户名密码登录的用户
@@ -112,7 +113,7 @@ class LoginController extends AuthBaseController
                     'sessionToken'  => $sessionToken
                 ]);
                 $this->events->dispatch(new TransitionBind($user, ['sessionToken' => $sessionToken]));
-                $this->outPut(ResponseCode::SUCCESS, '', $this->addUserInfo($user,$this->camelData($accessToken)));
+                $this->outPut(ResponseCode::SUCCESS, '', $userLoginToken);
             }
 
             if($type == 'mobilebrowser_username_login') {
@@ -133,19 +134,18 @@ class LoginController extends AuthBaseController
                     $bindTypeArr = AuthUtils::getBindTypeArrByCombinationBindType($user->bind_type);
                     if(!in_array(AuthUtils::WECHAT, $bindTypeArr)) {
                         $data['uid'] = !empty($user->id) ? $user->id : 0;
-                        $this->outPut(ResponseCode::NEED_BIND_WECHAT, '', $data);
+                        $this->outPut(ResponseCode::NEED_BIND_WECHAT, '', array_merge($data, $userLoginToken));
                     }
                 }
-                if(! $wechat && ! $miniWechat && $sms && !$user->mobile) {//开了短信配置未绑定手机号
-                    $this->outPut(ResponseCode::NEED_BIND_PHONE, '', $data);
+                if (! $wechat && ! $miniWechat && $sms && !$user->mobile) {//开了短信配置未绑定手机号
+                    $this->outPut(ResponseCode::NEED_BIND_PHONE, '', array_merge($data, $userLoginToken));
                 }
-                $this->outPut(ResponseCode::SUCCESS, '', $this->addUserInfo($user,$this->camelData($accessToken)));
+                $this->outPut(ResponseCode::SUCCESS, '', $userLoginToken);
             }
-            $this->outPut(ResponseCode::SUCCESS, '', $this->addUserInfo($user,$this->camelData($accessToken)));
+            $this->outPut(ResponseCode::SUCCESS, '', $userLoginToken);
         } catch (\Exception $e) {
             DzqLog::error('username_login_api_error', $paramData, $e->getMessage());
             $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名登录接口异常');
         }
-
     }
 }

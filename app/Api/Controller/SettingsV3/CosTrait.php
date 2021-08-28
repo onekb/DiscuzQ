@@ -17,7 +17,9 @@
 
 namespace App\Api\Controller\SettingsV3;
 
-use App\Models\Setting;
+use App\Common\Utils;
+use Discuz\Contracts\Setting\SettingsRepository;
+use Psr\Http\Message\ServerRequestInterface;
 use Qcloud\Cos\Client;
 
 trait CosTrait
@@ -31,19 +33,19 @@ trait CosTrait
     private $cosClient;
 
     // 注入settings信息
-    private function getSettings()
+    private function getCosSettings()
     {
-        $settings = Setting::query()
-            ->whereIn('key', ['qcloud_cos_bucket_name','qcloud_cos_bucket_area','qcloud_secret_id','qcloud_secret_key'])
-            ->get(['key', 'value'])
-            ->pluck('value','key')
-            ->toArray();
-        $this->secretId = $settings['qcloud_secret_id'];
-        $this->secretKey = $settings['qcloud_secret_key'];
-        $this->region = $settings['qcloud_cos_bucket_area'];
-        $this->bucket = $settings['qcloud_cos_bucket_name'];
-        $this->allowedOrigins = $settings['qcloud_cos_bucket_name'];
-        $this->siteUrl = $_SERVER['HTTP_ORIGIN'];
+        $settings = app()->make(SettingsRepository::class);
+        $this->secretId = $settings->get('qcloud_secret_id', 'qcloud');
+        $this->secretKey = $settings->get('qcloud_secret_key', 'qcloud');
+        $this->region = $settings->get('qcloud_cos_bucket_area', 'qcloud');
+        $this->bucket = $settings->get('qcloud_cos_bucket_name', 'qcloud');
+        $this->allowedOrigins = $this->bucket;
+        if (empty($this->secretId) || empty($this->secretKey) || empty($this->region) || empty($this->bucket)) {
+            app('log')->info('对象存储配置不全，无法配置跨域访问CORS');
+            return false;
+        }
+        $this->siteUrl = Utils::getSiteUrl();
         $this->cosClient = new Client(
             array (
                 'region' => $this->region,
@@ -60,10 +62,13 @@ trait CosTrait
     // 插入白名单
     public function putBucketCors()
     {
-        $this->getSettings();
+        if(!$this->getCosSettings()) {
+            return false;
+        }
         $cosClient = $this->cosClient;
         $id = 0;
         $urlArray = [];
+        $newUrlArray = [];
         $corsRules = [];
 
         try {
@@ -74,14 +79,15 @@ trait CosTrait
                 }
                 // 已写入白名单的不再重复写入
                 if (in_array($this->siteUrl, $urlArray)) {
-                    return false;
+                    app()->make(SettingsRepository::class)->set('qcloud_cors_origin', json_encode($urlArray), 'qcloud');
+                    return true;
                 }
                 $ids = array_column($oldBucketCors['CORSRules'], 'ID');
                 $id  = max($ids) + 1;
                 $corsRules = $oldBucketCors['CORSRules'];
             }
         } catch (\Exception $e) {
-            app('log')->info('未获取到原白名单信息，清空白名单，重置ID');
+            app('log')->info('未获取到原[跨域访问CORS]名单信息，清空[跨域访问CORS]，重置ID');
             $this->deleteBucketCors();
             $id = 1;
         }
@@ -101,9 +107,23 @@ trait CosTrait
             'CORSRules' => $corsRules,
         ));
 
-        $newBucketCors = $this->getBucketCors();
-        app('log')->info('插入白名单成功：' . json_encode($newBucketCors['CORSRules']));
-        return $newBucketCors;
+        // 再检查是否插入成功
+        try {
+            $newBucketCors = $this->getBucketCors();
+            foreach ($newBucketCors['CORSRules'] as $value) {
+                $newUrlArray = array_merge($newUrlArray, $value['AllowedOrigins']);
+            }
+            app()->make(SettingsRepository::class)->set('qcloud_cors_origin', json_encode($newUrlArray), 'qcloud');
+            if (!in_array($this->siteUrl, $newUrlArray)) {
+                app('log')->info('插入跨域访问CORS名单失败!');
+                return false;
+            }
+            app('log')->info('插入跨域访问CORS名单成功：' . json_encode($newBucketCors['CORSRules']));
+            return true;
+        } catch (\Exception $e) {
+            app('log')->info('插入跨域访问CORS名单失败!');
+            return false;
+        }
     }
 
     // 查看白名单

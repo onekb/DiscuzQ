@@ -179,9 +179,7 @@ class SetSettingsController extends DzqController
             return $setting;
         });
 
-        if (isset($settings['qcloud_qcloud_cos']) && $settings['qcloud_qcloud_cos']['value']) {
-            $this->putBucketCors();
-        }
+        $this->putBucketCors();
 
         $action_desc = "";
         if (!empty($settings['cash_cash_interval_time']['key'])) {
@@ -213,7 +211,7 @@ class SetSettingsController extends DzqController
         }
 
         $this->events->dispatch(new Saved($settings));
-        $this->outPut(ResponseCode::SUCCESS, '', $settings);
+        $this->outPut(ResponseCode::SUCCESS);
     }
 
     /**
@@ -242,7 +240,11 @@ class SetSettingsController extends DzqController
     {
         foreach ($settingData as &$item) {
             $key = $item['key'];
-            $value = $item['value'];
+            if (!empty($item['value'])) {
+                $value = $item['value'];
+            } else {
+                continue;
+            }
             $tag = $item['tag'];
             if (preg_match('/^\*+$/', $value)) {
                 $item['value'] = $this->settings->get($key, $tag);

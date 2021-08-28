@@ -23,6 +23,7 @@ use App\Common\PermissionKey;
 use App\Common\ResponseCode;
 use App\Models\Attachment;
 use App\Models\Group;
+use App\Models\Order;
 use App\Models\Thread;
 use App\Models\User;
 use App\Settings\SettingsRepository;
@@ -651,11 +652,11 @@ class UserRepository extends AbstractRepository
     {
         return $user->isAdmin();
     }
-
     public function canDeleteAvatar(User $user)
     {
         return $user->isAdmin();
     }
+
 
 
     public function canExportUser(User $user)
@@ -685,5 +686,45 @@ class UserRepository extends AbstractRepository
     public function canUserStatus(User $user)
     {
         return $user->isAdmin();
+    }
+
+    /**
+     * 检查 $user 是否已付费，true：已付费，false：未付费
+     * @param User $user
+     * @return bool
+     */
+    public function isPaid(User $user): bool
+    {
+        $settings = app(SettingsRepository::class);
+        $siteMode = $settings->get('site_mode');
+        if ($siteMode == 'public'
+            || $user->group_id == Group::ADMINISTRATOR_ID
+            || $user->isAdmin()
+        ) {
+            return true;
+        }
+        if ($user->isGuest()) {
+            return false;
+        }
+
+        $order = Order::query()->where([
+            'status' => Order::ORDER_STATUS_PAID,
+            'user_id' => $user->id
+        ])  ->whereIn('type', [Order::ORDER_TYPE_REGISTER, Order::ORDER_TYPE_RENEW])
+            ->orderByDesc('id')
+            ->first();
+        $now = time();
+        if (!empty($order)
+            && ((strtotime($order->expired_at) > $now)
+                || (empty($order->expired_at) && empty($user->expired_at)))
+        ){
+            return true;
+        }
+
+        if (!empty($user->expired_at) && strtotime($user->expired_at) > $now) {
+            return true;
+        }
+
+        return false;
     }
 }

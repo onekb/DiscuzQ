@@ -170,6 +170,7 @@ class UpdateThreadController extends DzqController
         }
 
         $thread->title = $title;
+        $originalCategoryId = $thread->category_id;
         !empty($categoryId) && $thread->category_id = $categoryId;
         if (!empty($position)) {
             $thread->longitude = $position['longitude'] ?? 0;
@@ -210,6 +211,9 @@ class UpdateThreadController extends DzqController
         if (!$isApproved && !$isDraft) {
             $this->user->refreshThreadCount();
             $this->user->save();
+            if($originalCategoryId != $categoryId){
+                Category::refreshThreadCountV3($originalCategoryId);
+            }
             Category::refreshThreadCountV3($categoryId);
         }
     }

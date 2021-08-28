@@ -92,8 +92,7 @@ class ThreadListener
             // 创建话题和关系
             //$firstPost->setContentAttribute($firstPost->content);
             //$firstPost->save();
-
-            ThreadTopic::setThreadTopic($firstPost);
+            //ThreadTopic::setThreadTopic($firstPost);
         }
 
         $this->updateThreadCount($thread);

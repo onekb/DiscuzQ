@@ -87,6 +87,7 @@ class WechatH5QrCodeController extends AuthBaseController
                 'type'          =>  $this->inPut('type'),
                 'redirectUri'   =>  urldecode($this->inPut('redirectUri')),
                 'sessionToken'  =>  $this->inPut('sessionToken'),
+                'process'       =>  $this->inPut('process'),
                 'userId'        =>  $this->user->id
             ];
 
@@ -102,7 +103,23 @@ class WechatH5QrCodeController extends AuthBaseController
             //手机浏览器绑定则由前端传session_token
             $sessionToken = $this->paramData['sessionToken'];
             if($this->paramData['type'] == 'mobile_browser_bind' && ! $sessionToken) {
-                $this->outPut(ResponseCode::GEN_QRCODE_TYPE_ERROR);
+                // 非登录流程下绑定微信用户
+                if ($this->paramData['process'] == 'bind') {
+                    if (! $this->user->isGuest()) {
+                        $accessToken = $this->getAccessToken($this->user);
+                        $token = SessionToken::generate(
+                            SessionToken::WECHAT_OFFIACCOUNT_QRCODE_BIND,
+                            $accessToken,
+                            $this->user->id
+                        );
+                        $token->save();
+                        $sessionToken = $token->token;
+                    } else {
+                        $this->outPut(ResponseCode::INVALID_PARAMETER, '用户不存在', ['id' => $this->user->id]);
+                    }
+                } else {
+                    $this->outPut(ResponseCode::GEN_QRCODE_TYPE_ERROR);
+                }
             }
             if($this->paramData['type'] != 'mobile_browser_bind') {
                 //跳转路由选择

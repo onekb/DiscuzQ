@@ -303,31 +303,40 @@ class CreateCrawlerDataCommand extends AbstractCommand
     {
         foreach ($users as $key => $value) {
             $this->checkExecutionTime();
-            $randomNumber = mt_rand(111111, 999999);
-            $nickname = 'robotdzq_' . $value['nickname'];
-            $password = $nickname . $randomNumber;
+            try {
+                $randomNumber = mt_rand(111111, 999999);
+                $nickname = 'robotdzq_' . $value['nickname'];
+                $password = $nickname . $randomNumber;
 
-            if (!isset($oldUsers[$nickname])) {
-                $data = [
-                    'username' => $nickname,
-                    'nickname' => $value['nickname'],
-                    'password' => $password,
-                    'passwordConfirmation' => $password,
-                    'dataType' => 'crawler'
-                ];
-                $newGuest = new Guest();
-                $register = new RegisterUser($newGuest, $data);
-                $registerUserResult = $register->handle($this->events, $this->censor, $this->settings, $this->userValidator);
-                $this->info('----Insert a new user: ' . $registerUserResult->username . ' ,The user_id is ' . $registerUserResult->id .'.----');
-                app('log')->info('----Insert a new user: ' . $registerUserResult->username . ' ,The user_id is ' . $registerUserResult->id .'.----');
-                $uploadAvatarResult = $this->uploadCrawlerUserAvatar($value, $registerUserResult);
-                $oldUsers = $oldUsers + [
-                    $registerUserResult->username => [
-                        'id'       => $registerUserResult->id,
-                        'username' => $registerUserResult->username,
-                        'nickname' => $registerUserResult->nickname
-                    ]
-                ];
+                if (!isset($oldUsers[$nickname])) {
+                    $data = [
+                        'username' => $nickname,
+                        'nickname' => $value['nickname'],
+                        'password' => $password,
+                        'passwordConfirmation' => $password,
+                        'dataType' => 'crawler'
+                    ];
+                    $newGuest = new Guest();
+                    $register = new RegisterUser($newGuest, $data);
+                    $registerUserResult = $register->handle($this->events, $this->censor, $this->settings, $this->userValidator);
+                    $this->info('----Insert a new user: ' . $registerUserResult->username . ' ,The user_id is ' . $registerUserResult->id .'.----');
+                    app('log')->info('----Insert a new user: ' . $registerUserResult->username . ' ,The user_id is ' . $registerUserResult->id .'.----');
+                    $uploadAvatarResult = $this->uploadCrawlerUserAvatar($value, $registerUserResult);
+                    if ($uploadAvatarResult) {
+                        $uploadAvatarResult->status = User::STATUS_NORMAL;
+                        $uploadAvatarResult->save();
+                    }
+                    $oldUsers = $oldUsers + [
+                            $registerUserResult->username => [
+                                'id'       => $registerUserResult->id,
+                                'username' => $registerUserResult->username,
+                                'nickname' => $registerUserResult->nickname
+                            ]
+                        ];
+                }
+            }catch (\Exception $e) {
+                $this->info('----Insert a new user fail,errorMsg: '. $e->getMessage() . '----');
+                app('log')->info('----Insert a new user fail,errorMsg: '. $e->getMessage() . '----');
             }
         }
         return $oldUsers;
@@ -387,7 +396,7 @@ class CreateCrawlerDataCommand extends AbstractCommand
                 $topicIds = [];
                 // 处理text中的img-src
                 if ($this->platform != Thread::CRAWLER_DATA_PLATFORM_OF_WEIBO && preg_match("/<img.*>/", $value['text']['text'])) {
-                    [$attachmentIds, $content] = $this->changeImg($threads[$key]['text']['text'], Attachment::TYPE_OF_IMAGE);
+                    [$attachmentIds, $content] = $this->changeImg($users[$threadAuthor]['id'], $threads[$key]['text']['text'], Attachment::TYPE_OF_IMAGE);
                     $threads[$key]['text']['text'] = $content;
                 } elseif ($this->platform == Thread::CRAWLER_DATA_PLATFORM_OF_WEIBO) {
                     $threads[$key]['text']['text'] = preg_replace('/<\s*img\s+[^>]*?src\s*=\s*(\'|\")(.*?)\\1[^>]*?\/?\s*>/i', '', $threads[$key]['text']['text']);
@@ -585,7 +594,7 @@ class CreateCrawlerDataCommand extends AbstractCommand
                     $imageFile->getClientOriginalName(),
                     $imageFile->getSize(),
                     $imageFile->getClientMimeType(),
-                    1,
+                    $this->settings->get('qcloud_cos', 'qcloud') ? 1 : 0,
                     Attachment::APPROVED,
                     $ipAddress,
                     0,
@@ -737,7 +746,7 @@ class CreateCrawlerDataCommand extends AbstractCommand
             $forumId = $post['comment']['forumId'];
             if (isset($users[$postAuthor]) && isset($threads[$forumId])) {
                 $this->checkExecutionTime();
-                [$attachmentIds, $content] = $this->changeImg($post['comment']['text']['text'], Attachment::TYPE_OF_IMAGE);
+                [$attachmentIds, $content] = $this->changeImg($users[$postAuthor]['id'], $post['comment']['text']['text'], Attachment::TYPE_OF_IMAGE);
                 if (!empty($attachmentIds) || !empty($content)) {
                     $newPost = new Post();
                     $newPost->thread_id = $threads[$forumId]['threadId'];
@@ -754,8 +763,8 @@ class CreateCrawlerDataCommand extends AbstractCommand
                     if (!empty($attachmentIds)) {
                         Attachment::query()->whereIn('id', $attachmentIds)->update(['type_id' => $newPost->id]);
                     }
-                    $this->info('----导入评论post_id为: ' . $newPost->id . '----');
-                    app('log')->info('----导入评论post_id为: ' . $newPost->id . '----');
+                    $this->info('----Insert a new post end.The post_id is ' . $newPost->id . '.----');
+                    app('log')->info('----Insert a new post end.The post_id is ' . $newPost->id . '.----');
                     $postIds = $postIds + [
                         $newPost->id => [
                             'threadId' => $threads[$forumId]['threadId'],
@@ -772,7 +781,7 @@ class CreateCrawlerDataCommand extends AbstractCommand
     /**
      * Change Img
      */
-    private function changeImg($content, $type)
+    private function changeImg($userId, $content, $type)
     {
         $content = preg_replace('/(<img.*?)(style=.+?[\'|"])|((width)=[\'"]+[0-9]+[\'"]+)|((height)=[\'"]+[0-9]+[\'"]+)/i', '$1' , $content);
         preg_match_all("/<img[^>]+/", $content, $imagesSrc);
@@ -785,7 +794,7 @@ class CreateCrawlerDataCommand extends AbstractCommand
             }
         }
         $postPicturesSrc = $this->getImagesSrc($content);
-        $insertImagesResult = $this->insertImages(1, $postPicturesSrc, $type);
+        $insertImagesResult = $this->insertImages($userId, $postPicturesSrc, $type);
         $insertImagesResult = array_column($insertImagesResult, null, 'oldImageSrc');
         $attachmentIds = array_column($insertImagesResult, 'id');
         if (!empty($attachmentIds)) {

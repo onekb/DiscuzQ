@@ -137,28 +137,32 @@ class ListUserScreenController extends DzqController
         $userDatasArr = $users['pageData']->toArray();
         $userIds = array_column($userDatasArr, 'userId');
         $ordersRegisterPaid = Order::query()->whereIn('user_id',$userIds)
-                                ->where('type',Order::ORDER_TYPE_REGISTER)
                                 ->where('status',Order::ORDER_STATUS_PAID)
-                                ->distinct(true)
+                                ->whereIn('type', [Order::ORDER_TYPE_REGISTER, Order::ORDER_TYPE_RENEW])
+                                ->orderBy('id')
                                 ->get()
                                 ->keyBy('user_id')
                                 ->toArray();
         $userDatas = $userDatas->map(function (User $user) use ($ordersRegisterPaid){
-            $user->paid = true;
-            if (!($user->group_id == Group::ADMINISTRATOR_ID)) {
-                $siteMode = Setting::getValue('site_mode');
-                //过期时间非空，有付费订单
-                if (!empty($user->expired_at) && !empty($ordersRegisterPaid[$user->userId])) {
-                    $t1 = strtotime($user->expired_at);
-                    $t2 = time();
-                    $diffTime = abs($t1 - $t2);
-                    if ($diffTime >= 3600 && $t1 < $t2) {
-                        $user->paid = false;
-                        //兜底逻辑,防止异常情况下判断错误
-                    }
-                }else{
-                    $user->paid = false;
-                }
+            $user->paid = false;
+            if ($user->group_id == Group::ADMINISTRATOR_ID) {
+                $user->paid = true;
+                return $user;
+            }
+
+            $now = time();
+            if (!empty($ordersRegisterPaid[$user->userId])
+                && ((strtotime($ordersRegisterPaid[$user->userId]['expired_at']) > $now)
+                    || (empty($ordersRegisterPaid[$user->userId]['expired_at']) && empty($user->expired_at))
+                )
+            ) {
+                $user->paid = true;
+                return $user;
+            }
+
+            if (!empty($user->expired_at) && strtotime($user->expired_at) > $now) {
+                $user->paid = true;
+                return $user;
             }
             return $user;
         });

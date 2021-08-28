@@ -256,7 +256,7 @@ class CreateAttachmentController extends DzqController
             DzqLog::error('create_attachment_api_error',[
                 'user'  => $this->user
             ], $e->getMessage());
-            $this->outPut(ResponseCode::INTERNAL_ERROR, $e->getMessage());
+            $this->outPut(ResponseCode::INTERNAL_ERROR, '附件上传异常', [$e->getMessage()]);
         } finally {
             @unlink($tmpFile);
             @unlink($tmpFileWithExt);

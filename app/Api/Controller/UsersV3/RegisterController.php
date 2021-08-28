@@ -123,7 +123,7 @@ class RegisterController extends AuthBaseController
             }
         } catch (\Exception $e) {
             DzqLog::error('username_register_api_error', $data, $e->getMessage());
-            $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常');
+            $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常', [$e->getMessage()]);
         }
 
         $this->connection->beginTransaction();
@@ -156,7 +156,7 @@ class RegisterController extends AuthBaseController
         } catch (\Exception $e) {
             DzqLog::error('username_register_api_error', $data, $e->getMessage());
             $this->connection->rollback();
-            $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常');
+            $this->outPut(ResponseCode::INTERNAL_ERROR, '用户名注册接口异常', [$e->getMessage()]);
         }
     }
 

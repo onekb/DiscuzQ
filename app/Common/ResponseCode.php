@@ -127,6 +127,8 @@ class ResponseCode
     const CATEGORY_NOT_FOUNF = -7076;
     const CURRENT_IS_PAY_SITE = -7077;
     const MOBILE_FORMAT_ERROR = -7078;
+    const GEN_SCHEME_TYPE_ERROR = -7079;
+    const GEN_BIND_SCHEME_TYPE_ERROR = -7080;
 
 
     const NEED_BIND_WECHAT = -8000;
@@ -238,7 +240,9 @@ class ResponseCode
         self::CATEGORY_NOT_FOUNF =>"分类不存在",
         self::INVALID_TOKEN => '无效token',
         self::CURRENT_IS_PAY_SITE =>'当前站点是付费模式',
-        self::MOBILE_FORMAT_ERROR =>'手机号格式错误'
+        self::MOBILE_FORMAT_ERROR =>'手机号格式错误',
+        self::GEN_SCHEME_TYPE_ERROR => '生成scheme参数类型错误',
+        self::GEN_BIND_SCHEME_TYPE_ERROR => '生成绑定scheme参数类型错误'
 
     ];
 }
