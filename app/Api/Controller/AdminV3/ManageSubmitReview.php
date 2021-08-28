@@ -314,11 +314,10 @@ class ManageSubmitReview extends DzqController
     //评论审核、发帖@、领取红包、回复通知处理
     public function postSendMiddleware($post){
         $this->events = app()->make(Dispatcher::class);
-        $actor = User::query()->where('id', $post->thread->user_id)->first();
         $post->raise(
-            new PostWasApproved($post, $actor, ['message' => ''])
+            new PostWasApproved($post, $this->user, ['message' => ''])
         );
-        $this->dispatchEventsFor($post, $actor);
+        $this->dispatchEventsFor($post, $this->user);
 
         /* if (empty($post->parsedContent)) {
             return;

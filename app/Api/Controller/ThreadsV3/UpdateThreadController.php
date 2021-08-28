@@ -29,14 +29,17 @@ use App\Models\ThreadRedPacket;
 use App\Models\ThreadReward;
 use App\Models\ThreadTag;
 use App\Models\ThreadTom;
+use App\Models\ThreadVote;
+use App\Models\ThreadVoteSubitem;
 use App\Models\User;
 use App\Modules\ThreadTom\TomConfig;
 use App\Notifications\Messages\Database\PostMessage;
 use App\Notifications\System;
 use App\Repositories\UserRepository;
+use Carbon\Carbon;
 use Discuz\Base\DzqCache;
 use Discuz\Base\DzqController;
-use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class UpdateThreadController extends DzqController
 {
@@ -69,16 +72,22 @@ class UpdateThreadController extends DzqController
             $this->outPut(ResponseCode::RESOURCE_NOT_FOUND, '帖子详情不存在');
         }
         $oldContent = $post->content;
+        $oldTitle = $thread->title;
         $result = $this->updateThread($thread, $post);
 
         if (
             ($thread->user_id != $this->user->id)
-            && ($oldContent != $post->content)
+            && ($oldContent != $post->content || $oldTitle != $result['title'])
             && $thread->user
         ) {
+            $messagePost = $post;
+            if (!empty($oldTitle)) {
+                $messagePost->content = strpos($oldContent, '<img') ? $oldTitle . '[图片]' : $oldTitle;
+            }
+
             $thread->user->notify(new System(PostMessage::class, $this->user, [
-                'message' => $oldContent,
-                'post' => $post,
+                'message' => $messagePost->content,
+                'post' => $messagePost,
                 'notify_type' => Post::NOTIFY_EDIT_CONTENT_TYPE,
             ]));
         }
@@ -322,6 +331,33 @@ class UpdateThreadController extends DzqController
             ->select('tom_type', 'key')
             ->where(['thread_id' => $threadId])
             ->whereIn('key', $keys)->delete();
+        //针对其他类型，再做特殊处理。如投票帖，做软删除
+        foreach ($keys as $val){
+            switch ($val){
+                case TomConfig::TOM_VOTE:
+                    $this->getDB()->beginTransaction();
+                    //目前是考虑一个帖子只有一个投票，暂时可以用 first
+                    $thread_vote = ThreadVote::query()->where('thread_id', $threadId)->whereNull('deleted_at')->first();
+                    $thread_vote->deleted_at = Carbon::now();
+                    $res = $thread_vote->save();
+                    if($res === false){
+                        $this->getDB()->rollBack();
+                        $this->outPut(ResponseCode::INTERNAL_ERROR,'删除原投票出错');
+                    }
+                    $res = ThreadVoteSubitem::query()->where('thread_vote_id', $thread_vote->id)->whereNull('deleted_at')->update(['deleted_at' => $thread_vote->deleted_at]);
+                    if($res === false){
+                        $this->getDB()->rollBack();
+                        $this->outPut(ResponseCode::INTERNAL_ERROR,'删除原投票选项出错');
+                    }
+                    $this->getDB()->commit();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+
 
         $this->delRedRelations($threadId, $isDeleteRedOrder, $isDeleteRewardOrder);
     }
@@ -336,7 +372,13 @@ class UpdateThreadController extends DzqController
     {
         $user = User::query()->where('id', $thread->user_id)->first();
         $group = Group::getGroup($user->id);
-        return $this->packThreadDetail($user, $group, $thread, $post, $tomJsons, true);
+        $tags = [];
+        if(!empty($tomJsons)){
+            foreach ($tomJsons as $val){
+                $tags[]['tag'] = $val['tomId'];
+            }
+        }
+        return $this->packThreadDetail($user, $group, $thread, $post, $tomJsons, true,$tags);
     }
 
     public function prefixClearCache($user)

@@ -31,7 +31,6 @@ use Discuz\Database\ScopeVisibilityTrait;
 use Discuz\Foundation\EventGeneratorTrait;
 use Discuz\SpecialChar\SpecialCharServer;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -753,5 +752,95 @@ class Post extends DzqModel
             ->where($arr)
             ->whereNull('deleted_at')
             ->first();
+    }
+
+    public static function changeNotifitionPostContent($post)
+    {
+        if (isset($post->isChange)) {
+            return $post;
+        }
+
+        if (isset($post->content)) {
+            $post->content = Post::changeContent($post->content);
+        }
+
+        if (isset($post->replyPost->content)) {
+            $post->replyPost->content = Post::changeContent($post->replyPost->content);
+        }
+
+        if ($post->is_first == Post::FIRST_YES) {
+            $post->content = Post::addTagToThreadContent($post->thread_id, $post->content);
+            $post->isChange = true;
+        } else {
+            $post->content = Post::addTagToPostContent($post->id, $post->content);
+        }
+
+        return $post;
+    }
+
+    public static function changeContent($content)
+    {
+        $content = Post::deleteHtmlTags($content);
+        if (strlen($content) > Thread::NOTICE_MESSAGE_LENGTH) {
+            $content = Post::getThreadTitleOrContent($content, Thread::NOTICE_MESSAGE_LENGTH);
+        }
+        return $content;
+    }
+
+    public static function deleteHtmlTags($content)
+    {
+        $content = str_replace("<p>", "", $content);
+        $content = str_replace("</p>", "", $content);
+        $content = str_replace(PHP_EOL, "", $content);
+        return $content;
+    }
+
+    public static function getThreadTitleOrContent($titleOrContent, $length)
+    {
+        if (strpos($titleOrContent, '<img') !== false && strpos($titleOrContent, 'attachmentId-') !== false) {
+            $titleOrContent = $titleOrContent . '[图片]';
+        }
+        $titleOrContent = strip_tags($titleOrContent);
+        if (mb_strlen($titleOrContent) > $length) {
+            $titleOrContent = Str::substr($titleOrContent, 0, $length) . '...';
+            //处理表情被截断的情况，针对最后的表情被截断的情况做截断处理
+            $titleOrContent = preg_replace('/([^\w])\:\w*\.\.\./s', '$1...', $titleOrContent);
+            //处理内容开头是表情，表情被截断的情况
+            $titleOrContent = preg_replace('/^\:\w*\.\.\./s', '...', $titleOrContent);
+        }
+
+        return $titleOrContent;
+    }
+
+    public static function addTagToThreadContent($threadId, $content)
+    {
+        $tags = [];
+        ThreadTag::query()->where('thread_id', $threadId)->get()->each(function ($item) use (&$tags) {
+            $tags[$item['tag']][] = $item->toArray();
+        });
+        if (!empty($tags)) {
+            if (isset($tags[ThreadTag::IMAGE])) {
+                $content = $content . '[图片]';
+            }
+            if (isset($tags[ThreadTag::VIDEO])) {
+                $content = $content . '[视频]';
+            }
+            if (isset($tags[ThreadTag::DOC])) {
+                $content = $content . '[附件]';
+            }
+            if (isset($tags[ThreadTag::VOICE])) {
+                $content = $content . '[语音条]';
+            }
+        }
+        return $content;
+    }
+
+    public static function addTagToPostContent($postId, $content)
+    {
+        $postAttachment = Attachment::query()->where('type_id', $postId)->get()->toArray();
+        if (!empty($postAttachment)) {
+            $content = $content . '[图片]';
+        }
+        return $content;
     }
 }

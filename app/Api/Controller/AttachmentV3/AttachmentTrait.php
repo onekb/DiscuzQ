@@ -95,9 +95,14 @@ trait AttachmentTrait
 
     public function getImageInfo($cosUrl, $censor)
     {
-        $newCosUrl = strstr($cosUrl,'?') ? $cosUrl . '&imageInfo' : $cosUrl . '?imageInfo';
         $thumbParameter = 'imageMogr2/thumbnail/' . Attachment::FIX_WIDTH . 'x' . Attachment::FIX_WIDTH;
-        $thumbUrl = strstr($cosUrl,'?') ? $cosUrl . '&' . $thumbParameter : $cosUrl . '?' . $thumbParameter;
+        if (strstr($cosUrl,'?')) {
+            $newCosUrl = $cosUrl . '&imageInfo';
+            $thumbUrl = $cosUrl . '&' . $thumbParameter;
+        } else {
+            $newCosUrl = $cosUrl . '?imageInfo';
+            $thumbUrl = $cosUrl . '?' . $thumbParameter;
+        }
         $imageInfo = $this->getFileContents($newCosUrl);
         $censor->checkImage($thumbUrl, true);
         if (!$imageInfo) {

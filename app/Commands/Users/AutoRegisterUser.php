@@ -109,6 +109,7 @@ class AutoRegisterUser
 
     private function checkName($name = 'username')
     {
+        $content = '';
         $censor = app(Censor::class);
         DzqLog::info('begin_check_'.$name.'_process_checkText', ['data' => $this->data], DzqLog::LOG_LOGIN);
         try {
@@ -125,7 +126,7 @@ class AutoRegisterUser
         $exists = User::where($name, $content)->exists();
         if ($exists) {
             $this->data[$name] = $name == 'username'
-                                    ? User::getNewUsername()
+                                    ? User::addStringToUsername($content)
                                     : User::addStringToNickname($content);
         } else {
             $this->data[$name] = $content;

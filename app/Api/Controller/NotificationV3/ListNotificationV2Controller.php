@@ -4,10 +4,10 @@ namespace App\Api\Controller\NotificationV3;
 
 use App\Common\ResponseCode;
 use App\Common\Utils;
+use App\Models\Post;
 use App\Models\Thread;
 use App\Models\User;
 use App\Repositories\UserRepository;
-use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Base\DzqController;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Arr;
@@ -191,6 +191,7 @@ class ListNotificationV2Controller extends DzqController
 
     protected function formatData(DatabaseNotification $data)
     {
+        $data->data = $this->changeNotificationData($data->data);
         $result = array_merge([
             'id' => $data->id,
             'type' => $data->type,
@@ -198,21 +199,6 @@ class ListNotificationV2Controller extends DzqController
             'readAt' => optional($data->read_at)->format('Y-m-d H:i:s'),
             'createdAt' => optional($data->created_at)->format('Y-m-d H:i:s'),
         ], Utils::arrayKeysToCamel($data->data));
-
-        if(!empty($result['postContent']) && mb_strlen($result['postContent']) > Thread::NOTICE_CONTENT_LENGTH){
-            $result['postContent'] = $this->getThreadTitleOrContent($result['postContent'], Thread::NOTICE_CONTENT_LENGTH);
-        }
-
-        if(!empty($result['threadTitle']) && mb_strlen($result['threadTitle']) > Thread::TITLE_LENGTH) {
-            $result['threadTitle'] = $this->getThreadTitleOrContent($result['threadTitle'], Thread::TITLE_LENGTH);
-        }
-
-        if(!empty($result['replyPostContent']) && mb_strlen($result['replyPostContent']) > Thread::NOTICE_CONTENT_LENGTH) {
-            $result['replyPostContent'] = $this->getThreadTitleOrContent($result['replyPostContent'], Thread::NOTICE_CONTENT_LENGTH);
-        }
-        if(!empty($result['content']) && mb_strlen($result['content']) > Thread::MORE_NOTICE_CONTENT_LENGTH) {
-            $result['content'] = $this->getThreadTitleOrContent($result['content'], Thread::MORE_NOTICE_CONTENT_LENGTH);
-        }
 
         // 默认必须要有的字段
         if (!array_key_exists('replyPostId', $result)) {
@@ -242,13 +228,46 @@ class ListNotificationV2Controller extends DzqController
         ]);
 
         // 判断是否要匿名
-        if (isset($data->isAnonymous) && $data->isAnonymous) {
-            $result['userId'] = -1;
-            $result['isReal'] = false; // 全部默认未认证
-            $result['isAnonymous'] = $data->isAnonymous;
+        if(!empty($result['threadId'])){
+            $thAnonymous = Thread::query()->where('id',$result['threadId'])->first(['id','is_anonymous']);
+            if(!empty($thAnonymous) && in_array($result['type'],['threadrewarded']) && (bool)$thAnonymous->is_anonymous){
+                $result['isReal'] = false; // 全部默认未认证
+                $result['isAnonymous'] = true;
+                $result['threadUsername'] = '匿名用户';
+                $result['threadUserNickname'] = '匿名用户';
+                $result['threadUserAvatar'] = '';
+            }
         }
 
         return $result;
+    }
+
+    protected function changeNotificationData($data)
+    {
+        if (isset($data['post_id']) && !empty($data['post_id'])) {
+            $data['post_content'] = Post::changeContent($data['post_content']);
+            $post = Post::query()->where('id', $data['post_id'])->first();
+            if ($post['is_first'] == Post::FIRST_YES) {
+                $data['post_content'] = Post::addTagToThreadContent($data['thread_id'], $data['post_content']);
+            } else {
+                $data['post_content'] = Post::addTagToPostContent($data['post_id'], $data['post_content']);
+            }
+        }
+        if (isset($data['reply_post_id']) && !empty($data['reply_post_id'])) {
+            $data['reply_post_content'] = Post::changeContent($data['reply_post_content']);
+            $data['reply_post_content'] = Post::addTagToPostContent($data['reply_post_id'], $data['reply_post_content']);
+        }
+
+        if (isset($data['amount']) && isset($data['thread_id'])) {
+            $data['content'] = Post::changeContent($data['content']);
+            $data['content'] = Post::addTagToThreadContent($data['thread_id'], $data['content']);
+            if (isset($data['thread_title']) && !empty($data['thread_title'])) {
+                $data['thread_title'] = Post::changeContent($data['thread_title']);
+                $data['thread_title'] = Post::addTagToThreadContent($data['thread_id'], $data['thread_title']);
+            }
+        }
+
+        return $data;
     }
 
     /**
@@ -265,15 +284,5 @@ class ListNotificationV2Controller extends DzqController
         } else {
             return false;
         }
-    }
-
-    private function getThreadTitleOrContent($titleOrContent, $length)
-    {
-        $titleOrContent = Str::substr(strip_tags($titleOrContent), 0, $length) . '...';
-        //处理表情被截断的情况，针对最后的表情被截断的情况做截断处理
-        $titleOrContent = preg_replace('/([^\w])\:\w*\.\.\./s', '$1...', $titleOrContent);
-        //处理内容开头是表情，表情被截断的情况
-        $titleOrContent = preg_replace('/^\:\w*\.\.\./s', '...', $titleOrContent);
-        return $titleOrContent;
     }
 }

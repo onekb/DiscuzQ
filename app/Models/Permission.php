@@ -52,6 +52,7 @@ class Permission extends DzqModel
         'thread.insertRedPacket' => '插入红包',         //开启/允许发布红包
         'thread.insertPosition' => '插入位置',         //开启/允许发布位置
         'thread.allowAnonymous' => '插入匿名贴',         //开启/允许发布匿名贴
+        'thread.insertVote'     =>  '插入投票'
     ];
 
 

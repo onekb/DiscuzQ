@@ -75,8 +75,11 @@ class WechatMiniProgramCodeController extends DzqController
         //入参日志记录
         app('log')->info("生成海报接口入参:{path:{$path},width:{$width},r:{$colorR},g:{$colorG},b:{$colorB}}");
 
-        if(!(bool)$this->settings->get('miniprogram_app_id', 'wx_miniprogram') || !(bool)$this->settings->get('miniprogram_app_secret', 'wx_miniprogram')){
-            $this->outPut(ResponseCode::INVALID_PARAMETER, '请先配置小程序参数');
+        if(!(bool)$this->settings->get('miniprogram_app_id', 'wx_miniprogram')
+            || !(bool)$this->settings->get('miniprogram_app_secret', 'wx_miniprogram')
+            || !(bool)$this->settings->get('miniprogram_close', 'wx_miniprogram')
+        ){
+            $this->outPut(ResponseCode::CONFIG_MINIPROGRAM_AND_OPEN);
         }
 
         try {

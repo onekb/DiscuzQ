@@ -18,11 +18,11 @@
 namespace App\Api\Controller\UsersV3;
 
 use App\Common\ResponseCode;
+use App\Models\GroupUser;
 use App\Models\User;
 use App\Models\UserFollow;
 use App\Repositories\UserRepository;
 use App\Models\Group;
-use Illuminate\Support\Arr;
 use Discuz\Base\DzqController;
 
 class UsersListController extends DzqController
@@ -37,51 +37,58 @@ class UsersListController extends DzqController
         $currentPage = $this->inPut('page');
         $perPage = $this->inPut('perPage');
         $filter = (array)$this->inPut('filter');
-
-        $query = User::query();
-        $query->select('users.id AS userId', 'users.nickname', 'users.username', 'users.avatar', 'users.thread_count', 'users.question_count', 'users.liked_count', 'users.follow_count', 'group_id');
-        $query->join('group_user', 'users.id', '=', 'group_user.user_id');
-        $query->where('users.status', User::STATUS_NORMAL);
-        if (Arr::has($filter, 'username') && Arr::get($filter, 'username') !== '') {
-            $username = $filter['username'];
-            $query->where('users.username', 'like', '%' . $username . '%');
-        }
-        if (Arr::has($filter, 'nickname') && Arr::get($filter, 'nickname') !== '') {
-            $nickname = $filter['nickname'];
-            $query->where('users.nickname', 'like', '%' . $nickname . '%');
-        }
-
-        if (isset($filter['hot']) && $filter['hot'] == 1) {
-            $query->orderByDesc('users.login_at');
+        $column = '';
+        !empty($filter['username']) && $column = 'username';
+        !empty($filter['nickname']) && $column = 'nickname';
+        if (empty($column)) {
+            $query = User::query();
+            $query->where('users.status', User::STATUS_NORMAL);
+            if (isset($filter['hot']) && $filter['hot'] == 1) {
+                $query->orderByDesc('users.login_at');
+            } else {
+                $query->orderBy('users.id');
+            }
         } else {
-            $query->orderBy('users.id');
+            $value = $filter[$column];
+            $query = User::query()->where($column, $value)->where('status', User::STATUS_NORMAL);
+            $likeL = User::query()->where($column, 'like', $value . '%')->where('status', User::STATUS_NORMAL);
+            $likeR = User::query()->where($column, 'like', '%' . $value)->where('status', User::STATUS_NORMAL);
+            $likeM = User::query()->where($column, 'like', '%' . $value . '%')->where('status', User::STATUS_NORMAL);
+            $query->union($likeL->getQuery())->union($likeR->getQuery())->union($likeM->getQuery());
         }
-
-
         $users = $this->pagination($currentPage, $perPage, $query);
         $userDatas = $users['pageData'];
-        $groupIds = array_column($userDatas, 'group_id');
-        $userGroupDatas = Group::query()->whereIn('id', $groupIds)->where('is_display', 1)->get()->toArray();
-        $userGroupDatas = array_column($userGroupDatas, null, 'id');
-
-        $userFollowList = UserFollow::query()->where('from_user_id', $this->user->id)->get()->toArray();
-        $userFollowList = array_column($userFollowList, null, 'to_user_id');
-
+        $userIds = array_column($userDatas, 'id');
+        $groupUsers = GroupUser::query()->whereIn('user_id', $userIds)->get()->toArray();
+        $groupUsers = array_column($groupUsers, null, 'user_id');
+        $groupIds = array_column($groupUsers, 'group_id');
+        $userGroupDatas = Group::query()->whereIn('id', $groupIds)->where('is_display', 1)->get()->pluck(null, 'id')->toArray();
+        $userFollowList = UserFollow::query()->where('from_user_id', $this->user->id)->get()->pluck(null, 'to_user_id')->toArray();
         // 将来需考虑单用户-多权限组情况
-        foreach ($userDatas as $key => $value) {
-            $userDatas[$key]['nickname']       = $value['nickname'] ? $value['nickname'] : $value['username'];
-            $userDatas[$key]['isFollow']       = false;
-            $userDatas[$key]['isMutualFollow'] = false;
-            if (isset($userFollowList[$value['userId']])) {
-                $userDatas[$key]['isFollow']       = true;
-                $userDatas[$key]['isMutualFollow'] = (bool) $userFollowList[$value['userId']]['is_mutual'];
+        $res = [];
+        foreach ($userDatas as $userData) {
+            $userId = $userData['id'];
+            $groupId = $groupUsers[$userId]['group_id'] ?? '';
+            $item = [
+                'userId'=>$userId,
+                'nickname' => $userData['nickname'],
+                'username' => $userData['username'],
+                'avatar' => $userData['avatar'],
+                'threadCount' => $userData['thread_count'],
+                'questionCount' => $userData['question_count'],
+                'likedCount' => $userData['liked_count'],
+                'followCount' => $userData['follow_count'],
+                'isFollow' => false,
+                'isMutualFollow' => false,
+                'groupName' => $userGroupDatas[$groupId]['name'] ?? ''
+            ];
+            if (isset($userFollowList[$userId])) {
+                $item['isFollow'] = true;
+                $item['isMutualFollow'] = (bool)$userFollowList[$userId]['is_mutual'];
             }
-            $userDatas[$key]['groupName'] = $userGroupDatas[$value['group_id']]['name'] ?? '';
-            unset($userDatas[$key]['group_id']);
+            $res[] = $item;
         }
-        $userDatas = $this->camelData($userDatas);
-        $users['pageData'] = $userDatas ?? [];
-
+        $users['pageData'] = $res;
         return $this->outPut(ResponseCode::SUCCESS, '', $users);
     }
 }

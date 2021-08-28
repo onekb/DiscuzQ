@@ -18,7 +18,6 @@
 
 namespace App\Models;
 
-use App\Common\CacheKey;
 use App\Common\Utils;
 use App\Events\Thread\Hidden;
 use App\Events\Thread\Restored;
@@ -132,8 +131,7 @@ class Thread extends DzqModel
     const CONTENT_LENGTH = 80;
     const CONTENT_WITHOUT_LENGTH = 0;
     const TITLE_LENGTH = 100;
-    const NOTICE_CONTENT_LENGTH = 100;
-    const MORE_NOTICE_CONTENT_LENGTH = 130;
+    const NOTICE_MESSAGE_LENGTH = 30;
 
 
     const  SORT_BY_THREAD = 1;//帖子创建时间排序
@@ -172,11 +170,26 @@ class Thread extends DzqModel
     const ORDER_TITLE_LENGTH = 20;
     const ORDER_TITLE_END_WITH = '...';
 
+    const DATA_PLATFORM_OF_SITE = 0;
     const CRAWLER_DATA_PLATFORM_OF_WEIBO = 1;
-
+    const CRAWLER_DATA_PLATFORM_OF_TIEBA = 2;
+    const CRAWLER_DATA_PLATFORM_OF_DOUBAN = 3;
     const CREATE_CRAWLER_DATA_LIMIT_MINUTE_TIME = 60;
 
     const PRICE_LIMIT = 100000;
+
+    const IMPORT_WAITING = 0;
+    const IMPORT_PROCESSING = 1;
+    const IMPORT_NORMAL_ENDING = 2;
+    const IMPORT_ABNORMAL_ENDING = 3;
+    const IMPORT_TIMEOUT_ENDING = 4;
+    const IMPORT_NOTHING_ENDING = 5;
+    const PROCESS_OF_START_INSERT_CRAWLER_DATA = 0;
+    const PROCESS_OF_GET_CRAWLER_DATA = 25;
+    const PROCESS_OF_INSERT_USERS = 50;
+    const PROCESS_OF_INSERT_THREADS = 75;
+    const PROCESS_OF_INSERT_POSTS = 99;
+    const PROCESS_OF_END_INSERT_CRAWLER_DATA = 100;
 
     /**
      * {@inheritdoc}

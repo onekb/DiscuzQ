@@ -15,6 +15,7 @@ class PermissionKey
     const THREAD_INSERT_REWARD = 'thread.insertReward';
     const THREAD_INSERT_RED_PACKET = 'thread.insertRedPacket';
     const THREAD_INSERT_POSITION = 'thread.insertPosition';
+    const THREAD_INSERT_VOTE = 'thread.insertVote';
 
     const THREAD_ALLOW_ANONYMOUS = 'thread.allowAnonymous';
 
@@ -48,4 +49,5 @@ class PermissionKey
 
     const CREATE_THREAD_WITH_CAPTCHA = 'createThreadWithCaptcha';
     const PUBLISH_NEED_BIND_PHONE = 'publishNeedBindPhone';
+    const PUBLISH_NEED_BIND_WECHAT = 'publishNeedBindWechat';
 }

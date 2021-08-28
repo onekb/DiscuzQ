@@ -72,6 +72,7 @@ class RepliedMessage extends SimpleMessage
      */
     public function changeBuild(&$build)
     {
+        $this->post = Post::changeNotifitionPostContent($this->post);
         $result = $this->post->getSummaryContent(Post::NOTICE_WITHOUT_LENGTH);
 
         /**

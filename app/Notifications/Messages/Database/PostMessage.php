@@ -54,7 +54,7 @@ class PostMessage extends SimpleMessage
 
         return [
             $this->post->user->username,
-            $post->content ?: '[图片]',
+            $post->content,
             Arr::get($data, 'refuse', '无')
         ];
     }

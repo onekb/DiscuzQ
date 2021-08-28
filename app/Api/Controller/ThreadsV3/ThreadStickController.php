@@ -29,6 +29,8 @@ use Discuz\Base\DzqController;
 
 class ThreadStickController extends DzqController
 {
+    use ThreadTrait;
+
     protected function checkRequestPermissions(UserRepository $userRepo)
     {
         return true;
@@ -37,7 +39,7 @@ class ThreadStickController extends DzqController
     public function main()
     {
         $categoryIds = $this->inPut('categoryIds');
-        $threads = Thread::query()->select(['id', 'category_id', 'title', 'updated_at'])->orderByDesc('updated_at');
+        $threads = Thread::query()->select(['id', 'category_id', 'title', 'updated_at','price','attachment_price','free_words'])->orderByDesc('updated_at');
         if (!empty($categoryIds)) {
             if (!is_array($categoryIds)) {
                 $categoryIds = [$categoryIds];
@@ -78,6 +80,19 @@ class ThreadStickController extends DzqController
             if (empty($title)) {
                 if (isset($posts[$id])) {
                     $title = Post::instance()->getContentSummary($posts[$id]);
+                }
+            }
+            $payType = $this->threadPayStatus($this->user, $thread, $paid);
+            if ($payType == Thread::PAY_THREAD) {
+                $freeWords = floatval($thread['free_words']);
+                if ($freeWords >= 0 && $freeWords < 1) {
+                    $title = strip_tags($title);
+                    $freeLength = mb_strlen($title) * $freeWords;
+                    $title = mb_substr($title, 0, $freeLength) . Post::SUMMARY_END_WITH;
+                    //针对最后的表情被截断的情况做截断处理
+                    $title = preg_replace('/([^\w])\:\w*\.\.\./s', '$1...', $title);
+                    //处理内容开头是表情，表情被截断的情况
+                    $title = preg_replace('/^\:\w*\.\.\./s', '...', $title);
                 }
             }
             $linkString .= $title;

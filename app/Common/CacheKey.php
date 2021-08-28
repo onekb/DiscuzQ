@@ -103,6 +103,8 @@ class CacheKey
     const LIST_THREADS_V3_GROUP_USER = 'list_threads_v3_group_user';//用户组 user_id
     const LIST_THREADS_V3_SEARCH_REPLACE = 'list_threads_v3_search_replace';//替换标签、话题和艾特
     const LIST_THREADS_V3_POST_USERS = 'list_threads_v3_post_users';//帖子卡面底部的点赞支付摘要 thread_id
+    const LIST_THREADS_V3_VOTES = 'list_threads_v3_votes';  //帖子投票
+    const LIST_THREADS_V3_VOTE_SUBITEMS = 'list_threads_v3_vote_subitems';  //帖子投票选项
 
     const LIST_THREADS_V3_POSTS = 'list_threads_v3_posts:';//帖子正文数据存储 thread_id,【碎片化多文件存储】--切分成20个缓存文件
     const LIST_THREADS_V3_USER_PAY_ORDERS = 'list_threads_v3_user_pay_orders:';//用户付费贴订单信息 user_id->thread_id

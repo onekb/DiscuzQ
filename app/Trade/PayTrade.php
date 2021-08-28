@@ -161,7 +161,7 @@ class PayTrade
             $message = isset($message['err_code_des']) ? $message['err_code_des'] : $message['return_msg'];
             throw new TradeErrorException($message, 500);
         }
-        app('log')->info('支付参数记录：' . implode(',', $result));
+        // app('log')->info('支付参数记录：' . implode(',', $result));
         return $result;
     }
 }

@@ -60,7 +60,7 @@ class DeleteThreadController extends DzqController
         Category::refreshThreadCountV3($thread['category_id']);
 
         if ($thread->user_id != $this->user->id) {
-            $this->sendIsDeleted($thread, $this->user, ['refuse' => $this->inPut('message')]);
+            $this->threadNotices($thread, $this->user, 'isDeleted', $this->inPut('message'));
         }
 
         $this->outPut(ResponseCode::SUCCESS);

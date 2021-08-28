@@ -81,7 +81,7 @@ class RelationAttachmentController extends DzqController
         // 模糊图处理
         if ($data['type'] == Attachment::TYPE_OF_IMAGE) {
             $tmpFile = tempnam(storage_path('/tmp'), 'attachment');
-            $tmpFileWithExt = $tmpFile . $fileInfo['ext'];
+            $tmpFileWithExt = $tmpFile . '.' . $fileInfo['ext'];
             @file_put_contents($tmpFileWithExt, $this->getFileContents($cosUrl));
             $blurImageFile = new UploadedFile(
                 $tmpFileWithExt,

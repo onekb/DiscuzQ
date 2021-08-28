@@ -125,10 +125,10 @@ class ListUserWalletLogsController extends DzqController
                 */
                 switch ($log->change_type){
                     case UserWalletLog::TYPE_INCOME_REWARD:
-                        $log->title = Str::limit($log->order->user->nickname, self::TITLE_LENGTH).'打赏了你的主题';
+                        $log->title = !empty($log->order->user->nickname) ? Str::limit($log->order->user->nickname, self::TITLE_LENGTH).'打赏了你的主题' : '';
                         break;
                     case UserWalletLog::TYPE_INCOME_SCALE_REWARD:
-                        $log->title = Str::limit($log->order->user->nickname, self::TITLE_LENGTH).'打赏了帖子';
+                        $log->title = !empty($log->order->user->nickname) ? Str::limit($log->order->user->nickname, self::TITLE_LENGTH).'打赏了帖子' : '';
                         break;
                     case UserWalletLog::TYPE_INCOME_ARTIFICIAL:
                         $log->title = '管理员充值';
@@ -146,10 +146,10 @@ class ListUserWalletLogsController extends DzqController
                         $log->title = '赏金被退回';
                         break;
                     case in_array($log->change_type, [UserWalletLog::TYPE_INCOME_ONLOOKER_REWARD, UserWalletLog::TYPE_INCOME_THREAD, UserWalletLog::TYPE_INCOME_SCALE_THREAD, UserWalletLog::TYPE_INCOME_ATTACHMENT, UserWalletLog::TYPE_INCOME_SCALE_ATTACHMENT]):
-                        $log->title = Str::limit($log->order->user->nickname, self::TITLE_LENGTH).'支付了帖子';
+                        $log->title = !empty($log->order->user->nickname) ? Str::limit($log->order->user->nickname, self::TITLE_LENGTH).'支付了帖子' : '';
                         break;
                     case UserWalletLog::TYPE_INCOME_SCALE_REGISTER:
-                        $log->title = Str::limit($log->order->user->nickname, self::TITLE_LENGTH).'注册了站点';
+                        $log->title = !empty($log->order->user->nickname) ? Str::limit($log->order->user->nickname, self::TITLE_LENGTH).'注册了站点' : '';
                         break;
                     case in_array($log->change_type, [UserWalletLog::TYPE_TEXT_ABNORMAL_REFUND, UserWalletLog::TYPE_LONG_ABNORMAL_REFUND, UserWalletLog::TYPE_QUESTION_ABNORMAL_REFUND, UserWalletLog::TYPE_ABNORMAL_ORDER_REFUND]):
                         $log->title = '异常订单退款';

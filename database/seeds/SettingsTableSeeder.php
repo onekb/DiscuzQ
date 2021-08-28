@@ -165,6 +165,11 @@ class SettingsTableSeeder extends Seeder
               'key' => 'is_need_transition',    // 启用微信内落地页
               'value' => 1,
               'tag' => 'default',
+            ],
+            [
+                'key' => 'qcloud_vod_auto_play',    // 默认启用视频自动播放
+                'value' => 1,
+                'tag' => 'qcloud'
             ]
         ]);
     }

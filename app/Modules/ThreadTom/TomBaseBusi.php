@@ -46,6 +46,7 @@ abstract class TomBaseBusi
     public $user = null;
     public $key = null;
     public $app = null;
+    public $db = null;
 
     public $canViewTom = true;
 
@@ -60,6 +61,7 @@ abstract class TomBaseBusi
         $this->user = $user;
         $this->key = $key;
         $this->canViewTom = $canViewTom;
+        $this->db = app('db');
         $this->operationValid();
     }
 
@@ -115,7 +117,9 @@ abstract class TomBaseBusi
             $validate = app('validator');
             $validate->validate($inputArray, $rules);
         } catch (\Exception $e) {
-            $this->outPut(ResponseCode::INVALID_PARAMETER, $e->getMessage());
+            $validate_error = $e->validator->errors()->first();
+            $error_message = !empty($validate_error) ? $validate_error : $e->getMessage();
+            $this->outPut(ResponseCode::INVALID_PARAMETER, $error_message);
         }
     }
 

@@ -203,3 +203,6 @@ $route->get('/view.count', 'view.count', ApiController\ThreadsV3\ViewCountContro
 $route->post('/coskey', 'coskey', ApiController\AttachmentV3\CoskeyAttachmentController::class);
 //记录前端上传文件的参数
 $route->post('/attachment.relation', 'attachment.relation', ApiController\AttachmentV3\RelationAttachmentController::class);
+//用户投票
+$route->post('/vote.thread', 'vote.thread', ApiController\ThreadsV3\VoteThreadController::class);
+

@@ -66,6 +66,9 @@ trait ThreadNoticesTrait
         }
 
         $message = $message ?: '无';
+        if (!empty($thread->title)) {
+            $thread->firstPost->content = strpos($thread->firstPost->content, '<img') ? $thread->title . '[图片]' : $thread->title;
+        }
 
         switch ($type) {
             case 'isEssence':   // 内容加精通知
@@ -141,7 +144,7 @@ trait ThreadNoticesTrait
         $data = [
             'message'     => $this->getThreadTitle($thread),
             'post'        => $thread->firstPost,
-            'refuse'      => $attach['refuse'],
+            'refuse'      => $attach['refuse'] ?: '无',
             'notify_type' => Post::NOTIFY_DELETE_TYPE,
         ];
 

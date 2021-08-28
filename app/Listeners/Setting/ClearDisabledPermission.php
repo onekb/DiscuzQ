@@ -75,6 +75,10 @@ class ClearDisabledPermission
             $permissions[] = 'createThread.' . Thread::TYPE_OF_VIDEO;   // 发布视频帖
             $permissions[] = 'createThread.' . Thread::TYPE_OF_AUDIO;   // 发布语音帖
         }
+        // 同时关闭公众号和小程序时
+        if (! (bool)$this->settings->get('miniprogram_close', 'wx_miniprogram') && ! (bool)$this->settings->get('offiaccount_close', 'wx_offiaccount')) {
+            $permissions[] = 'publishNeedBindWechat';        // 发布内容需先绑定微信
+        }
 
         // 清理权限
         if ($permissions) {

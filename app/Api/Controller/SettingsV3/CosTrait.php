@@ -19,7 +19,6 @@ namespace App\Api\Controller\SettingsV3;
 
 use App\Common\Utils;
 use Discuz\Contracts\Setting\SettingsRepository;
-use Psr\Http\Message\ServerRequestInterface;
 use Qcloud\Cos\Client;
 
 trait CosTrait
