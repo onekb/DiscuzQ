@@ -105,7 +105,13 @@ class CoskeyAttachmentController extends DzqController
         }
 
         $this->checkAttachmentSize($fileSize);
-        $this->checkAttachmentExt($type, $fileName);
+        if (strrpos($fileName,".")) {
+            $fileExt = substr($fileName, strrpos($fileName,".") + 1);
+            $this->checkAttachmentExt($type, $fileExt);
+        } else {
+            $this->outPut(ResponseCode::INVALID_PARAMETER, '上传文件后缀名有错误');
+        }
+
         $siteUrl = Utils::getSiteUrl();
         if (empty($settings['qcloud_cors_origin']) || !in_array($siteUrl, json_decode($settings['qcloud_cors_origin']))) {
             $putBucketCorsResult = $this->putBucketCors();

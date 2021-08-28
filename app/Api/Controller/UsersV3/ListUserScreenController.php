@@ -170,7 +170,7 @@ class ListUserScreenController extends DzqController
 
         $groupIds = array_column($userDatas, 'group_id');
 
-        $userGroupDatas = Group::query()->whereIn('id', $groupIds)->where('is_display', 1)->get()->toArray();
+        $userGroupDatas = Group::query()->whereIn('id', $groupIds)->where('is_display', 0)->get()->toArray();
         $userGroupDatas = array_column($userGroupDatas, null, 'id');
 
         $result = [];

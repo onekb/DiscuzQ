@@ -57,19 +57,13 @@ trait AttachmentTrait
         return $qcloudSettings;
     }
 
-    public function checkAttachmentExt($type, $fileName)
+    public function checkAttachmentExt($type, $fileExt)
     {
         $settings = $this->getSettings();
         if (in_array($type, [Attachment::TYPE_OF_IMAGE, Attachment::TYPE_OF_DIALOG_MESSAGE])) {
             $ext = $settings['support_img_ext'];
         } else {
             $ext = $settings['support_file_ext'];
-        }
-
-        if (strrpos($fileName,".")) {
-            $fileExt = substr($fileName, strrpos($fileName,".") + 1, strlen($fileName));
-        } else {
-            $this->outPut(ResponseCode::INVALID_PARAMETER, '上传文件后缀名有错误');
         }
 
         if (!in_array($fileExt, explode(',', $ext))) {
@@ -86,5 +80,72 @@ trait AttachmentTrait
         if ($fileSize > $maxSize) {
             $this->outPut(ResponseCode::INVALID_PARAMETER, "您的文件尺寸超过了站点所支持的最大尺寸({$settings['support_max_size']}MB)");
         }
+    }
+
+    public function getAttachmentMimeType($cosUrl)
+    {
+        $ch = curl_init ();
+        curl_setopt ( $ch, CURLOPT_CUSTOMREQUEST, 'GET' );
+        curl_setopt ( $ch, CURLOPT_SSL_VERIFYPEER, false );
+        curl_setopt ( $ch, CURLOPT_URL, $cosUrl );
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_exec($ch);
+        return curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    }
+
+    public function getImageInfo($cosUrl, $censor)
+    {
+        $newCosUrl = strstr($cosUrl,'?') ? $cosUrl . '&imageInfo' : $cosUrl . '?imageInfo';
+        $thumbParameter = 'imageMogr2/thumbnail/' . Attachment::FIX_WIDTH . 'x' . Attachment::FIX_WIDTH;
+        $thumbUrl = strstr($cosUrl,'?') ? $cosUrl . '&' . $thumbParameter : $cosUrl . '?' . $thumbParameter;
+        $imageInfo = $this->getFileContents($newCosUrl);
+        $censor->checkImage($thumbUrl, true);
+        if (!$imageInfo) {
+            $this->outPut(ResponseCode::INVALID_PARAMETER, '未获取到文件信息！');
+        }
+        $imageInfo = json_decode($imageInfo, true);
+        $fileData = $this->getFileData($cosUrl);
+        return [
+            'width' => $imageInfo['width'],
+            'height' => $imageInfo['height'],
+            'fileSize' => $imageInfo['size'],
+            'ext' => $imageInfo['format'],
+            'filePath' => $fileData['filePath'],
+            'attachmentName' => $fileData['attachmentName'],
+            'thumbUrl' => $thumbUrl
+        ];
+    }
+
+    public function getDocumentInfo($cosUrl)
+    {
+        $documentInfo = $this->getFileContents($cosUrl);
+        if(!$documentInfo) {
+            $this->outPut(ResponseCode::INVALID_PARAMETER, '未获取到文件信息！');
+        }
+        $fileData = $this->getFileData($cosUrl);
+        return [
+            'width' => 0,
+            'height' => 0,
+            'fileSize' => strlen($documentInfo),
+            'ext' => $fileData['extension'],
+            'filePath' => $fileData['filePath'],
+            'attachmentName' => $fileData['attachmentName'],
+            'thumbUrl' => ''
+        ];
+    }
+
+    public function getFileData($cosUrl)
+    {
+        $fileData = parse_url($cosUrl);
+        $fileData = pathinfo($fileData['path']);
+        $fileData['filePath'] = substr_replace($fileData['dirname'], '', strpos($fileData['dirname'], '/'), strlen('/')) . '/';
+        $fileData['attachmentName'] = urldecode($fileData['basename']);
+        return $fileData;
+    }
+
+    public function getFileContents($url)
+    {
+        $fileContents = @file_get_contents($url, false, stream_context_set_default(['ssl' => ['verify_peer'=>false, 'verify_peer_name'=>false]]));
+        return $fileContents;
     }
 }

@@ -67,6 +67,7 @@ trait VideoCloudTrait
         $region = $setting->get('qcloud_cos_bucket_area','qcloud');
 
         if(empty($secretId) || empty($secretKey)){
+            unlink($absoluteUrl);
             $log->info('云点播配置不能为空');
             return false;
         }
@@ -82,6 +83,7 @@ trait VideoCloudTrait
             $rsp = $client->upload($region, $req);
         } catch (\Exception $e) {
             // 处理上传异常
+            unlink($absoluteUrl);
             $log->info('上传视频接口报错');
             return false;
         }

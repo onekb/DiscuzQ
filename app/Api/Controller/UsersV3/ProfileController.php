@@ -22,6 +22,7 @@ use App\Api\Serializer\UserProfileSerializer;
 use App\Api\Serializer\UserV2Serializer;
 use App\Common\CacheKey;
 use App\Common\ResponseCode;
+use App\Common\Utils;
 use App\Models\Dialog;
 use App\Models\Group;
 use App\Models\GroupUser;
@@ -135,9 +136,12 @@ class ProfileController extends DzqController
         $data['isBindWechat'] = !empty($user->wechat);
         $data['wxNickname'] = !empty($user->wechat) ? $user->wechat->nickname : '';
         $data['wxHeadImgUrl'] = !empty($user->wechat) ? $user->wechat->headimgurl : '';
-
+        $data['expiredDays'] = false;
+        if(!empty($data['expiredAt'])){
+            $dateDiff = date_diff(date_create($data['expiredAt']),date_create(date('Y-m-d H:i:s')));
+            $data['expiredDays'] = $dateDiff->days;
+        }
         return $this->outPut(ResponseCode::SUCCESS,'', $data);
-
     }
 
 

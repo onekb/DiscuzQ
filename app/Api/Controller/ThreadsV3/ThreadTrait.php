@@ -667,12 +667,12 @@ trait ThreadTrait
 
     private function renderCall($text)
     {
-        preg_match_all('/@.+? /', $text, $call);
+        preg_match_all('/@.+?(\s|\<)/', $text, $call);
         if (empty($call)) {
             return $text;
         }
         $call = $call[0];
-        $call = str_replace(['@', ' '], '', $call);
+        $call = str_replace(['@', ' ', '<'], '', $call);
         $ats = User::query()->select('id', 'nickname')->whereIn('nickname', $call)->get()->map(function ($item) {
             $item['nickname'] = '@' . $item['nickname'];
             $item['html'] = sprintf('<span id="member" value="%s">%s</span>', $item['id'], $item['nickname']);
