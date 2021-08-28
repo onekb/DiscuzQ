@@ -206,3 +206,5 @@ $route->post('/attachment.relation', 'attachment.relation', ApiController\Attach
 //用户投票
 $route->post('/vote.thread', 'vote.thread', ApiController\ThreadsV3\VoteThreadController::class);
 
+$route->get('/check.user.get.redpacket', 'check.user.get.redpacket', ApiController\ThreadsV3\CheckUserGetRedpacketController::class);
+

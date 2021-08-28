@@ -67,8 +67,15 @@ class OrderSubscriber
             $day = app()->make(SettingsRepository::class)->get('site_expire');
             // 如果没有设置有效期，则设置有效期为 99 年
             if(empty($day))     $day = 365 * 99;
-            $order->user->expired_at = Carbon::now()->addDays($day);
-            $order->expired_at = Carbon::now()->addDays($day);
+            $expiredDate = date("Y-m-d H:i:s", time() + $day * 86400 - 1);
+            // 过期时间未到时，则续费时间加剩余时间
+            if( !empty($order->user->expired_at) && (strtotime($order->user->expired_at) > time()) ){
+                $remainTime = strtotime($order->user->expired_at) - time();
+                $reNewTime = time() + $remainTime + $day * 86400 - 1;
+                $expiredDate = date("Y-m-d H:i:s", $reNewTime);
+            }
+            $order->user->expired_at = $expiredDate;
+            $order->expired_at = $expiredDate;
             $order->user->save();
             $order->save();
         }

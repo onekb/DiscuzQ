@@ -26,6 +26,7 @@ use App\Models\AdminActionLog;
 use App\Models\Setting;
 use App\Repositories\UserRepository;
 use App\Validators\SetSettingValidator;
+use Carbon\Carbon;
 use Discuz\Auth\Exception\PermissionDeniedException;
 use Discuz\Base\DzqCache;
 use Discuz\Base\DzqLog;
@@ -155,8 +156,8 @@ class SetSettingsController extends DzqController
             DzqLog::error('invalid_parameter', ['validator' => $validator], $e->getMessage());
             $this->outPut(ResponseCode::INVALID_PARAMETER, '', $e->getMessage());
         }
-
-        $settings->transform(function ($setting) {
+        $now = Carbon::now();
+        $settings->transform(function ($setting) use($now) {
             $key = Arr::get($setting, 'key');
             $value = Arr::get($setting, 'value');
             $tag = Arr::get($setting, 'tag', 'default');
@@ -176,6 +177,49 @@ class SetSettingsController extends DzqController
                 }
             }
             $this->settings->set($key, $value, $tag);
+            //针对腾讯云配置，设置初始时间
+            switch ($key){
+                case 'qcloud_cms_image':
+                    if($value && empty($this->settings->get('qcloud_cms_image_init_time'))){
+                        $this->settings->set('qcloud_cms_image_init_time', $now, $tag);
+                    }
+                    break;
+                case 'qcloud_cms_text':
+                    if($value && empty($this->settings->get('qcloud_cms_text_init_time'))){
+                        $this->settings->set('qcloud_cms_text_init_time', $now, $tag);
+                    }
+                    break;
+                case 'qcloud_sms':
+                    if($value && empty($this->settings->get('qcloud_sms_init_time'))){
+                        $this->settings->set('qcloud_sms_init_time', $now, $tag);
+                    }
+                    break;
+                case 'qcloud_faceid':
+                    if($value && empty($this->settings->get('qcloud_faceid_init_time'))){
+                        print_r([$value, empty($this->settings->get('qcloud_faceid_init_time')), $tag]);
+
+                    }
+                    break;
+                case 'qcloud_cos':
+                    if($value && empty($this->settings->get('qcloud_cos_init_time'))){
+                        $this->settings->set('qcloud_cos_init_time', $now, $tag);
+                    }
+                    break;
+                case 'qcloud_vod':
+                    if($value && empty($this->settings->get('qcloud_vod_init_time'))){
+                        $this->settings->set('qcloud_vod_init_time', $now, $tag);
+                    }
+                    break;
+                case 'qcloud_captcha':
+                    if($value && empty($this->settings->get('qcloud_captcha_init_time'))){
+                        $this->settings->set('qcloud_captcha_init_time', $now, $tag);
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+
             return $setting;
         });
 

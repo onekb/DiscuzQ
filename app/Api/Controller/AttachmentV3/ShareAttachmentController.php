@@ -19,6 +19,7 @@
 namespace App\Api\Controller\AttachmentV3;
 
 use App\Common\ResponseCode;
+use App\Models\Attachment;
 use App\Models\Order;
 use App\Models\Thread;
 use App\Models\ThreadTom;
@@ -121,8 +122,13 @@ class ShareAttachmentController extends DzqController
         $AttachmentShare->expired_at = Carbon::now()->modify('+10 minutes');
         $AttachmentShare->save();
 
+        $attachment = Attachment::query()->where('id', $data['attachmentsId'])->first();
+        if(empty($attachment)){
+            $this->outPut(ResponseCode::RESOURCE_NOT_FOUND);
+        }
         $this->outPut(ResponseCode::SUCCESS, '', [
-            'url' => $this->url->to('/apiv3/attachment.download') . '?sign=' . $sign . '&attachmentsId=' . $data['attachmentsId']
+            'url' => $this->url->to('/apiv3/attachment.download') . '?sign=' . $sign . '&attachmentsId=' . $data['attachmentsId'],
+            'fileName'=>$attachment->file_name
         ]);
 
 

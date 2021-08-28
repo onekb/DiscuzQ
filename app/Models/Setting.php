@@ -65,13 +65,13 @@ class Setting extends DzqModel
      * @var array
      */
     public static $linkage = [
-        'qcloud_cms_image',
-        'qcloud_cms_text',
-        'qcloud_sms',
-        'qcloud_faceid',
-        'qcloud_cos',
-        'qcloud_vod',
-        'qcloud_captcha',
+        'qcloud_cms_image',             //图片内容安全
+        'qcloud_cms_text',              //文本内容安全
+        'qcloud_sms',                   //短信
+        'qcloud_faceid',                //实名认证
+        'qcloud_cos',                   //对象存储
+        'qcloud_vod',                   //云点播
+        'qcloud_captcha',               //验证码
     ];
 
     /**

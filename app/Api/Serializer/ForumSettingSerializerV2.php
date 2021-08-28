@@ -186,6 +186,7 @@ class ForumSettingSerializerV2 extends AbstractSerializer
                 'support_img_ext' => $this->settings->get('support_img_ext', 'default'),
                 'support_file_ext' => $this->settings->get('support_file_ext', 'default'),
                 'support_max_size' => $this->settings->get('support_max_size', 'default'),
+                'support_max_download_num' => $this->settings->get('support_max_download_num', 'default')
             ],
 
             // 腾讯云设置

@@ -20,6 +20,7 @@ namespace App\Api\Controller\UsersV3;
 
 use App\Commands\Users\GenJwtToken;
 use App\Common\ResponseCode;
+use App\Events\Users\AdminLogind;
 use App\Events\Users\Logind;
 use App\Models\User;
 use Discuz\Base\DzqLog;
@@ -87,6 +88,7 @@ class AdminLoginController extends DzqController
             return $this->outPut(ResponseCode::UNAUTHORIZED);
         }
         $this->events->dispatch(new Logind($user));
+        $this->events->dispatch(new AdminLogind($user));
 
         $accessToken = json_decode($response->getBody());
         $accessToken = array_merge($this->camelData(collect($accessToken)),['id' => $user->id]);

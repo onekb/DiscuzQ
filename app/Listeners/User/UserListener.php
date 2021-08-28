@@ -18,6 +18,7 @@
 
 namespace App\Listeners\User;
 
+use App\Events\Users\AdminLogind;
 use App\Events\Users\ChangeUserStatus;
 use App\Events\Users\PayPasswordChanged;
 use App\Events\Users\UserFollowCreated;
@@ -38,6 +39,8 @@ class UserListener
 
         // 修改支付密码
         $events->listen(PayPasswordChanged::class, [$this, 'payPasswordChanged']);
+
+        $events->listen(AdminLogind::class, QcloudDaily::class);
     }
 
     public function refreshFollowCount(UserFollowCreated $event)

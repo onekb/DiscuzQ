@@ -585,8 +585,8 @@ class User extends DzqModel
     {
         $this->thread_count = $this->threads()
             ->where('is_approved', Thread::APPROVED)
-            ->where('type', '<>', Thread::TYPE_OF_QUESTION)
-            ->where('is_draft', '<>', 1)
+            ->where('is_draft', Thread::IS_NOT_DRAFT)
+            ->where('is_display', Thread::BOOL_YES)
             ->whereNull('deleted_at')
             ->count();
 

@@ -514,7 +514,14 @@ trait ThreadTrait
         $censor = app(Censor::class);
         $sep = '__' . mt_rand(111111, 999999) . '__';
         $contentForCheck = $title . $sep . $text;
-        [$newTitle, $newContent] = explode($sep, $censor->checkText($contentForCheck));
+        $split = explode($sep, $censor->checkText($contentForCheck));
+        if(count($split)>=2){
+            $newTitle = $split[0];
+            $newContent = $split[1];
+        }else{
+            $newTitle='';
+            $newContent = $split[0];
+        }
         $isApproved = $censor->isMod;
         return [$newTitle, $newContent];
     }

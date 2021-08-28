@@ -470,7 +470,7 @@ class CreateCrawlerDataCommand extends AbstractCommand
                     $newThread->is_approved = Thread::BOOL_YES;
                     $newThread->is_anonymous = Thread::BOOL_NO;
                     $newThread->created_at = $newThread->updated_at = strtotime($threads[$key]['create_at']) ? $threads[$key]['create_at'] : Carbon::now();
-                    // $newThread->source = $this->platform;
+                    $newThread->source = $this->platform;
                     $newThread->save();
 
                     // 处理视频，暂时只写入小视频，以后再优化

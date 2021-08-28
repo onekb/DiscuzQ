@@ -171,7 +171,8 @@ class CreateThreadController extends DzqController
             'category_id' => $categoryId,
             'title' => $title,
             'post_count' => 1,
-            'type' => Thread::TYPE_OF_ALL
+            'type' => Thread::TYPE_OF_ALL,
+            'source' => Thread::DATA_PLATFORM_OF_SITE
         ];
         $price = floatval($price);
         $attachmentPrice = floatval($attachmentPrice);
